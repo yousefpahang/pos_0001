@@ -1236,6 +1236,23 @@ def check_offline_invoice_synced(offline_id):
 	return result
 
 
+POS_PROFILE_ADMIN_ROLES = ("System Manager", "Nexus POS Manager")
+
+
+def _check_submit_pos_profile_access(pos_profile):
+	"""Allow submit only for users listed on the POS Profile (or POS managers)."""
+	user = frappe.session.user
+	if user == "Administrator" or set(POS_PROFILE_ADMIN_ROLES) & set(frappe.get_roles(user)):
+		return
+	if not pos_profile:
+		frappe.throw(_("POS Profile is required"), frappe.PermissionError)
+	if not frappe.db.exists("POS Profile User", {"parent": pos_profile, "user": user}):
+		frappe.throw(
+			_("You don't have access to POS Profile {0}").format(pos_profile),
+			frappe.PermissionError,
+		)
+
+
 @frappe.whitelist()
 def submit_invoice(invoice=None, data=None):
 	"""Submit the invoice (Step 2)."""
@@ -1282,6 +1299,8 @@ def submit_invoice(invoice=None, data=None):
 
 	pos_profile = invoice.get("pos_profile")
 	doctype = invoice.get("doctype", "Sales Invoice")
+
+	_check_submit_pos_profile_access(pos_profile)
 
 	# Normalize pricing_rules before processing
 	standardize_pricing_rules(invoice.get("items"))
