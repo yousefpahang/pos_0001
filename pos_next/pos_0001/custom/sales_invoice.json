@@ -1,0 +1,48 @@
+{
+ "custom_fields": [
+  {
+   "creation": "2026-11-19 12:00:00.000000",
+   "doctype": "Custom Field",
+   "dt": "Sales Invoice",
+   "fieldname": "pos_device",
+   "fieldtype": "Link",
+   "insert_after": "pos_profile",
+   "is_system_generated": 0,
+   "label": "POS Device",
+   "modified": "2026-11-19 12:00:00.000000",
+   "modified_by": "Administrator",
+   "module": "POS 0001",
+   "name": "Sales Invoice-pos_device",
+   "no_copy": 1,
+   "options": "POS Device",
+   "owner": "Administrator",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "creation": "2026-11-19 12:00:00.000000",
+   "default": "0",
+   "description": "Set when a price changed on the server while this sale was made offline.",
+   "doctype": "Custom Field",
+   "dt": "Sales Invoice",
+   "fieldname": "offline_price_mismatch",
+   "fieldtype": "Check",
+   "insert_after": "pos_device",
+   "is_system_generated": 0,
+   "label": "Offline Price Mismatch",
+   "modified": "2026-11-19 12:00:00.000000",
+   "modified_by": "Administrator",
+   "module": "POS 0001",
+   "name": "Sales Invoice-offline_price_mismatch",
+   "no_copy": 1,
+   "owner": "Administrator",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "custom_perms": [],
+ "doctype": "Sales Invoice",
+ "links": [],
+ "property_setters": [],
+ "sync_on_migrate": 1
+}

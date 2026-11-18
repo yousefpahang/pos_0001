@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "creation": "2026-11-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "offline_section",
+  "offline_negative_stock",
+  "cache_refresh_minutes",
+  "column_break_offline",
+  "held_cart_retention_days",
+  "payments_section",
+  "default_cash_rounding",
+  "about_section",
+  "about_source_url"
+ ],
+ "fields": [
+  {
+   "fieldname": "offline_section",
+   "fieldtype": "Section Break",
+   "label": "Offline"
+  },
+  {
+   "default": "Warn",
+   "description": "What the till does when an item has no stock while offline.",
+   "fieldname": "offline_negative_stock",
+   "fieldtype": "Select",
+   "label": "Negative Stock While Offline",
+   "options": "Allow\nWarn\nBlock",
+   "reqd": 1
+  },
+  {
+   "default": "5",
+   "description": "How often the till refreshes its offline cache in the background.",
+   "fieldname": "cache_refresh_minutes",
+   "fieldtype": "Int",
+   "label": "Cache Refresh (minutes)",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_offline",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "3",
+   "description": "Held carts older than this are deleted automatically.",
+   "fieldname": "held_cart_retention_days",
+   "fieldtype": "Int",
+   "label": "Held Cart Retention (days)",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "payments_section",
+   "fieldtype": "Section Break",
+   "label": "Payments"
+  },
+  {
+   "default": "None",
+   "description": "Cash rounding in AED. Applied through ERPNext rounding adjustment, never by changing line amounts.",
+   "fieldname": "default_cash_rounding",
+   "fieldtype": "Select",
+   "label": "Default Cash Rounding",
+   "options": "None\n0.05\n0.25\n0.50\n1.00"
+  },
+  {
+   "fieldname": "about_section",
+   "fieldtype": "Section Break",
+   "label": "About"
+  },
+  {
+   "default": "https://github.com/yousefpahang/pos_0001",
+   "description": "Shown in the POS About screen so users can get the source code (AGPL-3.0).",
+   "fieldname": "about_source_url",
+   "fieldtype": "Data",
+   "label": "Source Code URL",
+   "options": "URL"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS 0001 Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Nexus POS Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "POSNext Cashier"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
