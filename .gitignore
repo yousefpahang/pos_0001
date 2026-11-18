@@ -9,8 +9,12 @@ __pycache__
 # Build artifacts
 pos_next/public/pos/
 pos_next/www/
-yarn.lock
+# yarn.lock files are committed (DECISIONS.md item 11, Node 22)
 package-lock.json
+
+# Playwright output
+POS/test-results/
+POS/playwright-report/
 
 # IDE and editor files
 .vscode/
