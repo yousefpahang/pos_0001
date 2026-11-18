@@ -8,7 +8,7 @@ We are building a branded ERPNext point of sale for UAE retail clients by forkin
 
 This document is written to be handed to Claude Code. Each section is a requirement set; section 11 holds copy-paste prompts, one per build phase; section 12 is the `CLAUDE.md` to commit in the repo.
 
-**Names:** app name `pos_0001` (used throughout). Still to replace: your GitHub org `YOUR_ORG`, test site `pos.test`.
+**Names:** app `pos_0001`, fork `yousefpahang/pos_0001` (remote `origin`; BrainWise is `upstream`), Frappe app/package `pos_next` (kept for clean upstream merges), bench `~/projects/pos/frappe-bench`, site `pos.test` at http://localhost:8001/pos. Versions at Phase 0: Frappe 15.127.1, ERPNext 15.125.0, POS Next 1.17.0.
 
 ### Must-have features
 
@@ -18,7 +18,7 @@ This document is written to be handed to Claude Code. Each section is a requirem
 | F2 | Fast search and scan on large catalogs | POS Next + POS Awesome techniques | Exists, optimise |
 | F3 | Barcode scanning | POS Next | Exists |
 | F4 | Barcode label printing (thermal + A4) | POS Awesome | Port |
-| F5 | Scale barcodes with embedded weight or price | POS Next (POS Barcode Rules) | Exists, extend + test |
+| F5 | Scale barcodes with embedded weight or price | New doctype POS Scale Barcode Rule | Build |
 | F6 | Sales person selection (optional or mandatory) | POS Next + LumenPOS idea | Exists, extend |
 | F7 | Hold / park and resume sales | POS Next | Exists |
 | F8 | Split, partial and credit payments | POS Next | Exists |
@@ -34,6 +34,25 @@ This document is written to be handed to Claude Code. Each section is a requirem
 - New payment-gateway integrations; card terminals are recorded as a payment mode with a reference number.
 - Rewriting loyalty, promotions or pricing rules; use ERPNext's own.
 
+## 1a. Decisions after Phase 0
+
+Phase 0 found 12 places where POS Next differs from this spec. The spec below has been updated to match these decisions. Commit this list as `docs/DECISIONS.md`; it overrides anything else in this doc.
+
+| # | Finding | Decision |
+| --- | --- | --- |
+| 1 | POS Next already has `offline_id` + Offline Invoice Sync | Reuse them. No `offline_uuid`, no POS Sync Log. Missing fields added as Custom Fields |
+| 2 | Failed invoices stay in the browser queue | Store payload + error on Offline Invoice Sync with status Failed; Retry from POS and desk. No Draft invoices |
+| 3 | Scale barcodes need barcode\_resolver; POS Barcode Rules holds only a name | Own doctype POS Scale Barcode Rule in pos\_0001; parse in browser, re-validate on server. Don't install barcode\_resolver or change POS Barcode Rules |
+| 4 | Scanning needs the server | Resolve from cached barcodes in the browser first |
+| 5 | Sales person is mandatory when enabled, payment dialog only | Add Off / Optional / Mandatory, default per user, picker in cart header too |
+| 6 | Held carts are local to one till | Server-side drafts when online; local copy offline, uploaded on reconnect |
+| 7 | QZ signing keys are files in the site's private folder | Reuse them; no key fields in settings |
+| 8 | Translations use Frappe CSV | Use `translations/ar.csv`; no ar.json |
+| 9 | Frontend is JavaScript, no TypeScript | Stay in JavaScript with JSDoc types |
+| 10 | `submit_invoice` doesn't check POS Profile access | Minimal patch, separate commit, offer upstream |
+| 11 | Install fails on Node 20 (no lockfile) | Node 22 for this bench; commit `yarn.lock` |
+| 12 | Credit is a POS Settings flag | Keep the flag |
+
 ## 2. Architecture decision
 
 Fork POS Next as the base, keep every new feature in its own folders, and treat POS Awesome as a read-only reference to port from. This keeps merges from upstream POS Next cheap.
@@ -48,32 +67,36 @@ Fork POS Next as the base, keep every new feature in its own folders, and treat 
 
 ### Rules for the codebase
 
-1. **Isolation:** all new backend code lives in a `pos_0001/` sub-package inside the POS Next Python package; all new frontend code in a `plus/` folder beside the existing frontend `src/`. Edits to POS Next's own files are kept small (hooks, imports, a slot or event) and each is listed in `docs/UPSTREAM_PATCHES.md`.
-2. **Remotes:** `origin` = `YOUR_ORG/pos_0001` (your fork); `upstream` = BrainWise-DEV/POSNext. Merge `upstream/version-15` monthly.
-3. **POS Awesome is never a dependency.** Clone it to `~/reference/posawesome` and port logic by rewriting it: its UI is Vuetify, ours is Tailwind, so components are rebuilt, not copied. Python and pure-JS logic (ZPL/EPL builders, QZ calls, barcode templates) may be adapted with attribution.
-4. **Shared parsing logic:** anything the POS must do offline (barcode parsing, totals, tax, rounding) is written once in TypeScript under `plus/core/` with no UI imports, and mirrored in Python only where the server must validate.
-5. **Hardware:** printers are reached through [QZ Tray](https://qz.io) on each till; network ESC/POS printers may also be reached through QZ. No other local agent.
+1. **Isolation:** all new backend code lives in the `pos_next/pos_0001/` sub-package; all new frontend code in a `plus/` folder inside the frontend `src/`. Edits to POS Next's own files are kept small (hooks, imports, a slot or event) and each is listed in `docs/UPSTREAM_PATCHES.md`.
+2. **Remotes:** `origin` = `yousefpahang/pos_0001`; `upstream` = BrainWise-DEV/POSNext. Merge `upstream/version-15` monthly.
+3. **POS Awesome is never a dependency.** It is cloned at `~/reference/posawesome`. Port logic by rewriting it: its UI is Vuetify, ours is Tailwind, so components are rebuilt, not copied. Python and pure-JS logic (ZPL/EPL builders, QZ calls, barcode templates) may be adapted with attribution.
+4. **Reuse before adding:** where POS Next already does something (offline\_id, Offline Invoice Sync, QZ key files, CSV translations), extend it with custom fields or hooks instead of building a parallel version.
+5. **Shared parsing logic:** anything the POS must do offline (barcode parsing, totals, tax, rounding) is written once in plain JavaScript with JSDoc types under `plus/core/`, with no UI imports, and mirrored in Python only where the server must validate.
+6. **Hardware:** printers are reached through [QZ Tray](https://qz.io) on each till; network ESC/POS printers may also be reached through QZ. No other local agent.
+7. **Node 22** for this bench, with `yarn.lock` committed.
 
 ### Target repo layout (additions only)
 
 ```text
-pos_next/                      # existing POS Next python package (name to confirm in Phase 0)
+pos_next/                      # POS Next python package (confirmed in Phase 0)
   pos_0001/
+    demo/           seed.py                       # done in Phase 0
     api/            sync.py  labels.py  printing.py  barcode.py  reports.py
     doctype/        pos_0001_settings/  pos_printer_profile/  pos_label_template/
-                    pos_sync_log/  pos_device/
+                    pos_device/  pos_scale_barcode_rule/
     print_format/   uae_tax_invoice_80mm/
     report/         sales_person_commission/
     tests/
-POS/src/                       # existing frontend (path to confirm)
+  translations/     ar.csv                        # existing Frappe CSV, add our strings
+<frontend>/src/                # exact path in ARCHITECTURE_NOTES.md
   plus/
-    core/           scaleBarcode.ts  ean.ts  escpos.ts  zpl.ts  tspl.ts  rounding.ts
-    printing/       qz.ts  receipt.ts  labels.ts  raster.ts
-    sync/           syncLog.ts
+    core/           scaleBarcode.js  ean.js  escpos.js  zpl.js  tspl.js  rounding.js
+    printing/       qz.js  receipt.js  labels.js  raster.js
+    sync/           syncLog.js
     components/     LabelPrintDialog.vue  SyncLogPanel.vue  SalesPersonPicker.vue
-    i18n/           ar.json  en.json
 docs/
-  ARCHITECTURE_NOTES.md  UPSTREAM_PATCHES.md  HARDWARE.md  NOTICE.md
+  SPEC.md  DECISIONS.md  ARCHITECTURE_NOTES.md  PROGRESS.md
+  UPSTREAM_PATCHES.md  HARDWARE.md  NOTICE.md
 ```
 
 ### License obligations
@@ -86,19 +109,23 @@ Before writing any feature, Claude Code sets up a v15 bench and writes `docs/ARC
 
 ### Environment (v15)
 
-- Ubuntu 22.04 or 24.04, Python 3.11, Node 18 LTS, Yarn, MariaDB 10.6+, Redis, wkhtmltopdf (patched Qt).
-- For v16 testing later, use a second bench and check the current v16 Python/Node requirements in the Frappe docs first.
+**Status: Phase 0 is done** (commits 64b7fda, 5a872b9, 06a0fff). The bench is a separate one at `~/projects/pos/frappe-bench` so it can't affect `~/frappe-bench`.
+
+- Ubuntu, Python 3.11, **Node 22** (via nvm, this bench only), Yarn, MariaDB 10.6+, Redis, wkhtmltopdf.
+- Ports: web 8001, socketio 9001, redis 11001 / 13001, file watcher 6788 (the other bench uses 8000/9000/11000/13000).
+- Phase 0 installed the frontend with `yarn install --ignore-engines` because there was no lockfile. Phase 1 switches to Node 22 and commits `yarn.lock`.
 
 ```bash
+# Reference only - already done in Phase 0
+cd ~/projects/pos
 bench init frappe-bench --frappe-branch version-15 --python python3.11
 cd frappe-bench
 bench get-app erpnext --branch version-15
-bench new-site pos.test --admin-password admin --mariadb-root-password <root>
+bench new-site pos.test --admin-password admin
 bench --site pos.test install-app erpnext
-bench get-app https://github.com/YOUR_ORG/pos_0001 --branch version-15
-bench --site pos.test install-app pos_next   # app name to confirm
+bench get-app https://github.com/yousefpahang/pos_0001 --branch version-15
+bench --site pos.test install-app pos_next
 bench --site pos.test set-config developer_mode 1
-bench --site pos.test migrate && bench build && bench start
 cd apps/pos_next && git remote add upstream https://github.com/BrainWise-DEV/POSNext
 git clone https://github.com/defendicon/POS-Awesome-V15 ~/reference/posawesome
 ```
@@ -135,20 +162,20 @@ POS Awesome (reference):
 
 A till that loses internet keeps selling with no visible change except a status badge, and every sale reaches ERPNext exactly once.
 
-- **Cached on login and refreshed in the background (every 5 min, configurable):** items, item barcodes (incl. UOM barcodes), prices for the profile's price list, item tax templates, stock qty per warehouse (informational), customers, sales persons, payment modes, POS Profile, barcode rules, printer profiles, label templates, print-format data.
-- **Idempotency:** each invoice gets a client UUID (`offline_uuid`) when the cart is created. The server rejects a second invoice with the same UUID and returns the existing one. Custom field is unique and indexed.
-- **Queue:** invoices go to an IndexedDB queue; sync runs on reconnect, every 30 s while items are pending, and on demand. Batches of 20, exponential backoff on errors.
-- **Failure handling (from POS Awesome):** an invoice the server rejects (validation error, closed period, missing item) is saved server-side as a Draft with the error, and shown in the sync log. It is never silently dropped.
+- **Cached on login and refreshed in the background (every 5 min, configurable):** items, item barcodes (incl. UOM barcodes), prices for the profile's price list, item tax templates, stock qty per warehouse (informational), customers, sales persons, payment modes, POS Profile, scale barcode rules, printer profiles, label templates, print-format data.
+- **Idempotency:** reuse POS Next's existing `offline_id` and Offline Invoice Sync doctype, which already stop duplicates. Verify with a test that sending the same `offline_id` twice creates one invoice.
+- **Queue:** keep POS Next's browser queue; sync runs on reconnect, every 30 s while items are pending, and on demand.
+- **Failure handling:** when the server rejects an invoice, store the full payload and the error on its Offline Invoice Sync record with status Failed (add `status`, `error`, `payload`, `pos_device` as Custom Fields if missing). Do not create a Draft invoice. The browser removes an invoice from its queue only after the server confirms Synced or Failed-and-stored. Retry is available in the POS sync panel and as a button on the Offline Invoice Sync form in desk.
 - **Stock while offline:** setting `offline_negative_stock` = Allow / Warn / Block (default Warn).
 - **Price changes while offline:** the sale keeps the price the cashier saw; server records `offline_price_mismatch = 1` for review.
-- **Shift rules:** a shift opened online can continue offline; closing a shift requires the queue to be empty.
-- **F12 Sync log panel (LumenPOS idea):** a badge (Online / Offline / n pending / n failed) opens a panel listing each queued invoice: time, total, status (Pending, Synced, Failed → Draft), error text in plain words, Retry button.
+- **Shift rules:** a shift opened online can continue offline; closing a shift requires the queue to be empty and no Failed records for that shift.
+- **F12 Sync log panel:** a badge (Online / Offline / n pending / n failed) opens a panel listing each queued or failed invoice: time, total, status (Pending, Synced, Failed), error in plain words, Retry button. Data comes from the browser queue plus Offline Invoice Sync.
 
 ### F5 Scale barcodes (weight or price embedded)
 
 Scanning a label printed by a shop scale adds the right item at the right weight and price, online or offline, with no keystroke.
 
-Extend POS Next's `POS Barcode Rules` (add fields only if missing):
+POS Next's `POS Barcode Rules` holds only a rule name and needs the separate barcode\_resolver app, so we leave both alone. Create a new doctype **POS Scale Barcode Rule** in `pos_0001` with these fields:
 
 | Field | Example | Notes |
 | --- | --- | --- |
@@ -163,11 +190,12 @@ Extend POS Next's `POS Barcode Rules` (add fields only if missing):
 
 Rules:
 
-1. Parse on the client in `plus/core/scaleBarcode.ts` so it works offline; the server re-validates on sync.
-2. Normal item barcodes are checked first; scale rules run only if no exact barcode match.
+1. Parse in the browser in `plus/core/scaleBarcode.js` so it works offline; the server re-validates the same barcode on sync (`pos_0001/api/barcode.py`).
+2. Scanning resolves from the cached item barcodes in the browser first (this also makes normal barcode scans work offline). Scale rules run only when there is no exact barcode match. The server is called only if online and still not found.
 3. Item UOM must be Kg (or the rule's UOM); if not, show an error naming the item.
 4. Price-embedded: qty rounded to 3 decimals; line amount equals the printed price exactly (adjust rate rounding, not amount).
 5. Same scale label scanned twice adds two lines, never merges.
+6. Rules apply per company, optionally limited to listed POS Profiles.
 
 Test vectors (valid EAN-13 check digits; rule A = prefix 20 weight, rule B = prefix 22 price; item PLU 12345):
 
@@ -181,16 +209,18 @@ Test vectors (valid EAN-13 check digits; rule A = prefix 20 weight, rule B = pre
 
 ### F6 Sales person
 
-- Picker in the cart header and in the payment dialog; search by name or scan the employee's barcode (new field `sales_person_barcode`).
-- Settings per POS Profile: Off / Optional / Mandatory; default sales person per user.
-- Several sales persons with allocation %, written to the invoice's Sales Team table so ERPNext commission reports work.
-- Works offline from cache.
+- POS Next today makes sales person mandatory whenever it is enabled, and only in the payment dialog. Extend it, keeping its existing code path:
+- Setting per POS Profile (custom field): Off / Optional / Mandatory.
+- Default sales person per user (custom field on User), pre-selected on each new cart.
+- Picker in the cart header as well as the payment dialog; search by name or scan the employee's barcode (`sales_person_barcode`).
+- Several sales persons with allocation %, written to the invoice's Sales Team table so ERPNext commission reports work. Works offline from cache.
 - New report **Sales Person Commission**: sales person, invoices, net sales, returns, commission rate, commission (AED), date range and POS Profile filters.
 
 ### F7 Hold / park
 
-- Hold button (F8) parks the cart with an optional note; held list shows time, customer, total, cashier.
-- Online: stored as draft invoices, resumable on any till (POS Next behaviour). Offline: stored locally and uploaded on reconnect.
+- POS Next keeps held carts only in the browser, so they can't move between tills. Change this:
+- Hold button (F8) parks the cart with an optional note; held list shows time, customer, total, cashier, till.
+- Online: saved on the server as a draft invoice, so any till with the same POS Profile can resume it. Offline: saved locally and uploaded as a draft on reconnect.
 - Held carts older than N days (setting, default 3) are deleted automatically.
 
 ### F8 Payments
@@ -223,7 +253,7 @@ Requirements:
 - Receipt includes a Code128 or QR barcode of the invoice number for fast returns.
 - Printing works offline (receipt data built from the local invoice, not fetched).
 - Reprint last receipt (F9) and reprint from the invoice list.
-- **QZ signing:** server endpoint signs QZ requests with a private key stored in site config, so tills show no trust prompts. Document the certificate setup in `docs/HARDWARE.md`.
+- **QZ signing:** reuse POS Next's existing QZ signing, which keeps its certificate and key as files in the site's private folder, so tills show no trust prompts. Do not add key fields to settings. Document the certificate setup in `docs/HARDWARE.md`.
 - If QZ is not connected, show a red printer badge and fall back to `browser` mode.
 
 ### F4 Barcode label printing (ported from POS Awesome)
@@ -285,34 +315,32 @@ Other:
 
 ## 8. Data model
 
-Five new doctypes and a set of custom fields (shipped as fixtures). Reuse POS Next's own doctypes wherever they already cover a need.
+Five new doctypes and a set of custom fields (shipped as fixtures). POS Next's own doctypes are reused and extended only through Custom Fields, never by editing their JSON.
 
 ### New doctypes
 
 | Doctype | Type | Key fields |
 | --- | --- | --- |
-| POS 0001 Settings | Single | `offline_negative_stock` (Allow/Warn/Block), `cache_refresh_minutes` (5), `held_cart_retention_days` (3), `sync_batch_size` (20), `qz_certificate` (Text), `qz_private_key` (Password), `default_cash_rounding`, `about_source_url` |
+| POS 0001 Settings | Single | `offline_negative_stock` (Allow/Warn/Block), `cache_refresh_minutes` (5), `held_cart_retention_days` (3), `default_cash_rounding`, `about_source_url` |
+| POS Scale Barcode Rule | Master | `company`, `pos_profiles` (table, optional), `prefix`, `total_length`, `item_code_start`, `item_code_length`, `item_match` (Item Barcode / scale\_plu), `value_type` (Weight/Price), `value_start`, `value_length`, `decimals`, `uom`, `check_digit_mode` (Validate/Ignore), `priority`, `enabled` |
 | POS Printer Profile | Master | `printer_name`, `purpose` (Receipt/Label), `connection` (QZ local name / Network IP:port), `print_mode` (raster/escpos\_text/qz\_html/browser), `paper_width_mm` (80/58), `dpi`, `auto_cut`, `copies`, `drawer_kick`, `label_language` (ZPL/EPL/TSPL) |
 | POS Label Template | Master | `width_mm`, `height_mm`, `dpi`, `language` (ZPL/EPL/TSPL/PDF), `barcode_type` (Code128/EAN13), `body` (Code, Jinja), `a4_columns`, `a4_rows`, `margins_mm`, `is_default` |
 | POS Device | Master | `device_id` (UUID from the browser), `device_name`, `pos_profile`, `receipt_printer`, `label_printer`, `last_seen`, `app_version` |
-| POS Sync Log | Log | `device`, `offline_uuid`, `invoice` (Dynamic Link), `status` (Synced/Failed/Duplicate), `error`, `payload_hash`, `received_at`, `client_created_at` |
 
 ### Custom fields
 
 | Doctype | Field | Type | Purpose |
 | --- | --- | --- | --- |
-| Sales Invoice / POS Invoice (whichever POS Next uses) | `offline_uuid` | Data, unique, read-only, indexed | Idempotent sync |
-| same | `pos_device` | Link POS Device | Audit |
+| Offline Invoice Sync (POS Next) | `status` (Synced/Failed), `error`, `payload`, `pos_device`, `retry_count` | Custom Fields, only those missing | Failed-sync storage and Retry (decision 2) |
+| Invoice doctype POS Next creates (see notes) | `pos_device` | Link POS Device | Audit |
 | same | `offline_price_mismatch` | Check | Review prices changed while offline |
-| POS Profile | `plus_sales_person_mode` | Select Off/Optional/Mandatory | F6 |
-| POS Profile | `plus_receipt_template`, `plus_default_label_template` | Links | Printing defaults |
-| POS Profile | `plus_receipt_footer`, `plus_receipt_logo` | Text / Attach Image | Receipt branding |
+| POS Profile | `pos0001_sales_person_mode` | Select Off/Optional/Mandatory | F6 |
+| POS Profile | `pos0001_receipt_template`, `pos0001_default_label_template` | Links | Printing defaults |
+| POS Profile | `pos0001_receipt_footer`, `pos0001_receipt_logo` | Text / Attach Image | Receipt branding |
 | Item | `item_name_ar` | Data | Arabic name |
 | Item | `scale_plu` | Data, indexed | Scale barcode item code |
 | Sales Person | `sales_person_barcode` | Data, unique | Scan to select |
-| User | `plus_default_sales_person` | Link Sales Person | Default per cashier |
-
-Extend `POS Barcode Rules` with any of these missing fields: `value_type`, `decimals`, `check_digit_mode`, `priority`, `uom` (see F5).
+| User | `pos0001_default_sales_person` | Link Sales Person | Default per cashier |
 
 Roles: reuse POS Next's cashier and manager roles; add permission `No Sale drawer open` and `Print labels` checks via role on POS Profile.
 
@@ -322,16 +350,18 @@ All new endpoints are `@frappe.whitelist()` methods under `<package>.pos_0001.ap
 
 | Method | Input | Output | Notes |
 | --- | --- | --- | --- |
-| `sync.submit_offline_invoices` | `invoices[]` (each with `offline_uuid`, `device_id`, full invoice payload) | per invoice: `{offline_uuid, status, invoice_name, error}` | Idempotent; one DB transaction per invoice; failures saved as Draft + Sync Log |
-| `sync.get_sync_log` | `device_id`, `limit` | log rows | For the sync panel |
+| `sync.retry_failed` | `offline_ids[]` | per invoice: `{offline_id, status, invoice_name, error}` | Re-submits stored payloads from Offline Invoice Sync; also a desk button |
+| `sync.get_sync_status` | `device_id`, `limit` | Offline Invoice Sync rows for this device | For the sync panel |
 | `sync.register_device` | `device_id`, `device_name`, `pos_profile` | POS Device + printer profiles | Called on first login per browser |
-| `barcode.get_rules` | `pos_profile` | rules\[\] | Cached offline |
+| `barcode.get_scale_rules` | `pos_profile` | rules\[\] | Cached offline |
+| `barcode.resolve_scale_barcode` | `barcode`, `pos_profile` | `{item_code, qty, amount}` | Server-side re-validation, same logic as the browser |
 | `barcode.generate_scale_barcode` | `rule`, `item_code`, `value` | EAN-13 string | Valid check digit |
-| `printing.sign_qz` | `request` (string) | signature | Signs with key from POS 0001 Settings; rate-limited |
 | `printing.get_receipt_data` | `invoice` | receipt JSON | For reprints; live sales build receipts locally |
 | `labels.items_from_document` | `doctype`, `name` | rows\[\] | Purchase Receipt, Stock Entry |
-| `labels.render` | `template`, `rows[]` | raw string (ZPL/EPL/TSPL) or PDF file URL | Server-side render for desk page; POS renders locally |
-| `reports.sales_person_commission` | `from_date`, `to_date`, `pos_profile?` | rows | Also exposed as a Script Report |
+| `labels.render` | `template`, `rows[]` | raw string (ZPL/EPL/TSPL) or PDF file URL | Desk page; the POS renders locally |
+| `reports.sales_person_commission` | `from_date`, `to_date`, `pos_profile?` | rows | Also a Script Report |
+
+Invoice submit stays in POS Next's `submit_invoice`; per decision 10 we add a POS Profile access check there as a minimal, separate patch. QZ signing uses POS Next's existing endpoint.
 
 Conventions: type hints on every function, `frappe.throw` with translatable messages (`_()`), no raw SQL where the Query Builder works, and every endpoint has at least one test.
 
@@ -341,9 +371,9 @@ A phase is done only when its automated tests pass and its acceptance checks bel
 
 ### Automated tests
 
-- **Python** (`bench --site pos.test run-tests --app <package>`): barcode parsing vectors (F5 table), idempotent sync (same UUID twice → one invoice), failed sync → Draft + log, sales-person allocation totals 100%, label rendering snapshots, commission report totals.
-- **Frontend unit** (Vitest): `scaleBarcode.ts`, `ean.ts` check digits, totals/VAT/rounding, ESC/POS and ZPL/TSPL builders (byte snapshots), raster conversion of a fixed receipt.
-- **End-to-end** (Playwright, Chromium): login → cache → go offline (`context.setOffline(true)`) → sell 10 invoices incl. scale items, split payment, held cart → go online → assert 10 invoices in ERPNext, no duplicates, GL and stock entries correct.
+- **Python** (`bench --site pos.test run-tests --app pos_next`, our tests under `pos_0001/tests/`): scale barcode vectors (F5 table), same `offline_id` sent twice → one invoice, rejected invoice → Offline Invoice Sync status Failed with payload and error, Retry succeeds after fixing the cause, POS Profile access check on `submit_invoice`, sales-person allocation totals 100%, label rendering snapshots, commission report totals.
+- **Frontend unit** (Vitest, added as a dev dependency in Phase 1): `scaleBarcode.js`, `ean.js` check digits, totals/VAT/rounding, ESC/POS and ZPL/TSPL builders (byte snapshots), raster conversion of a fixed receipt.
+- **End-to-end** (Playwright, Chromium): login → cache → go offline (`context.setOffline(true)`) → sell 10 invoices incl. scanned and scale items, split payment, held cart → go online → assert 10 invoices in ERPNext, no duplicates, GL and stock entries correct; hold on one browser context and resume on another.
 - **Load:** script 500 queued invoices from 5 devices syncing together; assert no duplicates and < 5 min.
 
 ### Acceptance checks (manual, with real hardware)
@@ -370,17 +400,17 @@ A phase is done only when its automated tests pass and its acceptance checks bel
 
 ## 11. Build phases and Claude Code prompts
 
-Run one phase per Claude Code session, in order. Save this document as `docs/SPEC.md` in the repo first (export it as Markdown), so every prompt can point to it. Review and commit after each phase.
+Phase 0 is done. Phases 1–8 run unattended with `run_phases.sh`, one fresh Claude Code run per phase; each reads `CLAUDE.md`, `docs/SPEC.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE_NOTES.md` and `docs/PROGRESS.md`, and ends by writing `PHASE N: DONE` or `PHASE N: BLOCKED - reason` in `docs/PROGRESS.md`. Review `PROGRESS.md` (manual checks, decisions to review) after the run.
 
 | Phase | Delivers | Depends on | Rough size |
 | --- | --- | --- | --- |
-| 0 | Bench, seed data, ARCHITECTURE\_NOTES.md | — | 1 day |
-| 1 | Doctypes, custom fields, idempotent sync, sync log | 0 | 3–4 days |
-| 2 | Scale barcodes | 1 | 2 days |
-| 3 | Sales person + commission report | 1 | 2 days |
-| 4 | Receipt printing (raster, ESC/POS, QZ signing, drawer) | 1 | 4–5 days |
+| 0 | Bench, seed data, ARCHITECTURE\_NOTES.md (done) | — | done |
+| 1 | Node 22 + yarn.lock, doctypes, custom fields, failed-sync storage + Retry, sync panel, access check, Vitest/Playwright setup | 0 | 3–4 days |
+| 2 | Scale barcodes, offline scanning | 1 | 2 days |
+| 3 | Sales person modes + commission report | 1 | 2 days |
+| 4 | Receipt printing (raster, ESC/POS, drawer) | 1 | 4–5 days |
 | 5 | Label printing | 4 | 4 days |
-| 6 | Performance + shortcuts | 2 | 3 days |
+| 6 | Performance, server-side held carts, shortcuts | 2 | 3 days |
 | 7 | UAE receipt, Arabic/RTL | 4 | 2–3 days |
 | 8 | Hardening, e2e, docs, release | all | 3 days |
 
@@ -393,13 +423,13 @@ Read docs/SPEC.md sections 1-3. Set up the v15 bench and test site exactly as in
 **Phase 1**
 
 ```text
-Read docs/SPEC.md sections 2, 4 (F1, F12), 8, 9 and docs/ARCHITECTURE_NOTES.md. Create the pos_0001 sub-package, the five doctypes and the custom fields as fixtures. Make offline invoice sync idempotent using offline_uuid, save rejected invoices as Draft with a POS Sync Log row, register devices, and build the sync badge + SyncLogPanel. Keep edits to POS Next files minimal and record each in docs/UPSTREAM_PATCHES.md. Write the Python and Playwright tests from section 10 for F1. Run them and fix until green.
+Read docs/SPEC.md sections 1a, 2, 4 (F1, F12), 8, 9, docs/DECISIONS.md and docs/ARCHITECTURE_NOTES.md. First switch this bench to Node 22, run a clean yarn install and commit yarn.lock; confirm bench build works. Add Vitest and Playwright as dev dependencies (note them in PROGRESS.md). Create the pos_0001 sub-package, POS 0001 Settings, POS Device, and the custom fields as fixtures (Offline Invoice Sync fields only where missing). Keep POS Next's offline_id duplicate protection; add failed-sync storage on Offline Invoice Sync (status Failed, payload, error), the Retry endpoint and desk button, device registration, and the sync badge + SyncLogPanel. Add the POS Profile access check to submit_invoice as its own commit. Keep edits to POS Next files minimal and record each in docs/UPSTREAM_PATCHES.md. Write the F1 tests from section 10. Run them and fix until green.
 ```
 
 **Phase 2**
 
 ```text
-Read docs/SPEC.md F5 and the barcode notes in ARCHITECTURE_NOTES.md. Extend POS Barcode Rules with the missing fields, implement plus/core/scaleBarcode.ts and ean.ts (client, offline) and the server re-validation, wire them into POS Next's barcode flow after exact-match lookup, and add barcode.get_rules to the offline cache. All five test vectors in F5 must pass in Vitest and in Python tests.
+Read docs/SPEC.md F5, docs/DECISIONS.md items 3-4 and the barcode notes in ARCHITECTURE_NOTES.md. Do not install barcode_resolver and do not change POS Barcode Rules. Create the POS Scale Barcode Rule doctype, implement plus/core/scaleBarcode.js and ean.js (plain JS with JSDoc, works offline), and the server re-validation in pos_0001/api/barcode.py. Make scanning resolve from cached item barcodes in the browser first, then scale rules, then the server only if online. Add the rules to the offline cache. All five F5 test vectors must pass in Vitest and in Python tests, and a scan must work with the network off.
 ```
 
 **Phase 3**
@@ -411,25 +441,25 @@ Read docs/SPEC.md F6. Add the Off/Optional/Mandatory mode on POS Profile, defaul
 **Phase 4**
 
 ```text
-Read docs/SPEC.md F9 and ARCHITECTURE_NOTES.md (POS Next QZ silent print and POS Awesome raw printing). Implement Printer Profiles, QZ request signing (printing.sign_qz), and the four print modes. raster mode renders the receipt HTML to a canvas in a Web Worker, converts to 1-bit and sends GS v 0 via QZ. Add auto-cut, copies, drawer kick, No Sale with permission, reprint, receipt barcode, and fallback to browser printing when QZ is down. Byte-snapshot tests for the ESC/POS builder. Write docs/HARDWARE.md with QZ install and certificate steps.
+Read docs/SPEC.md F9, docs/DECISIONS.md item 7 and ARCHITECTURE_NOTES.md (POS Next QZ silent print and POS Awesome raw printing). Reuse POS Next's QZ connection and its signing keys in the site's private folder. Implement POS Printer Profile and the four print modes. raster mode renders the receipt HTML to a canvas in a Web Worker, converts to 1-bit and sends GS v 0 via QZ. Add auto-cut, copies, drawer kick, No Sale with permission, reprint, receipt barcode, and fallback to browser printing when QZ is down. Byte-snapshot tests for the ESC/POS builder. Write docs/HARDWARE.md with QZ install and certificate steps.
 ```
 
 **Phase 5**
 
 ```text
-Read docs/SPEC.md F4 and the POS Awesome Barcode Printing notes. Port its label logic into plus/core/zpl.ts, tspl.ts and an EPL builder, rebuild the UI in Tailwind (LabelPrintDialog + desk page pos-labels + Print Labels buttons on Purchase Receipt and Stock Entry), add POS Label Template with the three default templates, Arabic text as bitmap, A4 PDF grid, and scale-barcode label generation. Credit POS Awesome in NOTICE.md and file headers. Snapshot tests for each label language.
+Read docs/SPEC.md F4 and the POS Awesome Barcode Printing notes. Port its label logic into plus/core/zpl.js, tspl.js and an EPL builder (plain JS), rebuild the UI in Tailwind (LabelPrintDialog + desk page pos-labels + Print Labels buttons on Purchase Receipt and Stock Entry), add POS Label Template with the three default templates, Arabic text as bitmap, A4 PDF grid, and scale-barcode label generation using POS Scale Barcode Rule. Credit POS Awesome in NOTICE.md and file headers. Snapshot tests for each label language.
 ```
 
 **Phase 6**
 
 ```text
-Read docs/SPEC.md section 6. Seed 20,000 items, measure every target in the table with a small benchmark script, then add virtual scrolling, the IndexedDB search index, favourites grid, global scanner capture and Web Worker indexing until all targets pass. Add the keyboard shortcut map and the ? overlay. Report before/after numbers in docs/PERFORMANCE.md.
+Read docs/SPEC.md section 6, F7 and docs/DECISIONS.md item 6. Make held carts server-side drafts when online (resumable on any till of the same POS Profile), keep the local copy when offline and upload it on reconnect, and add the retention cleanup. Then seed 20,000 items with pos_next/pos_0001/demo/seed.py, measure every target in the section 6 table with a small benchmark script, and add virtual scrolling, the IndexedDB search index, favourites grid, global scanner capture and Web Worker indexing until all targets pass. Add the keyboard shortcut map and the ? overlay. Report before/after numbers in docs/PERFORMANCE.md.
 ```
 
 **Phase 7**
 
 ```text
-Read docs/SPEC.md section 7. Create the UAE Tax Invoice 80mm receipt (bilingual, VAT 5%, TRN, credit-note variant), item_name_ar on receipts, labels and search, AED formatting, and check full RTL layout on every POS screen. Add ar.json translations for all new strings. Keep invoice creation in one service function with a no-op hook for future e-invoicing.
+Read docs/SPEC.md section 7 and docs/DECISIONS.md item 8. Create the UAE Tax Invoice 80mm receipt (bilingual, VAT 5%, TRN, credit-note variant), item_name_ar on receipts, labels and search, AED formatting, and check full RTL layout on every POS screen. Add Arabic for all new strings to Frappe's translations CSV (pos_next/translations/ar.csv). Keep invoice creation in one service function with a no-op hook for future e-invoicing.
 ```
 
 **Phase 8**
@@ -447,45 +477,52 @@ Commit this as `CLAUDE.md` at the repo root before Phase 0. Claude Code reads it
 
 Branded ERPNext POS: a fork of BrainWise POS Next (AGPL-3.0) with features ported
 from POS Awesome (defendicon fork, GPL-3.0). Full spec: docs/SPEC.md.
+docs/DECISIONS.md overrides SPEC.md wherever they differ.
 How the base code works: docs/ARCHITECTURE_NOTES.md (read before changing anything).
+Progress and status per phase: docs/PROGRESS.md.
 
 ## Targets
 - Frappe/ERPNext v15 (branch version-15) first; must also install on v16.
-- Dev site: pos.test. Bench at ~/frappe-bench. POS Awesome reference: ~/reference/posawesome (read-only).
+- Bench: ~/projects/pos/frappe-bench (Node 22). Site: pos.test (admin/admin), http://localhost:8001/pos.
+- Do not touch ~/frappe-bench; it is a different bench.
+- POS Awesome reference: ~/reference/posawesome (read-only).
 
 ## Where code goes
-- New backend code: <package>/pos_0001/ only. New frontend code: <frontend>/src/plus/ only.
+- New backend code: pos_next/pos_0001/ only. New frontend code: <frontend>/src/plus/ only.
 - Pure logic that must work offline (barcodes, totals, VAT, rounding, ESC/POS, ZPL/TSPL) goes in
-  src/plus/core/ with no Vue imports and has Vitest tests.
+  src/plus/core/ as plain JavaScript with JSDoc types, no Vue imports, with Vitest tests.
+- Reuse POS Next first: offline_id + Offline Invoice Sync, QZ key files, CSV translations.
+  Extend its doctypes only with Custom Fields (fixtures), never by editing their JSON.
 - Editing POS Next's own files: keep the change minimal and add an entry to docs/UPSTREAM_PATCHES.md
   (file, reason, what changed).
-- Never add POS Awesome as a dependency. Port logic, rebuild UI in Tailwind, credit it in NOTICE.md.
-- Never copy LumenPOS code.
+- Never add POS Awesome or barcode_resolver as a dependency. Port logic, rebuild UI in Tailwind,
+  credit POS Awesome in NOTICE.md. Never copy LumenPOS code.
 
 ## Conventions
 - Python: type hints, frappe.qb over raw SQL, frappe.throw(_("...")) for user errors,
   every whitelisted method checks POS Profile access.
-- Vue 3 Composition API + TypeScript + Tailwind, matching POS Next components and tokens.
-- Every user-facing string translatable; add Arabic to src/plus/i18n/ar.json. Check RTL.
+- Vue 3 + JavaScript (no TypeScript) + Tailwind, matching POS Next components and tokens.
+- Every user-facing string translatable; Arabic goes in pos_next/translations/ar.csv. Check RTL.
 - Schema changes only via doctype JSON or fixtures, plus a patch in patches.txt when data must move.
 - Money: never edit line amounts to fix rounding; use ERPNext rounding adjustment.
-- Offline invoices: always carry offline_uuid; the server must stay idempotent.
+- Never drop an offline invoice: it leaves the browser queue only when the server confirms
+  Synced or Failed-and-stored.
 
-## Commands
-- Build: bench build --app <package>
+## Commands (run from ~/projects/pos/frappe-bench)
+- Build: bench build --app pos_next
 - Migrate: bench --site pos.test migrate
-- Python tests: bench --site pos.test run-tests --app <package>
-- Frontend tests: cd <frontend> && yarn test
-- E2E: cd <frontend> && yarn e2e
+- Python tests: bench --site pos.test run-tests --app pos_next
+- Frontend tests and e2e: see docs/ARCHITECTURE_NOTES.md for the frontend folder, then yarn test / yarn e2e
 
 ## Definition of done for any task
 1. Tests for the change exist and pass (Python + Vitest; Playwright for flows).
 2. Works offline if it is used at the till.
 3. No console errors; RTL checked for UI changes.
-4. docs updated (SPEC section, UPSTREAM_PATCHES, HARDWARE as relevant).
+4. Docs updated (PROGRESS, UPSTREAM_PATCHES, HARDWARE as relevant).
 5. Small, focused commits with clear messages.
 
-## Ask before
+## Ask before (when running unattended: choose the safest option, log it under
+## "Decisions to review" in docs/PROGRESS.md, and continue)
 - Changing an existing POS Next doctype's fields or behaviour.
 - Adding a new npm or pip dependency.
 - Anything touching GL entries, stock ledger or tax calculation logic.
