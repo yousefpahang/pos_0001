@@ -1586,4 +1586,25 @@ Extra decision to review:
    finish. It runs as a background job of this session and stops with it; start the bench again by hand if
    http://localhost:8001 is down afterwards.
 
-PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB was not permitted); all automated tests pass after fixing one flaky e2e check, docs written, tagged v1.0.0-rc.1 instead of v1.0.0
+### Third run (2026-11-19, unattended)
+
+No code changes were needed. This run reran every automated test and tried the install checks again.
+
+- **Clean install on a fresh v15 site: still blocked.** Running `mariadb-install-db` for a private database
+  (decision 7) was denied again (needs approval, no one to approve). Docker was not tried, for the same reason.
+  No files were created.
+- **v16 bench: not tried** (same limits as the second run).
+
+Test results (third run, on the running `bench start` stack at http://localhost:8001):
+
+- Vitest `yarn test:run`: **247 tests, 27 files, all pass**.
+- Python `bench --site pos.test run-tests --app pos_next --skip-test-records`: **169 tests, OK**;
+  `--module pos_next.test_promotions` **18 OK**; `--module pos_next.test_packed_items_regression` **3 OK**.
+- Demo data rebuilt after the Python tests: `seed.ensure_item_prices` (20,050 prices), `seed.restock` (0 items
+  needed stock).
+- Playwright `yarn e2e`: **20 passed (6.1 min)** on the first full run.
+
+Manual checks and decisions to review: unchanged from the first and second runs above. The tag stays
+`v1.0.0-rc.1` (decision 1). Once the fresh-v15 and v16 install checks pass, tag `v1.0.0` on the same commit line.
+
+PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB needs approval that an unattended run cannot get); all automated tests pass (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
