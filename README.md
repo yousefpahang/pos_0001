@@ -107,6 +107,15 @@ Run the tests on a test site only: ERPNext's `before_tests` hook deletes every I
 pos_0001 tests create their own data. Frappe v15's runner skips test files at the package root, hence the two
 `--module` lines.
 
+`yarn e2e` runs against the demo data (`pos_next.pos_0001.demo.seed`) and needs the whole `bench start` stack
+(web, Socket.IO, Redis, worker). Repeated runs sell the same demo items: before a run, rebuild prices after any
+Python test run and top up stock:
+
+```bash
+bench --site your-test-site execute pos_next.pos_0001.demo.seed.ensure_item_prices
+bench --site your-test-site execute pos_next.pos_0001.demo.seed.restock
+```
+
 ## Updating
 
 ```bash
