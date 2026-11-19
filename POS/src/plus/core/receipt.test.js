@@ -402,6 +402,36 @@ describe("UAE tax invoice (SPEC section 7)", () => {
 		expect(buildReceiptModel(SERVER_DOC, { vatRate: 5 }).taxes).toHaveLength(1)
 	})
 
+	it("local invoices show ERPNext's rounded total, rounding and change", () => {
+		const local = {
+			...OFFLINE_DOC,
+			grand_total: 40.96,
+			payments: [{ mode_of_payment: "Cash", amount: 41 }],
+			paid_amount: 41,
+			change_amount: 0.04, // POS Next: paid - unrounded total
+		}
+		const rule = { disabled: 0, fraction: 0, method: "Banker's Rounding" }
+		const m = buildReceiptModel(local, { cashModes: ["Cash"], rounding: rule })
+		expect(m.total).toBe(41)
+		expect(m.roundingAdjustment).toBe(0.04)
+		expect(m.change).toBe(0)
+		const card = buildReceiptModel(
+			{ ...local, payments: [{ mode_of_payment: "Card", amount: 41 }] },
+			{ rounding: rule },
+		)
+		expect(card.change).toBe(0)
+		const off = buildReceiptModel(local, {
+			cashModes: ["Cash"],
+			rounding: { ...rule, disabled: 1 },
+		})
+		expect(off.total).toBe(40.96)
+		expect(off.change).toBe(0.04)
+		// Server invoices keep ERPNext's own figures.
+		const server = buildReceiptModel(SERVER_DOC, { ...CTX, rounding: rule })
+		expect(server.total).toBe(22)
+		expect(server.change).toBe(8)
+	})
+
 	it("text mode leaves Arabic footer lines out", () => {
 		expect(latinFooter("شكراً لزيارتكم\nThank you for shopping")).toBe(
 			"Thank you for shopping",

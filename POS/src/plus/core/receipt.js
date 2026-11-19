@@ -21,6 +21,7 @@ import {
 import { AED_ARABIC, currencySymbol } from "./money.js"
 import { encodeQr } from "./qr.js"
 import { LABELS, fill, rateText, receiptTitle } from "./receiptLabels.js"
+import { roundedTotal } from "./rounding.js"
 
 export const PRINT_MODES = Object.freeze([
 	"raster",
@@ -98,6 +99,8 @@ export const QZ_MODES = Object.freeze(["raster", "escpos_text", "qz_html"])
  * @property {string} [lang]         till language, for the AED symbol
  * @property {string} [symbolMode]   "By language" | "AED" | "د.إ"
  * @property {number|null} [vatRate] the profile's VAT % (local invoices have no tax rows)
+ * @property {import("./rounding.js").RoundingRule|null} [rounding] ERPNext rounded total rule
+ *   for local invoices
  * @property {Record<string, string>} [arabicNames] item code -> item_name_ar
  * @property {(text: string, args?: unknown[]) => string} [t]  not used: the receipt is
  *   bilingual (English + Arabic) whatever the till language
@@ -198,8 +201,18 @@ export function buildReceiptModel(doc, ctx = {}) {
 			rate: num(ctx.vatRate),
 		})
 	const grandTotal = num(doc.grand_total)
-	const rounded = num(doc.rounded_total)
-	const roundingAdjustment = num(doc.rounding_adjustment)
+	let rounded = num(doc.rounded_total)
+	let roundingAdjustment = num(doc.rounding_adjustment)
+	// A local invoice (offline or not submitted yet) has no rounded total: work it out as
+	// ERPNext will, so the receipt shows the invoice's final total and change.
+	const localRounding =
+		doc.rounded_total == null && ctx.rounding && grandTotal !== 0
+			? roundedTotal(grandTotal, ctx.rounding)
+			: null
+	if (localRounding?.applied) {
+		rounded = localRounding.roundedTotal
+		roundingAdjustment = localRounding.adjustment
+	}
 	// ERPNext sets rounded_total to 0 when rounding is disabled on the invoice.
 	const total = rounded !== 0 ? rounded : grandTotal
 	const payments = (Array.isArray(doc.payments) ? doc.payments : [])
@@ -216,11 +229,16 @@ export function buildReceiptModel(doc, ctx = {}) {
 		doc.paid_amount != null
 			? num(doc.paid_amount)
 			: payments.reduce((s, p) => s + p.amount, 0)
-	const change = num(doc.change_amount)
+	// ERPNext's change is paid minus the rounded total (cash only).
+	const change = localRounding?.applied
+		? payments.some((p) => p.isCash)
+			? Math.max(0, Math.round((paid - total) * 100) / 100)
+			: 0
+		: num(doc.change_amount)
 	const outstanding =
-		doc.outstanding_amount != null
+		doc.outstanding_amount != null && !localRounding?.applied
 			? Math.max(0, num(doc.outstanding_amount))
-			: Math.max(0, total - paid)
+			: Math.max(0, Math.round((total - paid) * 100) / 100)
 	const name = str(doc.name)
 	const isReturn = Boolean(Number(doc.is_return))
 	const salesPersons = (Array.isArray(doc.sales_team) ? doc.sales_team : [])

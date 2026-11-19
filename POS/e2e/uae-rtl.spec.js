@@ -6,6 +6,7 @@ import { readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { expect, test } from "@playwright/test"
+import { buildReceiptModel } from "../src/plus/core/receipt.js"
 
 const CASHIER = { usr: "cashier@pos.test", pwd: "cashier" }
 const ADMIN = { usr: "Administrator", pwd: "admin" }
@@ -328,6 +329,139 @@ test.describe
 				await expect(receipt).toContainText(text)
 			await expect(receipt).toContainText(/AED \d+\.\d\d/)
 			await receipt.screenshot({ path: `${OUT}/uae-tax-invoice-desk.png` })
+		})
+
+		test("receipt totals from the till equal ERPNext's VAT and rounding", async ({
+			page,
+		}) => {
+			// Background-submitted sales print the browser's totals (DECISIONS item 13, Phase 6
+			// decision 3). Sell a sample of carts and compare with the submitted invoices.
+			test.setTimeout(300_000)
+			const sent = new Map()
+			let waited = 0 // sales that waited for submit_invoice (print ERPNext's own data)
+			page.on("request", (req) => {
+				if (req.url().includes("pos_next.api.invoices.submit_invoice")) waited++
+				if (!req.url().includes("pos_0001.api.sync.submit_offline_invoice"))
+					return
+				let body = req.postDataJSON?.() ?? null
+				if (!body) {
+					try {
+						body = Object.fromEntries(new URLSearchParams(req.postData() || ""))
+					} catch {
+						body = {}
+					}
+				}
+				const raw = body.invoices ?? body.invoice
+				const list = typeof raw === "string" ? JSON.parse(raw) : raw
+				for (const inv of Array.isArray(list) ? list : [list])
+					if (inv?.offline_id) sent.set(inv.offline_id, inv)
+			})
+			await login(page, CASHIER)
+			await openTill(page)
+			// Scans resolve from the till's item cache: wait until it has the demo item.
+			await expect
+				.poll(() => cachedArabicName(page), {
+					timeout: 180_000,
+					intervals: [2_000],
+				})
+				.toBeTruthy()
+			const input = page.locator("#item-search")
+			const lines = page
+				.getByTestId("invoice-cart-lines")
+				.getByTestId("cart-line")
+			const carts = [
+				[BARCODE],
+				[BARCODE, BARCODE, BARCODE],
+				["2012345012509"], // 1.250 kg, weight label (SPEC F5)
+				["2212345009992", BARCODE], // AED 9.99 price label + an item
+				["6290000000023", "2012345007505"],
+			]
+			for (const cart of carts) {
+				for (const code of cart) {
+					await input.click()
+					await input.fill(code)
+					await input.press("Enter")
+					await page.waitForTimeout(300)
+				}
+				await expect(lines.first()).toBeVisible({ timeout: 15_000 })
+				await page.getByRole("button", { name: "Proceed to payment" }).click()
+				const dialog = page
+					.getByRole("dialog")
+					.filter({ hasText: "Complete Payment" })
+				await expect(dialog).toBeVisible({ timeout: 15_000 })
+				await dialog.getByRole("button", { name: /Cash$/ }).first().click()
+				const quick = dialog
+					.getByText("Quick amounts for Cash")
+					.locator("xpath=following-sibling::div[1]//button")
+					.first()
+				await quick.click({ timeout: 15_000 }).catch(async (error) => {
+					await page.screenshot({ path: `${OUT}/totals-payment-failed.png` })
+					throw error
+				})
+				const complete = dialog
+					.getByRole("button", { name: "Complete Payment" })
+					.first()
+				await expect(complete).toBeEnabled({ timeout: 10_000 })
+				await complete.click()
+				await expect(lines).toHaveCount(0, { timeout: 30_000 })
+				await closeDialogs(page)
+			}
+			await expect
+				.poll(() => sent.size + waited, { timeout: 120_000 })
+				.toBe(carts.length)
+			expect(sent.size).toBeGreaterThanOrEqual(3)
+			const cacheRes = await page.request.get(
+				"/api/method/pos_next.pos_0001.api.printing.get_printing_cache",
+				{ params: { pos_profile: PROFILE } },
+			)
+			const cache = (await cacheRes.json()).message
+			const rows = []
+			for (const [offlineId, inv] of sent) {
+				let name = null
+				await expect
+					.poll(
+						async () => {
+							const res = await page.request.get(
+								"/api/method/pos_next.api.invoices.check_offline_invoice_synced",
+								{ params: { offline_id: offlineId } },
+							)
+							name = (await res.json()).message?.sales_invoice || null
+							return name
+						},
+						{ timeout: 120_000, intervals: [2_000] },
+					)
+					.toBeTruthy()
+				const res = await page.request.get(
+					`/api/method/pos_next.pos_0001.api.printing.get_receipt_data`,
+					{ params: { invoice: name } },
+				)
+				const server = (await res.json()).message
+				// The receipt the till prints for this sale (same model as the printing store).
+				const model = buildReceiptModel(
+					{ ...inv, name: offlineId, change_amount: null },
+					{ cashModes: cache.cash_modes, rounding: cache.rounding },
+				)
+				rows.push({
+					name,
+					tillGrand: Number(inv.grand_total),
+					serverGrand: server.grand_total,
+					till: model.total,
+					server: server.rounded_total || server.grand_total,
+					tillRounding: model.roundingAdjustment,
+					serverRounding: server.rounding_adjustment,
+					tillChange: model.change,
+					serverChange: server.change_amount,
+				})
+			}
+			console.log("Till vs ERPNext totals:", JSON.stringify(rows))
+			const near = (a, b) => Math.abs(Number(a) - Number(b)) < 0.005
+			for (const row of rows) {
+				const why = JSON.stringify(row)
+				expect(near(row.tillGrand, row.serverGrand), why).toBe(true)
+				expect(near(row.till, row.server), why).toBe(true)
+				expect(near(row.tillRounding, row.serverRounding), why).toBe(true)
+				expect(near(row.tillChange, row.serverChange), why).toBe(true)
+			}
 		})
 
 		test("every till screen in Arabic: RTL layout, Arabic names, AED sign", async ({

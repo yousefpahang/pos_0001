@@ -111,6 +111,31 @@ class TestFormatting(FrappeTestCase):
 		for text in uae.LABELS.values():
 			self.assertNotEqual(uae.bilingual(text)["ar"], text, f"no Arabic for {text!r} in ar.csv")
 
+	def test_rounding_vectors_match_frappe(self) -> None:
+		"""The browser's rounded total (plus/core/rounding.js) uses the same vectors."""
+		import os
+
+		from frappe.utils import round_based_on_smallest_currency_fraction
+
+		path = os.path.join(os.path.dirname(__file__), "rounding_vectors.json")
+		with open(path) as f:
+			vectors = json.load(f)
+		for v in vectors:
+			currency = f"XR{round(v['fraction'] * 100):03d}"
+			if not frappe.db.exists("Currency", currency):
+				frappe.get_doc(
+					{
+						"doctype": "Currency",
+						"currency_name": currency,
+						"enabled": 0,  # test only: never offered in currency pickers
+						"fraction_units": 100,
+						"smallest_currency_fraction_value": v["fraction"],
+					}
+				).insert(ignore_permissions=True)
+			with patch("frappe.utils.data.frappe.get_system_settings", return_value=v["method"]):
+				got = round_based_on_smallest_currency_fraction(v["value"], currency, 2)
+			self.assertEqual(got, v["expected"], v)
+
 	def test_line_vat_rates(self) -> None:
 		tax = frappe._dict(charge_type="On Net Total", account_head="VAT - X", rate=5)
 		doc = frappe._dict(
@@ -209,6 +234,9 @@ class TestTillData(UAETestCase):
 		self.assertEqual(cache["currency_symbol"], "AED")
 		self.assertTrue(cache["print_format"])
 		self.assertEqual(cache["vat_rate"], 5)
+		disabled = frappe.db.get_value("POS Profile", PROFILE, "disable_rounded_total")
+		self.assertEqual(cache["rounding"]["disabled"], disabled)
+		self.assertIn(cache["rounding"]["method"], ("Banker's Rounding", "Banker's Rounding (legacy)", "Commercial Rounding"))
 		self.assertIsNone(printing.template_vat_rate(None))
 
 	def test_receipt_data_has_line_vat_and_arabic_name(self) -> None:

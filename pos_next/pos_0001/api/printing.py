@@ -90,6 +90,22 @@ def default_print_format() -> str:
 	return POS_NEXT_PRINT_FORMAT
 
 
+def rounding_rule(profile: Any) -> dict:
+	"""How ERPNext rounds this profile's POS invoices, so receipts printed before the server
+	answers show the same rounded total (``plus/core/rounding.js``). POS Next sets the
+	invoice's Disable Rounded Total from the profile (default on when unset)."""
+	disabled = profile.get("disable_rounded_total")
+	return {
+		"disabled": 1 if disabled is None else cint(disabled),
+		"fraction": flt(
+			frappe.db.get_value("Currency", profile.get("currency"), "smallest_currency_fraction_value")
+		)
+		if profile.get("currency")
+		else 0,
+		"method": frappe.get_system_settings("rounding_method") or "Banker's Rounding (legacy)",
+	}
+
+
 def template_vat_rate(template: str | None) -> float | None:
 	"""VAT % of a Sales Taxes and Charges Template ("On Net Total" rows), for offline
 	receipts, which carry only the VAT total. None without a template."""
@@ -174,6 +190,8 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 			"pos0001_receipt_logo",
 			"pos0001_invoice_title",
 			"taxes_and_charges",
+			"currency",
+			"disable_rounded_total",
 		],
 		as_dict=True,
 	)
@@ -189,6 +207,7 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 		"invoice_title": profile.pos0001_invoice_title if profile.pos0001_invoice_title in TITLE_MODES else "Tax Invoice",
 		"currency_symbol": settings_symbol_mode(),
 		"vat_rate": template_vat_rate(profile.taxes_and_charges),
+		"rounding": rounding_rule(profile),
 		"cash_modes": cash_modes(pos_profile),
 		"can_no_sale": can_open_drawer(pos_profile),
 		"cashier": frappe.utils.get_fullname(frappe.session.user),
