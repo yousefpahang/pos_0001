@@ -104,6 +104,7 @@ fixtures = [
 after_install = [
 	"pos_next.install.after_install",
 	"pos_next.pos_0001.install.ensure_default_label_templates",  # pos_0001
+	"pos_next.pos_0001.install.hide_upstream_workspace",  # pos_0001
 ]
 after_migrate = [
 	"pos_next.install.after_migrate",

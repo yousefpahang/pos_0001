@@ -5,6 +5,7 @@ import frappeui from "frappe-ui/vite";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { viteStaticCopy } from "vite-plugin-static-copy";
+import { APP_NAME } from "./src/plus/core/brand.js";
 
 // Get build version from environment or use timestamp
 const buildVersion = process.env.POS_NEXT_BUILD_VERSION || Date.now().toString();
@@ -71,8 +72,8 @@ export default defineConfig({
 			registerType: "autoUpdate",
 			includeAssets: ["favicon.png", "icon.svg", "icon-maskable.svg"],
 			manifest: {
-				name: "POSNext",
-				short_name: "POSNext",
+				name: APP_NAME,
+				short_name: APP_NAME,
 				description:
 					"Point of Sale system with real-time billing, stock management, and offline support",
 				theme_color: "#4F46E5",

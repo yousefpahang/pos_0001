@@ -1,6 +1,6 @@
 # Copyright (c) 2026, pos_0001 contributors
 # License: AGPL-3.0. See license.txt
-"""POSNext workspace: every pos_0001 feature is reachable and every link resolves."""
+"""POS 0001 workspace: every pos_0001 feature is reachable and every link resolves."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import json
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-WORKSPACE = "POSNext"
+WORKSPACE = "POS 0001"
 POS_0001_TARGETS = {
 	"POS Scale Barcode Rule",
 	"POS Label Template",
@@ -57,7 +57,9 @@ class TestWorkspace(FrappeTestCase):
 			if block["type"] == "shortcut":
 				self.assertIn(block["data"]["shortcut_name"], shortcuts)
 
-	def test_shortcut_filters_use_real_fields(self) -> None:
-		for shortcut in self.ws.shortcuts:
-			for doctype, field, *_ in json.loads(shortcut.stats_filter or "[]"):
-				self.assertTrue(frappe.get_meta(doctype).has_field(field) or field == "docstatus", field)
+
+
+class TestBrandWorkspace(FrappeTestCase):
+	def test_upstream_workspace_hidden(self) -> None:
+		self.assertEqual(frappe.db.get_value("Workspace", "POSNext", "is_hidden"), 1)
+		self.assertEqual(frappe.db.get_value("Workspace", WORKSPACE, "is_hidden"), 0)

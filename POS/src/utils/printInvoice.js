@@ -1,4 +1,5 @@
 import { call } from "@/utils/apiWrapper";
+import { APP_NAME } from "@/plus/core/brand.js";
 import { logger } from "@/utils/logger";
 import { getOfflineReceiptPayload } from "@/utils/offline/offlineReceiptCache";
 import { getOfflineInvoiceByOfflineId } from "@/utils/offline/sync";
@@ -202,7 +203,7 @@ export function buildReceiptHTML(invoiceData) {
 	return `
 			<div class="receipt">
 				<div class="header">
-					<div class="company-name">${invoiceData.company || "POS Next"}</div>
+					<div class="company-name">${invoiceData.company || APP_NAME}</div>
 					<div style="font-size: 12px;">${invoiceData.header || __("TAX INVOICE")}</div>
 				</div>
 

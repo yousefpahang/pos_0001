@@ -32,3 +32,15 @@ def ensure_default_label_templates() -> None:
 		doc = frappe.get_doc({"doctype": "POS Label Template", **values})
 		doc.flags.ignore_permissions = True
 		doc.insert()
+
+
+UPSTREAM_WORKSPACE = "POSNext"
+
+
+def hide_upstream_workspace() -> None:
+	"""The "POS 0001" workspace replaces POS Next's "POSNext" one. Frappe keeps is_hidden as a
+	site setting when it syncs workspace files, so it is set here: once by the patch on existing
+	sites, and after install on new ones. An admin can show it again from the sidebar."""
+	if frappe.db.exists("Workspace", UPSTREAM_WORKSPACE):
+		frappe.db.set_value("Workspace", UPSTREAM_WORKSPACE, "is_hidden", 1, update_modified=False)
+

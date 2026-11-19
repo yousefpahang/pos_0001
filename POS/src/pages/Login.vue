@@ -5,7 +5,7 @@
 		<div class="max-w-md w-full space-y-8">
 			<div class="text-center">
 				<h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-					{{ __("Sign in to POS Next") }}
+					{{ __("Sign in to {0}", [APP_NAME]) }}
 				</h2>
 				<p class="mt-2 text-sm text-gray-600">
 					{{ __("Access your point of sale system") }}
@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import { APP_NAME } from "@/plus/core/brand.js";
 import { FeatherIcon } from "frappe-ui";
 import { onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";

@@ -19,6 +19,8 @@
  * }
  */
 
+import { APP_NAME } from "@/plus/core/brand.js";
+
 /**
  * Clean HTML and extra whitespace from error messages
  */
@@ -219,7 +221,7 @@ export function parseError(error) {
  */
 export function formatErrorReport(errorContext, additionalInfo = {}) {
 	const lines = [
-		__("Error Report - POS Next"),
+		__("Error Report - {0}", [APP_NAME]),
 		"=".repeat(40),
 		__("Title: {0}", [errorContext.title]),
 		__("Type: {0}", [errorContext.type]),
