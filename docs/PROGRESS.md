@@ -737,3 +737,166 @@ Awesome was read as a reference only (`useZplGenerator.ts`, `useBarcodePrintOutp
 16. `register_device` (Phase 1) now returns the profile's label printer too; the Phase 4 test was updated.
 
 PHASE 5: DONE
+
+## Phase 6
+
+Run date: 2026-11-19 (unattended). Scope: SPEC section 11, Phase 6 prompt (SPEC section 6, F7), with DECISIONS.md
+item 6 applied. The 20,000-item demo catalogue from `pos_next/pos_0001/demo/seed.py` was already on `pos.test`
+(20,000 `ITM-` items + 50 weighed items), so the seed was not run again.
+
+### What was built
+
+**Held carts on the server (F7, DECISIONS item 6)**
+
+- A held cart is a **draft Sales Invoice** (`pos0001_held = 1`), built by POS Next's own `update_invoice()` from the
+  till's draft payload. Payments, opening shift and `offline_id` are removed first. New custom fields on Sales Invoice
+  (collapsed "Held Cart (POS)" section): `pos0001_held`, `pos0001_hold_id` (unique), `pos0001_held_at`,
+  `pos0001_held_by`, `pos0001_hold_note`, `pos0001_held_cart` (the exact cart as JSON: lines, offers, sales persons).
+- `pos_0001/api/held_carts.py` (POS role + POS Profile access on every endpoint): `hold_cart` (idempotent per hold id;
+  returns `Failed` with ERPNext's reason instead of raising), `list_held_carts` (time, customer, total, cashier, till,
+  note, lines), `resume_held_cart` (row lock; returns the cart and deletes the draft in the same transaction, so two
+  tills cannot resume one cart), `delete_held_cart`, and the daily `cleanup_held_carts` for drafts older than
+  `held_cart_retention_days` (POS 0001 Settings, default 3; 0 = keep).
+- A held draft is **named by its hold id** (`HOLD-<uuid>`, Sales Invoice `before_insert` hook), so held carts never use
+  a number of the invoice naming series. A late re-upload of a cart that was already resumed answers `Resumed` (its
+  Deleted Document exists) and is not created again.
+- Till: **Hold** (button or F8 / Ctrl+S) asks for an optional note. The cart is always saved in the browser first
+  (POS Next's `pos_next_drafts` database). It is removed there only when the server confirms it holds the cart.
+  Offline, or when the server refuses the cart, it stays local ("On this till" / "Not uploaded" with the reason) and
+  is uploaded on reconnect. **Held Carts** (replaces POS Next's Draft Invoices dialog) lists server and local carts,
+  newest first, and can resume or delete them. Resuming restores the lines, customer, offers and sales persons. POS
+  Next drafts saved before this phase are given a hold id and uploaded like the others.
+
+**Performance (SPEC section 6, details and numbers in `docs/PERFORMANCE.md`)**
+
+- Benchmark `POS/perf/benchmark.spec.js` (`yarn perf`) measures every target in the section 6 table.
+- **Search index** (`plus/core/searchIndex.js`) with lowercased name, code, barcodes and Arabic name (Arabic letter
+  forms folded). It is built in a **Web Worker** (`plus/search/searchIndex.worker.js`), stored in its own IndexedDB
+  database `pos0001_search`, and searched in memory. The first results come without POS Next's debounce.
+- **Virtual scrolling** for the item grid and list (`plus/core/virtualGrid.js`, `plus/perf/useVirtualGrid.js`).
+- **Favourites grid**: top 30 sellers of the POS Profile (`pos_0001.api.favourites.get_favourites`, cached offline),
+  one-tap buttons above the grid while the search box is empty.
+- **Global scanner capture** (`plus/core/scannerCapture.js`, `plus/scan/globalScanner.js`): scans work with no field
+  focused, using the 30 ms inter-key rule.
+- **Faster reopen**: the cached catalogue shows at once, and the server refresh runs afterwards only when the cache
+  is older than `cache_refresh_minutes`. POS Next's `getCacheStats()` counts hidden items through indexes.
+- **Progress bar** for the first full cache.
+- **Keyboard shortcuts** (`plus/core/shortcuts.js`, `plus/shortcuts/useShortcuts.js`) and the **`?` overlay**
+  (`plus/components/ShortcutsOverlay.vue`): F2, F3, F4, F6, F8, F9 (Phase 4), Ctrl+S, Esc, Del, +, -.
+- POS Next patches: UPSTREAM_PATCHES.md entries 28-36. Arabic for all new strings in `pos_next/translations/ar.csv`
+  (59 new rows). Docs: `docs/PERFORMANCE.md`, HARDWARE.md section 9 (scanners), ARCHITECTURE_NOTES "After Phase 6".
+
+### Test results
+
+- **Python** (`bench --site pos.test run-tests --module ...`): new `pos_0001.tests.test_held_carts` **11 OK**. It covers:
+  a held draft has no shift, payments or offline id and is named by its hold id; the same hold id twice gives one
+  draft; resume on another till returns the exact cart and claims it, a second resume is refused, and a late
+  re-upload answers Resumed; resume by hold id; other profile, outsider and Guest refused; a refused draft is reported,
+  not raised; bad input; delete; offline hold time kept (future times clamped); retention cleanup (0 = keep).
+  New `test_favourites` **3 OK** (top sellers by quantity, limit, per profile, access).
+  Regression: `test_sync` 13 OK, `test_barcode` 19 OK, `test_sales_person` 20 OK, `test_printing` 14 OK, `test_labels`
+  21 OK, `pos_next.test_promotions` 18 OK, `pos_next.api.test_credit_sales` 4 OK, `pos_next.test_packed_items_regression`
+  3 OK. Whole-app `run-tests` still does not start on v15 (Phase 1 decision 8).
+- **Vitest** `cd POS && yarn test:run`: **186 tests, 17 files, all pass**. 40 new tests in `heldCarts`, `searchIndex`
+  (including 20,000 rows searched in well under the target), `virtualGrid`, `shortcuts` (with scanner capture), and
+  `cacheFreshness`.
+- **Playwright** `cd POS && yarn e2e`: **15 tests pass** (5.0 min). New tests:
+  - `e2e/held-carts.spec.js`: two browser contexts (till 1, till 2) on Main Till. Hold with a note on till 1. The
+    server has a `HOLD-` draft with the item, quantity and cashier. Till 2 lists it as a server cart and resumes it
+    (cart restored, server copy gone). Till 1's list no longer shows it. Till 1 offline: the hold shows "On this till"
+    and is on the server after reconnect. RTL check of the dialog.
+  - `e2e/till-speed.spec.js`: scan with nothing focused adds the item; slow typing is not a scan; `+`, `-` and Del
+    change or remove the last line; `?` shows 12 shortcuts, and Esc closes the list; F2 focuses search; "Dates 1kg"
+    finds items at once; a long result list renders fewer than 120 rows; F8 opens Hold; F4 opens Payment. Favourites
+    grid: a tap adds the item; 44 px targets; no overflow in RTL (grid and overlay).
+- **Benchmark** (`yarn perf`, dev bench, 20,000 items). Before -> after:
+
+  | Target | Before | After |
+  | --- | --- | --- |
+  | Search first results < 100 ms | ~1,100 ms (one search found nothing) | **32 ms** |
+  | Scan to cart < 150 ms | 613 ms | **24 ms** |
+  | Scale scan to cart < 150 ms | 213 ms | **27 ms** |
+  | Scan with no field focused | not supported | **13 ms** |
+  | Pay -> receipt < 1 s | 1,825 ms | 1,735 ms (**not met**) |
+  | Submit offline < 50 ms | 20 ms | 26 ms |
+  | Reopen cached < 3 s | 7,802 ms | **2,483 ms** |
+  | Initial cache 20,000 < 60 s, progress bar | 20.4 s, no bar | 17.8 s, bar |
+  | Sync 500 queued < 5 min, no duplicates | (code not changed) | 9 min 34 s, no duplicates (**not met**) |
+
+- `bench --site pos.test migrate`, `bench build --app pos_next`: OK. `biome check` clean on `src/plus`, `e2e`, `perf`.
+- After the Python runs, the demo prices were rebuilt with `seed.ensure_item_prices` (ERPNext `before_tests`).
+
+### Manual checks (need real hardware or a person)
+
+- [ ] Hold a cart on till 1 and resume it on till 2 on two real machines (SPEC acceptance). Also hold while the
+      network cable is out, then plug it back in: the cart appears on till 2.
+- [ ] Scan with a real HID scanner (USB and Bluetooth) **without clicking the search box**, and with the payment
+      dialog open (the scan must be ignored). Check that Bluetooth scanners' key delay stays under 30 ms
+      (HARDWARE.md section 9).
+- [ ] 20,000-item search and scan meet the section 6 targets on a real mid-range till (Intel i3 / 8 GB or a 2022
+      Android tablet, Chrome). The numbers above come from a developer laptop.
+- [ ] Pay -> receipt printing < 1 s and sync of 500 invoices < 5 min on a **production** server (gunicorn workers,
+      no developer mode), with a real receipt printer.
+- [ ] Reopen the installed PWA from the taskbar / home screen: under 3 s with the cache filled.
+- [ ] Keyboard shortcuts on a real keyboard, including laptop Fn keys, and `?` on an Arabic keyboard layout (the key
+      gives `؟` there; the shortcut only reacts to `?`).
+- [ ] Switch the POS to Arabic and look at the Held Carts dialog, Hold dialog, favourites grid and `?` overlay;
+      only `dir="rtl"` was simulated automatically.
+- [ ] Desk: open a held draft in Sales Invoice (collapsed "Held Cart (POS)" section) and check the list filter
+      "Held Cart".
+- [ ] 1024x768 and a 10-inch tablet: the favourites grid (collapsible) leaves enough room for the item grid.
+
+### Not done in this phase
+
+- Pay -> print < 1 s and sync 500 < 5 min are not met on the dev bench (see Decisions to review 1 and 2).
+- Favourites are not filtered by stock, and they are not shown on the item group tabs.
+- The F3 shortcut focuses the customer search in the cart. When a customer is already chosen, it shows a hint
+  instead of clearing the customer.
+- The search index takes Arabic names from the label cache (Phase 5), only when the cashier may print labels.
+  Phase 7 adds `item_name_ar` to the item cache.
+
+### Decisions to review
+
+1. **Pay -> print is 1.7 s on the dev bench.** Most of this is POS Next's online `submit_invoice` (about 1.1 s here),
+   plus `get_receipt_data` (Phase 4 decision 8: online receipts show the server's final VAT and rounding). Options:
+   measure on a production server first, or print online sales from the local invoice at once (this changes Phase 4
+   decision 8). Nothing was changed.
+2. **Sync of 500 invoices takes 9.6 min (one browser, dev bench).** POS Next syncs one invoice at a time, with a
+   pre-check call for each. Making it parallel or dropping the pre-check changes POS Next's sync behaviour (ask-first
+   area), so it was left for the Phase 8 load test. There were no duplicates: 500 sync rows, 500 different invoices.
+3. **Held carts are named `HOLD-<uuid>`, not from the invoice naming series.** This keeps the tax invoice numbers
+   without gaps (UAE). It uses a Sales Invoice `before_insert` hook that only acts on held drafts. A resumed cart is
+   submitted as a new invoice with a normal number; the held draft is deleted (a Deleted Document remains as the
+   audit trail and as the "already resumed" marker).
+4. **Resume = claim.** Resuming deletes the server draft at once, so no other till can take the cart. If the till
+   that resumed it then closes without selling, the cart is lost (as with POS Next's local drafts). The other choice,
+   locking the cart until it is sold or held again, is more complex.
+5. **Held drafts never carry the opening shift**, so POS Next's shift close (`delete_draft_invoices`) leaves them
+   alone. They are removed only by resume, delete or the retention cleanup.
+6. **A cart the server refuses** (for example a disabled customer, or "block sale beyond stock" in POS Next's
+   `update_invoice`) stays on the till with the reason, and is tried again on every refresh or reconnect. It can
+   still be resumed on that till.
+7. **Hold and "Save draft" are one thing.** F8 and Ctrl+S both hold the cart (SPEC lists them separately). POS Next's
+   local-only drafts are now held carts; old local drafts are uploaded once.
+8. **Reopen shows the cache first.** POS Next fetched the server's first page and re-synced the whole catalogue on
+   every page load. Now the cached catalogue shows at once, and the server refresh runs afterwards only when the
+   last item sync is older than `cache_refresh_minutes` (default 5). Prices changed on the server reach a reopened
+   till in the background, not before the first screen. This changes POS Next behaviour (ask-first area); the safe
+   variant was chosen, since data is never older than the setting before a refresh starts.
+9. **POS Next's `getCacheStats()`** now counts hidden variants and templates through IndexedDB indexes. It assumes
+   `has_variants` is cached as 0/1, as the server sends it, and falls back to the old full scan on error.
+10. **Search ranking**: exact barcode, exact code, code prefix, then name or Arabic prefix, then word starts, then
+    any substring. Every word must match. The index replaces POS Next's browser search when ready; POS Next's
+    search is the fallback. Server results still replace them after the debounce when online (as before).
+11. **Global scanner rule**: at least 4 characters, at most 30 ms between keys, ending in Enter or Tab, no text field
+    focused, no dialog open. `+`, `-` and Del inside a fast burst are not taken as shortcuts.
+12. **Favourites** = top 30 by quantity sold on the POS Profile in the last 90 days (not configurable yet). The
+    list is collapsible, and the choice is remembered per browser.
+13. **No new npm or pip dependency.** Virtual scrolling is built in (POS Awesome uses `vue-virtual-scroller`).
+14. `window.pos0001Search` (status and search) is exposed for e2e tests and support.
+15. The e2e test and the benchmark send scans as one burst of key events inside the page. Playwright's
+    `keyboard.type` spaces keys by the time each takes to be handled, which exceeds 30 ms on a busy page.
+16. Demo data note: ITM-00002 shows two "Nos" UOM rows in the UOM dialog (left over from earlier test data). It does
+    not affect this phase but is worth cleaning up in the seed.
+
+PHASE 6: BLOCKED - two SPEC section 6 targets are not met on the dev bench: pay -> receipt printing (1.7 s, target 1 s) and syncing 500 queued invoices (9.6 min, target 5 min); both depend on server speed and POS Next's one-at-a-time sync (Decisions to review 1-2)
