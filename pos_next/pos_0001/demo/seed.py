@@ -55,6 +55,7 @@ def run(item_count: int = 20000) -> None:
 	frappe.db.commit()
 	create_items(item_count)
 	create_weighed_items()
+	mark_demo_items_sellable()
 	frappe.db.commit()
 	opening_stock()
 	ensure_cashier()
@@ -205,6 +206,8 @@ def create_items(item_count: int) -> None:
 				"item_group": random.choice(ITEM_GROUPS),
 				"stock_uom": "Nos",
 				"is_stock_item": 1,
+				"is_sales_item": 1,
+				"is_purchase_item": 1,
 				"include_item_in_manufacturing": 0,
 				"valuation_rate": round(rate * 0.7, 2),
 				"standard_rate": rate,
@@ -218,6 +221,18 @@ def create_items(item_count: int) -> None:
 			print(f"items: {n}/{item_count}")
 	frappe.flags.in_import = False
 	frappe.db.commit()
+
+
+def mark_demo_items_sellable() -> None:
+	"""Items inserted with frappe.flags.in_import skip doctype defaults, so is_sales_item ends up 0."""
+	item = frappe.qb.DocType("Item")
+	(
+		frappe.qb.update(item)
+		.set(item.is_sales_item, 1)
+		.set(item.is_purchase_item, 1)
+		.where(item.item_code.like("ITM-%") | item.item_code.like("PLU-%"))
+		.where((item.is_sales_item == 0) | (item.is_purchase_item == 0))
+	).run()
 
 
 def create_weighed_items() -> None:
