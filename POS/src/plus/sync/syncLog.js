@@ -16,6 +16,7 @@ import {
 	registerDevice,
 	retryFailed,
 } from "@/plus/sync/syncClient"
+import { startScanCacheRefresh } from "@/plus/scan/scanCache"
 import { usePOSShiftStore } from "@/stores/posShift"
 import { usePOSSyncStore } from "@/stores/posSync"
 import { logger } from "@/utils/logger"
@@ -178,6 +179,10 @@ export const usePlusSyncLogStore = defineStore("plusSyncLog", () => {
 			() => [posShift.profileName, posSync.isOffline],
 			() => {
 				ensureDeviceRegistered()
+				// Scale rules and barcode index for offline scanning (Phase 2)
+				if (posShift.profileName && !posSync.isOffline) {
+					startScanCacheRefresh(posShift.profileName)
+				}
 			},
 			{ immediate: true },
 		)

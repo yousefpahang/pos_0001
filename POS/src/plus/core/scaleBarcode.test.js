@@ -67,7 +67,9 @@ describe("SPEC F5 test vectors", () => {
 	})
 
 	it("2012345012508 parses when the rule ignores check digits", () => {
-		const p = parseScaleBarcode("2012345012508", [{ ...RULE_A, check_digit_mode: "Ignore" }])
+		const p = parseScaleBarcode("2012345012508", [
+			{ ...RULE_A, check_digit_mode: "Ignore" },
+		])
 		expect(p.ok).toBe(true)
 		expect(p.value).toBe(1.25)
 	})
@@ -83,12 +85,24 @@ describe("rule matching", () => {
 
 	it("tries lower priority first", () => {
 		const a = { ...RULE_A, name: "late", priority: 20 }
-		const b = { ...RULE_A, name: "early", priority: 5, value_type: "Price", decimals: 2 }
+		const b = {
+			...RULE_A,
+			name: "early",
+			priority: 5,
+			value_type: "Price",
+			decimals: 2,
+		}
 		expect(parseScaleBarcode("2012345012509", [a, b]).rule.name).toBe("early")
 	})
 
 	it("accepts UPC-A length rules", () => {
-		const rule = { ...RULE_A, prefix: "2", total_length: 12, item_code_start: 2, value_start: 7 }
+		const rule = {
+			...RULE_A,
+			prefix: "2",
+			total_length: 12,
+			item_code_start: 2,
+			value_start: 7,
+		}
 		const code = generateScaleBarcode(rule, "12345", 1.25)
 		expect(code).toHaveLength(12)
 		expect(parseScaleBarcode(code, [rule]).value).toBe(1.25)
@@ -99,7 +113,10 @@ describe("rule matching", () => {
 		expect(normalizeRule({ ...RULE_A, value_start: 10 })).toBeNull() // runs into check digit
 		expect(normalizeRule({ ...RULE_A, item_code_start: 2 })).toBeNull() // overlaps prefix
 		expect(ruleErrors(normalizeRule(RULE_A) || RULE_A)).toEqual([])
-		expect(normalizeRule({ ...RULE_A, total_length: "13", decimals: "3" }).total_length).toBe(13)
+		expect(
+			normalizeRule({ ...RULE_A, total_length: "13", decimals: "3" })
+				.total_length,
+		).toBe(13)
 	})
 
 	it("PLU candidates drop leading zeros", () => {
@@ -119,7 +136,8 @@ describe("priceLine", () => {
 					line.exact &&
 					roundTo(line.qty * line.rate, 2) === price &&
 					line.amount === price &&
-					Math.abs(line.qty - price / rate) / (price / rate) < 0.01 + 0.002 / (price / rate)
+					Math.abs(line.qty - price / rate) / (price / rate) <
+						0.01 + 0.002 / (price / rate)
 				if (!ok) bad.push({ price, rate, ...line })
 			}
 		}
@@ -160,7 +178,12 @@ describe("generateScaleBarcode", () => {
 
 describe("buildScaleItem", () => {
 	it("errors when the item is not sold in the rule UOM", () => {
-		const nos = { ...ITEM, stock_uom: "Nos", uom: "Nos", uom_prices: { Nos: 5 } }
+		const nos = {
+			...ITEM,
+			stock_uom: "Nos",
+			uom: "Nos",
+			uom_prices: { Nos: 5 },
+		}
 		const out = buildScaleItem(nos, parseScaleBarcode("2012345012509", RULES))
 		expect(out.error).toEqual({
 			code: "uom",
@@ -180,7 +203,10 @@ describe("buildScaleItem", () => {
 			uom_prices: {},
 			item_uoms: [{ uom: "Kg", conversion_factor: 1000 }],
 		}
-		const { item } = buildScaleItem(gram, parseScaleBarcode("2012345012509", RULES))
+		const { item } = buildScaleItem(
+			gram,
+			parseScaleBarcode("2012345012509", RULES),
+		)
 		expect(item.uom).toBe("Kg")
 		expect(item.conversion_factor).toBe(1000)
 		expect(item.rate).toBe(12)

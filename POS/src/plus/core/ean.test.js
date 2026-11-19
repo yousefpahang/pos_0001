@@ -27,7 +27,12 @@ describe("ean check digits", () => {
 	})
 
 	it("validates the SPEC F5 vectors", () => {
-		for (const code of ["2012345012509", "2012345007505", "2212345025008", "2212345009992"]) {
+		for (const code of [
+			"2012345012509",
+			"2012345007505",
+			"2212345025008",
+			"2212345009992",
+		]) {
 			expect(hasValidCheckDigit(code)).toBe(true)
 		}
 		expect(hasValidCheckDigit("2012345012508")).toBe(false)

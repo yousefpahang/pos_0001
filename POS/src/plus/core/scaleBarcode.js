@@ -90,7 +90,8 @@ export function normalizeRule(raw) {
 		decimals: Number(raw.decimals ?? 0),
 		priority: Number(raw.priority ?? 10),
 		value_type: raw.value_type === "Price" ? "Price" : "Weight",
-		item_match: raw.item_match === "Item Barcode" ? "Item Barcode" : "Scale PLU",
+		item_match:
+			raw.item_match === "Item Barcode" ? "Item Barcode" : "Scale PLU",
 		check_digit_mode: raw.check_digit_mode === "Ignore" ? "Ignore" : "Validate",
 		uom: raw.uom || "",
 	}
@@ -106,7 +107,8 @@ export function normalizeRule(raw) {
 export function ruleErrors(rule) {
 	const errors = []
 	const n = rule.total_length
-	if (!Number.isInteger(n) || n < MIN_LENGTH || n > MAX_LENGTH) errors.push("total_length")
+	if (!Number.isInteger(n) || n < MIN_LENGTH || n > MAX_LENGTH)
+		errors.push("total_length")
 	if (!/^[0-9]{1,3}$/.test(rule.prefix)) errors.push("prefix")
 	const segments = [
 		["prefix", 1, rule.prefix.length],
@@ -114,14 +116,22 @@ export function ruleErrors(rule) {
 		["value", rule.value_start, rule.value_length],
 	]
 	for (const [name, start, length] of segments) {
-		if (!Number.isInteger(start) || !Number.isInteger(length) || start < 1 || length < 1) {
+		if (
+			!Number.isInteger(start) ||
+			!Number.isInteger(length) ||
+			start < 1 ||
+			length < 1
+		) {
 			errors.push(name)
 		} else if (Number.isInteger(n) && start + length - 1 > n - 1) {
 			errors.push(`${name}_past_check_digit`)
 		}
 	}
 	const ranges = segments
-		.filter(([, s, l]) => Number.isInteger(s) && Number.isInteger(l) && s >= 1 && l >= 1)
+		.filter(
+			([, s, l]) =>
+				Number.isInteger(s) && Number.isInteger(l) && s >= 1 && l >= 1,
+		)
 		.map(([name, s, l]) => [name, s, s + l - 1])
 	for (let i = 0; i < ranges.length; i++) {
 		for (let j = i + 1; j < ranges.length; j++) {
@@ -130,7 +140,11 @@ export function ruleErrors(rule) {
 			}
 		}
 	}
-	if (!Number.isInteger(rule.decimals) || rule.decimals < 0 || rule.decimals > 6) {
+	if (
+		!Number.isInteger(rule.decimals) ||
+		rule.decimals < 0 ||
+		rule.decimals > 6
+	) {
 		errors.push("decimals")
 	}
 	return errors
@@ -143,7 +157,8 @@ export function ruleErrors(rule) {
  */
 export function sortRules(rules) {
 	return [...rules].sort(
-		(a, b) => a.priority - b.priority || String(a.name).localeCompare(String(b.name)),
+		(a, b) =>
+			a.priority - b.priority || String(a.name).localeCompare(String(b.name)),
 	)
 }
 
@@ -158,14 +173,22 @@ export function parseScaleBarcode(barcode, rules) {
 	if (!isDigits(code)) return null
 	const usable = sortRules((rules || []).map(normalizeRule).filter(Boolean))
 	for (const rule of usable) {
-		if (code.length !== rule.total_length || !code.startsWith(rule.prefix)) continue
+		if (code.length !== rule.total_length || !code.startsWith(rule.prefix))
+			continue
 		if (rule.check_digit_mode === "Validate" && !hasValidCheckDigit(code)) {
 			return { ok: false, error: "check_digit", barcode: code, rule }
 		}
 		const plu = code.substr(rule.item_code_start - 1, rule.item_code_length)
 		const digits = code.substr(rule.value_start - 1, rule.value_length)
 		const value = Number(`${Number(digits)}e-${rule.decimals}`)
-		return { ok: true, barcode: code, rule, plu, valueType: rule.value_type, value }
+		return {
+			ok: true,
+			barcode: code,
+			rule,
+			plu,
+			valueType: rule.value_type,
+			value,
+		}
 	}
 	return null
 }
@@ -211,10 +234,23 @@ export function priceLine(price, unitRate, opts = {}) {
 			if (qty <= 0) continue
 			const lo = roundTo((target - half) / qty, rd)
 			const hi = roundTo((target + half) / qty, rd)
-			const candidates = [ru, lo - rateStep, lo, lo + rateStep, hi - rateStep, hi, hi + rateStep]
+			const candidates = [
+				ru,
+				lo - rateStep,
+				lo,
+				lo + rateStep,
+				hi - rateStep,
+				hi,
+				hi + rateStep,
+			]
 			for (const raw of candidates) {
 				const rate = roundTo(raw, rd)
-				if (rate <= 0 || isHalfTie(qty * rate, ad) || roundTo(qty * rate, ad) !== target) continue
+				if (
+					rate <= 0 ||
+					isHalfTie(qty * rate, ad) ||
+					roundTo(qty * rate, ad) !== target
+				)
+					continue
 				const dev = Math.abs(rate - unitRate)
 				if (!best || dev < best.dev - 1e-9) best = { qty, rate, dev }
 			}
@@ -223,7 +259,8 @@ export function priceLine(price, unitRate, opts = {}) {
 		// pair one rate step away is already found by then; nothing further is better.
 		if (best && k >= 1 && best.dev <= rateStep + 1e-9) break
 	}
-	if (best) return { qty: best.qty, rate: best.rate, amount: target, exact: true }
+	if (best)
+		return { qty: best.qty, rate: best.rate, amount: target, exact: true }
 	const rate = roundTo(target / q0, rd)
 	return { qty: q0, rate, amount: roundTo(q0 * rate, ad), exact: false }
 }
@@ -241,12 +278,16 @@ export function generateScaleBarcode(rawRule, plu, value) {
 	if (!rule) throw new Error("Invalid scale barcode rule")
 	const pluDigits = String(plu ?? "")
 	if (!isDigits(pluDigits) || pluDigits.length > rule.item_code_length) {
-		throw new Error(`PLU ${plu} does not fit in ${rule.item_code_length} digits`)
+		throw new Error(
+			`PLU ${plu} does not fit in ${rule.item_code_length} digits`,
+		)
 	}
 	if (!(Number(value) >= 0)) throw new Error(`Invalid value ${value}`)
 	const scaled = String(Math.round(Number(`${Number(value)}e${rule.decimals}`)))
 	if (scaled.length > rule.value_length) {
-		throw new Error(`Value ${value} does not fit in ${rule.value_length} digits`)
+		throw new Error(
+			`Value ${value} does not fit in ${rule.value_length} digits`,
+		)
 	}
 	const digits = Array(rule.total_length - 1).fill("0")
 	const put = (start, text) => {
@@ -317,7 +358,9 @@ export function buildScaleItem(item, parsed, opts = {}) {
 	if (parsed.valueType === "Weight") {
 		qty = roundTo(parsed.value, 3)
 	} else {
-		const line = priceLine(parsed.value, info.unitRate, { rateDecimals: opts.rateDecimals })
+		const line = priceLine(parsed.value, info.unitRate, {
+			rateDecimals: opts.rateDecimals,
+		})
 		if (!line) return { error: { code: "no_price", ...base } }
 		qty = line.qty
 		rate = line.rate
@@ -332,7 +375,8 @@ export function buildScaleItem(item, parsed, opts = {}) {
 			price_list_rate: rate,
 			resolved_qty: qty,
 			resolved_uom: info.uom,
-			resolved_barcode_type: parsed.valueType === "Weight" ? "Weighted" : "Priced",
+			resolved_barcode_type:
+				parsed.valueType === "Weight" ? "Weighted" : "Priced",
 			pos0001_scale_barcode: parsed.barcode,
 			pos0001_scale_rate: rate,
 			pos0001_line_id: opts.lineId || `${parsed.barcode}-${Date.now()}`,

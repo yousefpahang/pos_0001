@@ -7,7 +7,12 @@
 //   3. the server, only when online and still not found
 // Pure orchestration: every lookup is injected, so it runs in Vitest and offline.
 
-import { buildScaleItem, itemUomRate, parseScaleBarcode, pluCandidates } from "./scaleBarcode.js"
+import {
+	buildScaleItem,
+	itemUomRate,
+	parseScaleBarcode,
+	pluCandidates,
+} from "./scaleBarcode.js"
 
 /**
  * @typedef {Object} ScanCache
@@ -118,13 +123,19 @@ export async function resolveScan(rawBarcode, deps) {
 		let item = await findCachedPlu(parsed, deps)
 		if (!item && online && deps.serverScale && deps.serverLookup) {
 			const resolved = await deps.serverScale(barcode)
-			if (resolved?.item_code) item = await deps.serverLookup(resolved.item_code)
+			if (resolved?.item_code)
+				item = await deps.serverLookup(resolved.item_code)
 		}
 		if (!item) {
-			return { item: null, source: null, error: { code: "plu_not_found", plu: parsed.plu } }
+			return {
+				item: null,
+				source: null,
+				error: { code: "plu_not_found", plu: parsed.plu },
+			}
 		}
 		const built = buildScaleItem(item, parsed, opts)
-		if ("error" in built) return { item: null, source: null, error: built.error }
+		if ("error" in built)
+			return { item: null, source: null, error: built.error }
 		return { item: built.item, source: "scale", error: null }
 	}
 

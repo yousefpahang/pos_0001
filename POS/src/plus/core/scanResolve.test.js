@@ -30,8 +30,9 @@ function deps(overrides = {}) {
 			plu_map: { 12345: "PLU-12345" },
 			uom_barcodes: { 6290000000024: { item_code: "ITM-00001", uom: "Box" } },
 		},
-		findByBarcode: vi.fn(async (b) =>
-			Object.values(items).find((i) => i.barcodes?.includes(b)) || null,
+		findByBarcode: vi.fn(
+			async (b) =>
+				Object.values(items).find((i) => i.barcodes?.includes(b)) || null,
 		),
 		findByItemCode: vi.fn(async (c) => items[c] || null),
 		isOnline: () => false,
@@ -81,7 +82,10 @@ describe("resolveScan", () => {
 	})
 
 	it("calls the server only when online and not found locally", async () => {
-		const d = deps({ isOnline: () => true, serverLookup: vi.fn(async () => ({ item_code: "X" })) })
+		const d = deps({
+			isOnline: () => true,
+			serverLookup: vi.fn(async () => ({ item_code: "X" })),
+		})
 		const r = await resolveScan("9999999999994", d)
 		expect(r.source).toBe("server")
 		expect(d.serverLookup).toHaveBeenCalledWith("9999999999994")
@@ -104,7 +108,9 @@ describe("resolveScan", () => {
 	})
 
 	it("reports a PLU that is not found offline", async () => {
-		const d = deps({ cache: { rules: [RULE_A], plu_map: {}, uom_barcodes: {} } })
+		const d = deps({
+			cache: { rules: [RULE_A], plu_map: {}, uom_barcodes: {} },
+		})
 		const r = await resolveScan("2012345007505", d)
 		expect(r.error).toEqual({ code: "plu_not_found", plu: "12345" })
 	})
