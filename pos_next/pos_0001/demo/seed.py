@@ -16,12 +16,14 @@ Creates (idempotent, safe to re-run):
 - 5 sales persons, a walk-in customer and two credit customers.
 - Opening stock in "Stores - DTL" through Stock Reconciliation.
 - A cashier user cashier@pos.test (password "cashier") with the POSNext Cashier role.
+- A photo on every demo item (demo/images, CC0 / public domain, see demo/images/CREDITS.md).
 
 Demo data only. Never run on a production site.
 """
 
 from __future__ import annotations
 
+import os
 import random
 
 import frappe
@@ -67,8 +69,43 @@ def run(item_count: int = 20000) -> None:
 	ensure_sales_person_setup()
 	ensure_printing_setup()
 	ensure_label_setup()
+	ensure_item_images()
 	frappe.db.commit()
 	print("Seed done:", summary())
+
+
+# Demo photos: one CC0 / public-domain photo per product word (demo/images/CREDITS.md).
+# Each photo becomes one public File, and every item whose name contains that word gets it.
+IMAGE_DIR = os.path.join(os.path.dirname(__file__), "images")
+
+
+def ensure_item_images() -> None:
+	"""Give every demo item a photo. Run alone:
+	bench --site pos.test execute pos_next.pos_0001.demo.seed.ensure_item_images"""
+	item = frappe.qb.DocType("Item")
+	for filename in sorted(os.listdir(IMAGE_DIR)):
+		if not filename.endswith(".jpg"):
+			continue
+		word = filename[:-4].capitalize()
+		file_url = f"/files/demo-item-{filename}"
+		if not frappe.db.exists("File", {"file_url": file_url, "is_private": 0}):
+			with open(os.path.join(IMAGE_DIR, filename), "rb") as f:
+				frappe.get_doc(
+					{
+						"doctype": "File",
+						"file_name": f"demo-item-{filename}",
+						"content": f.read(),
+						"is_private": 0,
+						"folder": "Home",
+					}
+				).insert(ignore_permissions=True)
+		(
+			frappe.qb.update(item)
+			.set(item.image, file_url)
+			.where(item.item_code.like("ITM-%") | item.item_code.like("PLU-%"))
+			.where(item.item_name.like(f"% {word} %") | item.item_name.like(f"{word} %"))
+		).run()
+	frappe.db.commit()
 
 
 # Phase 5 (F4): a ZPL label printer for Main Till, a Print Labels role for the cashier and
