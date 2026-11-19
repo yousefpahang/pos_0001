@@ -1,5 +1,6 @@
 import { ref, watch, nextTick, onUnmounted } from "vue";
 import { QueuedMutex } from "@/utils/mutex";
+import { installGlobalScanner } from "@/plus/scan/globalScanner"; // pos_0001
 
 /**
  * Composable for search input, barcode scanning, and auto-add logic.
@@ -210,10 +211,17 @@ export function useSearchInput({ itemStore, onItemFound, showWarning, isAnyDialo
 		}
 	});
 
+	// pos_0001 (SPEC section 6): scans work without focusing the search box
+	const uninstallGlobalScanner = installGlobalScanner({
+		onScan: (code) => processBarcodeScan(code, true),
+		// Blocked while a dialog is on screen (checked in the DOM by default).
+	});
+
 	// ---- Cleanup ----
 	function cleanup() {
 		clearAutoSearchTimer();
 		stopDialogWatcher();
+		uninstallGlobalScanner();
 	}
 
 	onUnmounted(cleanup);

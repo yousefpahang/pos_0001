@@ -279,8 +279,14 @@ function onDocumentClick(event) {
 	if (open.value && root.value && !root.value.contains(event.target)) close()
 }
 
-onMounted(() => document.addEventListener("pointerdown", onDocumentClick))
-onBeforeUnmount(() =>
-	document.removeEventListener("pointerdown", onDocumentClick),
-)
+// F6 (plus/shortcuts): open or close the picker
+const onShortcut = () => toggle()
+onMounted(() => {
+	document.addEventListener("pointerdown", onDocumentClick)
+	window.addEventListener("pos0001:toggle-sales-person", onShortcut)
+})
+onBeforeUnmount(() => {
+	document.removeEventListener("pointerdown", onDocumentClick)
+	window.removeEventListener("pos0001:toggle-sales-person", onShortcut)
+})
 </script>

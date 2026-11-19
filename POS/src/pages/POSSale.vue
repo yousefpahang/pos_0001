@@ -534,6 +534,8 @@
 				@load-draft="handleLoadDraft"
 				@drafts-updated="draftsStore.updateDraftsCount"
 			/>
+			<!-- pos_0001: keyboard shortcuts overlay (?) -->
+			<ShortcutsOverlay v-model="showShortcuts" />
 			<!-- pos_0001: Hold (F8) with an optional note -->
 			<HoldCartDialog v-model="showHoldDialog" :busy="holdBusy" @confirm="confirmHold" />
 
@@ -1013,6 +1015,8 @@ import CreateCustomerDialog from "@/components/sale/CreateCustomerDialog.vue";
 import CustomerDialog from "@/components/sale/CustomerDialog.vue";
 import HeldCartsDialog from "@/plus/components/HeldCartsDialog.vue"; // pos_0001
 import HoldCartDialog from "@/plus/components/HoldCartDialog.vue"; // pos_0001
+import ShortcutsOverlay from "@/plus/components/ShortcutsOverlay.vue"; // pos_0001
+import { useShortcuts } from "@/plus/shortcuts/useShortcuts"; // pos_0001
 import InvoiceCart from "@/components/sale/InvoiceCart.vue";
 import InvoiceHistoryDialog from "@/components/sale/InvoiceHistoryDialog.vue";
 import ItemSelectionDialog from "@/components/sale/ItemSelectionDialog.vue";
@@ -2450,6 +2454,48 @@ async function handleSaveDraft() {
 	}
 	showHoldDialog.value = true;
 }
+
+// pos_0001 (SPEC section 6): keyboard shortcuts, listed in the ? overlay
+const showShortcuts = ref(false);
+
+function plusLastLine() {
+	const lines = cartStore.invoiceItems || [];
+	return lines.length ? lines[lines.length - 1] : null;
+}
+
+useShortcuts(
+	{
+		search: () => document.getElementById("item-search")?.focus(),
+		customer: () => {
+			const input = document.getElementById("cart-customer-search");
+			if (input) input.focus();
+			else showWarning(__("A customer is already chosen. Clear it in the cart to choose another."));
+		},
+		pay: () => handleProceedToPayment(),
+		salesPerson: () => window.dispatchEvent(new CustomEvent("pos0001:toggle-sales-person")),
+		hold: () => handleSaveDraft(),
+		saveDraft: () => handleSaveDraft(),
+		removeLine: () => {
+			const line = plusLastLine();
+			if (line) cartStore.removeItem(line.item_code, line.uom, line.pos0001_line_id);
+		},
+		qtyUp: () => {
+			const line = plusLastLine();
+			if (line && !line.is_resolved_barcode)
+				cartStore.updateItemQuantity(line.item_code, (Number(line.quantity) || 0) + 1, line.uom);
+		},
+		qtyDown: () => {
+			const line = plusLastLine();
+			const qty = Number(line?.quantity) || 0;
+			if (line && !line.is_resolved_barcode && qty > 1)
+				cartStore.updateItemQuantity(line.item_code, qty - 1, line.uom);
+		},
+		help: () => {
+			showShortcuts.value = true;
+		},
+	},
+	{ isActive: () => Boolean(shiftStore.hasOpenShift ?? shiftStore.currentShift) }
+);
 
 async function confirmHold(note) {
 	if (holdBusy.value) return;
