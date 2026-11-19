@@ -2223,7 +2223,8 @@ async function handlePaymentCompleted(paymentData) {
 				}
 
 				// Refresh stock - Direct API (50-200ms), no Socket.IO lag!
-				await stockStore.refresh(soldItemCodes, shiftStore.profileWarehouse);
+				// pos_0001: runs while the receipt prints (SPEC section 6: pay -> print < 1 s).
+				const stockRefresh = stockStore.refresh(soldItemCodes, shiftStore.profileWarehouse);
 
 				// Refresh invoice history cache in background (non-blocking)
 				loadInvoiceHistoryData().catch((err) =>
@@ -2231,8 +2232,16 @@ async function handlePaymentCompleted(paymentData) {
 				);
 
 				if (shiftStore.autoPrintEnabled || posSettingsStore.silentPrint || plusPrinting.active) {
+					// pos_0001: plus printing uses the receipt data sent with the submit answer.
+					const receipt = plusPrinting.active ? result.pos0001_receipt : null;
+					// Plain copy: the resource answer may be a reactive proxy, which IndexedDB
+					// cannot store (the printing store keeps the last receipt for F9).
+					const printDoc =
+						receipt?.name === invoiceName
+							? JSON.parse(JSON.stringify(receipt))
+							: { name: invoiceName };
 					try {
-						await handlePrintInvoice({ name: invoiceName }, { reason: "sale" });
+						await handlePrintInvoice(printDoc, { reason: "sale" });
 						showSuccess(__("Invoice {0} created and sent to printer", [invoiceName]));
 					} catch (error) {
 						log.error("Auto-print error:", error);
@@ -2242,6 +2251,7 @@ async function handlePaymentCompleted(paymentData) {
 					uiStore.showSuccess(invoiceName, invoiceTotal, paidAmount);
 					showSuccess(__("Invoice {0} created successfully", [invoiceName]));
 				}
+				await stockRefresh;
 			}
 		}
 	} catch (error) {

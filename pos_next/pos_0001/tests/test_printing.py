@@ -210,6 +210,30 @@ class TestReceiptData(PrintingTestCase):
 		with self.assertRaises(frappe.DoesNotExistError):
 			printing.get_receipt_data("NO-SUCH-INVOICE")
 
+	def test_online_submit_answer_carries_the_receipt(self) -> None:
+		"""Phase 6: the till prints from the submit answer, without get_receipt_data."""
+		from pos_next.api.invoices import submit_invoice
+
+		payload = _payload()
+		payload.pop("offline_id")
+		# A live sale on a "Mandatory" profile needs a sales person (Phase 3); not tested here.
+		frappe.db.set_value("POS Profile", PROFILE, "pos0001_sales_person_mode", "Off")
+		frappe.set_user(CASHIER)
+		result = submit_invoice(invoice=json.loads(json.dumps(payload)), data={})
+		receipt = result["pos0001_receipt"]
+		self.assertEqual(receipt["name"], result["name"])
+		self.assertEqual(receipt, printing.get_receipt_data(result["name"]))
+		self.assertAlmostEqual(receipt["grand_total"], result["grand_total"])
+		self.assertEqual(receipt["docstatus"], 1)
+
+	def test_offline_sync_answer_has_no_receipt(self) -> None:
+		result = sync.submit_offline_invoice(json.dumps(_payload()), None)
+		self.assertEqual(result["status"], "Synced", result)
+		self.assertNotIn("pos0001_receipt", result)
+
+	def test_receipt_failure_does_not_fail_the_sale(self) -> None:
+		self.assertIsNone(printing.receipt_for_submitted("NO-SUCH-INVOICE"))
+
 
 class TestDrawerEvents(PrintingTestCase):
 	def _event(self, **values) -> dict:

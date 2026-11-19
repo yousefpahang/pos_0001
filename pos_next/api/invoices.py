@@ -1604,6 +1604,12 @@ def submit_invoice(invoice=None, data=None):
 		if offline_id:
 			result["offline_id"] = offline_id
 
+		# pos_0001: receipt data in the same answer, so the till prints without another call
+		if doctype == DOCTYPE_SALES_INVOICE and not frappe.flags.pos0001_offline_submit:
+			from pos_next.pos_0001.api.printing import receipt_for_submitted
+
+			result["pos0001_receipt"] = receipt_for_submitted(invoice_doc.name)
+
 		return result
 
 	except Exception:

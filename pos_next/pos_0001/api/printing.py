@@ -173,7 +173,27 @@ def get_receipt_data(invoice: str) -> dict:
 		check_pos_profile_access(doc.pos_profile)
 	elif not frappe.has_permission("Sales Invoice", "read", doc):
 		frappe.throw(_("You don't have access to invoice {0}.").format(invoice), frappe.PermissionError)
+	return receipt_for(doc)
 
+
+def receipt_for_submitted(invoice_name: str) -> dict | None:
+	"""Receipt JSON returned with POS Next's online ``submit_invoice`` answer (SPEC section 6).
+
+	The till then prints at once, without a second request for ``get_receipt_data``. The
+	data is read back from the database inside the submit transaction, so it holds
+	ERPNext's final VAT and rounding (Phase 4 decision 8). The caller already checked the
+	POS Profile access. A failure here never fails the sale: the till falls back to
+	``get_receipt_data``.
+	"""
+	try:
+		return receipt_for(frappe.get_doc("Sales Invoice", invoice_name))
+	except Exception:
+		frappe.log_error(title=f"POS receipt data failed: {invoice_name}")
+		return None
+
+
+def receipt_for(doc: Any) -> dict:
+	"""Receipt JSON of a loaded Sales Invoice (no access check)."""
 	codes = list({row.item_code for row in doc.items if row.item_code})
 	arabic = {}
 	if codes and frappe.db.has_column("Item", "item_name_ar"):
