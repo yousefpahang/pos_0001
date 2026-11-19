@@ -1,5 +1,7 @@
 import { call } from "@/utils/apiWrapper";
 import { resolveScannedBarcode } from "@/plus/scan/scanner";
+import { quickSearch } from "@/plus/search/searchClient";
+import { isCacheFresh, readRefreshMinutes } from "@/plus/core/cacheFreshness";
 import { isOffline } from "@/utils/offline";
 import { offlineWorker } from "@/utils/offline/workerClient";
 import { updateItemBatchSerialData } from "@/utils/offline/items";
@@ -784,8 +786,13 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 			// - stats.cacheReady = false: Cache not available, need server data
 			// - Otherwise: Use cache (already have fresh data this session)
 
-			const shouldFetchFromServer =
-				forceServerFetch || !serverDataFresh.value || !stats.cacheReady;
+			// pos_0001 (SPEC section 6, reopen < 3 s): after a page reload the till shows its cache
+			// at once; when the cache is older than cache_refresh_minutes the server refresh below
+			// runs afterwards in the background instead of before the first screen.
+			const plusCacheFresh =
+				serverDataFresh.value ||
+				isCacheFresh(stats.lastSync, readRefreshMinutes(globalThis.localStorage));
+			const shouldFetchFromServer = forceServerFetch || !stats.cacheReady;
 
 			// ====================================================================
 			// STRATEGY A: OFFLINE MODE - Cache Only
@@ -853,6 +860,12 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 						log.success(
 							`Loaded ${cached.length} items from cache (total: ${stats.items})`
 						);
+						// pos_0001: stale cache -> refresh from the server after the first screen
+						if (!plusCacheFresh) {
+							setTimeout(() => {
+								if (posProfile.value === profile) loadAllItems(profile, true);
+							}, 0);
+						}
 						return; // Exit early - cache hit, no server fetch needed
 					}
 				} catch (cacheError) {
@@ -1662,6 +1675,17 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 			return;
 		}
 
+		// pos_0001 (SPEC section 6): first results from the search index worker at once, without
+		// the debounce; the debounced search below still runs (index first, then the server).
+		const plusQuick = quickSearch(term, {
+			// One screenful first; the debounced search below fills the full list.
+			limit: 60,
+			showVariantsAsItems: getShowVariantsFlag(),
+		}).then((items) => {
+			if (items?.length && searchTerm.value === term) setSearchResults(items);
+			return items;
+		});
+
 		// Debounce search - wait 300ms after user stops typing
 		return new Promise((resolve) => {
 			searchDebounceTimer = setTimeout(async () => {
@@ -1677,7 +1701,13 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 					// 3. Then search server for fresh results in background
 
 					log.debug(`Searching cache for: "${term}"`);
-					const cached = await offlineWorker.searchCachedItems(term, searchLimit);
+					// pos_0001: full list from the search index, else POS Next's cache search
+					await plusQuick;
+					const cached =
+						(await quickSearch(term, {
+							limit: searchLimit,
+							showVariantsAsItems: getShowVariantsFlag(),
+						})) || (await offlineWorker.searchCachedItems(term, searchLimit));
 
 					if (cached && cached.length > 0) {
 						// Show cached results immediately (instant!)

@@ -16,7 +16,9 @@ import {
 	registerDevice,
 	retryFailed,
 } from "@/plus/sync/syncClient"
+import { usePlusHeldCartStore } from "@/plus/heldCarts/heldCartStore"
 import { startScanCacheRefresh } from "@/plus/scan/scanCache"
+import { startSearchIndex } from "@/plus/search/startSearchIndex"
 import { usePlusPrintingStore } from "@/plus/printing/printingStore"
 import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore"
 import { usePOSShiftStore } from "@/stores/posShift"
@@ -177,6 +179,9 @@ export const usePlusSyncLogStore = defineStore("plusSyncLog", () => {
 	function start() {
 		if (timer) return
 		timer = setInterval(tick, AUTO_SYNC_INTERVAL_MS)
+		// Search index in a worker (Phase 6), held carts upload on reconnect (Phase 6)
+		startSearchIndex(() => posShift.profileName)
+		usePlusHeldCartStore().start()
 		watch(
 			() => [posShift.profileName, posSync.isOffline],
 			() => {

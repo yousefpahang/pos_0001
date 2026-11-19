@@ -5,6 +5,7 @@
 // for the POS Profile, kept in IndexedDB (POS Next's `settings` store) so scanning works
 // with the network off. Refreshed in the background while online.
 
+import { REFRESH_MINUTES_KEY } from "@/plus/core/cacheFreshness"
 import { call } from "@/utils/apiWrapper"
 import { logger } from "@/utils/logger"
 import { isOffline } from "@/utils/offline"
@@ -14,6 +15,15 @@ const log = logger.create("ScanCache")
 const API = "pos_next.pos_0001.api.barcode"
 const KEY_PREFIX = "pos0001_scan_cache::"
 const DEFAULT_REFRESH_MINUTES = 5
+
+/** Remembered for the item cache freshness check on reopen (plus/core/cacheFreshness.js). */
+function rememberRefreshMinutes(minutes) {
+	try {
+		localStorage.setItem(REFRESH_MINUTES_KEY, String(minutes))
+	} catch {
+		// private mode or no storage
+	}
+}
 
 /** @type {import("@/plus/core/scanResolve").ScanCache} */
 const EMPTY = Object.freeze({ rules: [], plu_map: {}, uom_barcodes: {} })
@@ -65,6 +75,7 @@ export function refreshScanCache(profile) {
 					Number(data?.refresh_minutes) || DEFAULT_REFRESH_MINUTES,
 			}
 			memory.set(profile, entry)
+			rememberRefreshMinutes(entry.refreshMinutes)
 			await db.settings.put({ key: KEY_PREFIX + profile, value: entry })
 			return entry.cache
 		} catch (error) {

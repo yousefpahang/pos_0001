@@ -1328,6 +1328,20 @@ async function isCacheReady() {
 	}
 }
 
+// pos_0001: hidden item count from the variant_of / has_variants indexes (keys only).
+// Items without the field are not in the index; has_variants is cached as 0/1.
+async function countHiddenItems(db) {
+	try {
+		return showVariantsAsItems
+			? await db.table("items").where("has_variants").anyOf(1, "1").count()
+			: await db.table("items").where("variant_of").above("").count();
+	} catch (error) {
+		return showVariantsAsItems
+			? db.table("items").filter((item) => !!item.has_variants).count()
+			: db.table("items").filter((item) => !!item.variant_of).count();
+	}
+}
+
 // Get cache stats
 async function getCacheStats() {
 	try {
@@ -1339,15 +1353,9 @@ async function getCacheStats() {
 				// Count items hidden from display based on current mode:
 				// showVariantsAsItems=true: hide templates (has_variants)
 				// showVariantsAsItems=false: hide variants (variant_of)
-				showVariantsAsItems
-					? db
-							.table("items")
-							.filter((item) => !!item.has_variants)
-							.count()
-					: db
-							.table("items")
-							.filter((item) => !!item.variant_of)
-							.count(),
+				// pos_0001 (SPEC section 6): count through the indexes instead of reading all
+				// 20,000 item objects (about 1-2 s on every till start).
+				countHiddenItems(db),
 				db.table("customers").count(),
 				getOfflineInvoiceCount(),
 				db.table("settings").get("items_last_sync"),

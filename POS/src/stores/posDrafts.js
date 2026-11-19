@@ -18,8 +18,9 @@ export const usePOSDraftsStore = defineStore("posDrafts", () => {
 
 	// Actions
 	async function updateDraftsCount() {
+		// The held-cart store refreshes itself on start, profile change and reconnect, and keeps
+		// its count up to date after hold / resume / delete; the till's start-up does not wait.
 		held.start();
-		await held.refresh();
 	}
 
 	async function loadDrafts() {
