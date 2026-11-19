@@ -125,6 +125,9 @@
 						</span>
 					</button>
 
+					<!-- pos_0001: sync badge + sync log panel -->
+					<SyncBadge />
+
 					<!-- Cache Status Indicator -->
 					<div class="relative">
 						<button
@@ -391,6 +394,7 @@ import ActionButton from "@/components/common/ActionButton.vue";
 import StatusBadge from "@/components/common/StatusBadge.vue";
 import UserMenu from "@/components/common/UserMenu.vue";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher.vue";
+import SyncBadge from "@/plus/components/SyncBadge.vue";
 import { DEFAULT_LOCALE } from "@/utils/currency";
 import { ref } from "vue";
 import { version } from "../../../package.json";

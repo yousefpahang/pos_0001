@@ -5,6 +5,8 @@ import { db } from "./db";
 import { offlineState } from "./offlineState";
 import { removeOfflineReceiptPayload } from "./offlineReceiptCache";
 import { generateOfflineId } from "./uuid";
+import { classifySubmitResponse, queueUpdateFor } from "@/plus/core/syncOutcome";
+import { submitQueuedInvoice } from "@/plus/sync/syncClient";
 
 // Re-export for backwards compatibility
 export { generateOfflineId };
@@ -324,22 +326,36 @@ const syncInvoiceToServer = async (invoice, retryCount = 0) => {
 	const invoiceData = normalizeInvoiceForSync(invoice.data, offlineId);
 
 	try {
-		const response = await call("pos_next.api.invoices.submit_invoice", {
-			data: JSON.stringify({ invoice: invoiceData, data: {} }),
-		});
+		// pos_0001: the server stores rejected invoices (status Failed) instead of
+		// losing them; the row leaves the queue only on Synced or Failed-and-stored.
+		const response = await submitQueuedInvoice(invoiceData);
+		const outcome = classifySubmitResponse(response);
 
-		if (response.message || response.name) {
-			const serverName = response.name || response.message;
-			await markInvoiceSynced(invoice.id, serverName, offlineId);
+		if (outcome.action === "synced") {
+			await markInvoiceSynced(invoice.id, outcome.invoiceName, offlineId);
+			await db.invoice_queue.update(invoice.id, queueUpdateFor(outcome));
 			log.success("Invoice synced", {
 				id: invoice.id,
 				offline_id: offlineId,
-				sales_invoice: serverName,
+				sales_invoice: outcome.invoiceName,
 			});
 			return { status: "success" };
 		}
 
-		throw new Error("Invalid server response");
+		if (outcome.action === "stored_failed") {
+			await db.invoice_queue.update(invoice.id, queueUpdateFor(outcome));
+			log.warn("Invoice rejected by server and stored for retry", {
+				id: invoice.id,
+				offline_id: offlineId,
+				error: outcome.error,
+			});
+			return { status: "stored_failed", error: outcome.error };
+		}
+
+		if (response?.status === "Pending") {
+			throw new Error("SYNC_IN_PROGRESS");
+		}
+		throw new Error(outcome.error || "Invalid server response");
 	} catch (error) {
 		// Handle "sync in progress" - another request is processing this invoice
 		if (isSyncInProgressError(error) && retryCount < MAX_IN_PROGRESS_RETRIES) {
@@ -388,6 +404,15 @@ export const syncOfflineInvoices = async () => {
 					result.success++;
 				} else if (syncResult.status === "skipped") {
 					result.skipped++;
+				} else if (syncResult.status === "stored_failed") {
+					result.failed++;
+					result.errors.push({
+						invoiceId: invoice.id,
+						offlineId: invoice.offline_id,
+						customer: invoice.data?.customer || "Walk-in Customer",
+						error: new Error(syncResult.error),
+						stored: true,
+					});
 				}
 			} catch (error) {
 				log.error("Failed to sync invoice", { id: invoice.id, error });
