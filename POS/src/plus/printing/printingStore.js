@@ -279,6 +279,7 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			reprint,
 			titleMode: c.invoice_title,
 			symbolMode: c.currency_symbol,
+			vatRate: c.vat_rate ?? null,
 			lang:
 				typeof document !== "undefined" ? document.documentElement.lang : "en",
 			arabicNames: await arabicNamesFor(doc),

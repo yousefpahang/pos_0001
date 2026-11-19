@@ -97,6 +97,7 @@ export const QZ_MODES = Object.freeze(["raster", "escpos_text", "qz_html"])
  * @property {string} [titleMode]    "Tax Invoice" | "Simplified Tax Invoice" | "Auto"
  * @property {string} [lang]         till language, for the AED symbol
  * @property {string} [symbolMode]   "By language" | "AED" | "د.إ"
+ * @property {number|null} [vatRate] the profile's VAT % (local invoices have no tax rows)
  * @property {Record<string, string>} [arabicNames] item code -> item_name_ar
  * @property {(text: string, args?: unknown[]) => string} [t]  not used: the receipt is
  *   bilingual (English + Arabic) whatever the till language
@@ -189,6 +190,13 @@ export function buildReceiptModel(doc, ctx = {}) {
 		}))
 		.filter((row) => row.amount !== 0)
 	const taxTotal = num(doc.total_taxes_and_charges ?? doc.total_tax)
+	// Offline / local invoices carry only the VAT total: print it with the profile's rate.
+	if (!taxes.length && taxTotal !== 0 && ctx.vatRate != null)
+		taxes.push({
+			label: LABELS.vat.en,
+			amount: taxTotal,
+			rate: num(ctx.vatRate),
+		})
 	const grandTotal = num(doc.grand_total)
 	const rounded = num(doc.rounded_total)
 	const roundingAdjustment = num(doc.rounding_adjustment)

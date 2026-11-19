@@ -90,6 +90,19 @@ def default_print_format() -> str:
 	return POS_NEXT_PRINT_FORMAT
 
 
+def template_vat_rate(template: str | None) -> float | None:
+	"""VAT % of a Sales Taxes and Charges Template ("On Net Total" rows), for offline
+	receipts, which carry only the VAT total. None without a template."""
+	if not template:
+		return None
+	rates = frappe.get_all(
+		"Sales Taxes and Charges",
+		filters={"parent": template, "parenttype": "Sales Taxes and Charges Template", "charge_type": "On Net Total"},
+		pluck="rate",
+	)
+	return round(sum(flt(r) for r in rates), 2) if rates else None
+
+
 def resolve_printers(pos_profile: str | None, device_id: str | None) -> dict[str, dict | None]:
 	"""Receipt and label printer for a till: the POS Device's own, else the POS Profile's."""
 	receipt = label = None
@@ -160,6 +173,7 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 			"pos0001_receipt_footer",
 			"pos0001_receipt_logo",
 			"pos0001_invoice_title",
+			"taxes_and_charges",
 		],
 		as_dict=True,
 	)
@@ -174,6 +188,7 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 		"print_format": profile.pos0001_receipt_template or profile.print_format or default_print_format(),
 		"invoice_title": profile.pos0001_invoice_title if profile.pos0001_invoice_title in TITLE_MODES else "Tax Invoice",
 		"currency_symbol": settings_symbol_mode(),
+		"vat_rate": template_vat_rate(profile.taxes_and_charges),
 		"cash_modes": cash_modes(pos_profile),
 		"can_no_sale": can_open_drawer(pos_profile),
 		"cashier": frappe.utils.get_fullname(frappe.session.user),

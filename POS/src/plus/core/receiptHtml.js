@@ -177,8 +177,10 @@ body{margin:0 auto;padding:3mm;width:${width}mm;font-family:Arial,"Noto Sans Ara
 .c{text-align:center}.b{font-weight:bold}.sm{font-size:11px}.lg{font-size:15px}
 .company{font-size:16px;font-weight:bold}.title{font-size:16px;font-weight:bold;margin:6px 0}
 .logo{max-width:60%;max-height:30mm}
-.bi{display:flex;align-items:baseline;gap:6px;margin:2px 0}
-.bi .en{flex:0 1 auto}.bi .ar{flex:1 1 auto;text-align:right}.bi .val{flex:0 0 auto;text-align:right;white-space:nowrap;max-width:60%;overflow-wrap:anywhere;white-space:normal}
+.bi{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:6px;margin:2px 0}
+.bi>span{flex-shrink:0;max-width:100%}
+.bi .en{white-space:nowrap}.bi .ar{flex-grow:1;text-align:right;white-space:nowrap}
+.bi .val{margin-left:auto;text-align:right;overflow-wrap:anywhere}
 .pair{display:flex;justify-content:space-between;gap:6px;margin:2px 0}
 .item{margin:4px 0}.ar-name{text-align:right}
 hr{border:0;margin:6px 0}hr.dash{border-top:1px dashed #000}hr.solid{border-top:2px solid #000}

@@ -208,6 +208,8 @@ class TestTillData(UAETestCase):
 		self.assertEqual(cache["invoice_title"], "Auto")
 		self.assertEqual(cache["currency_symbol"], "AED")
 		self.assertTrue(cache["print_format"])
+		self.assertEqual(cache["vat_rate"], 5)
+		self.assertIsNone(printing.template_vat_rate(None))
 
 	def test_receipt_data_has_line_vat_and_arabic_name(self) -> None:
 		result = sync.submit_offline_invoice(json.dumps(_payload()), _device_id())

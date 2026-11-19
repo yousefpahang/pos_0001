@@ -368,9 +368,7 @@ describe("UAE tax invoice (SPEC section 7)", () => {
 			CTX,
 		)
 		expect(same.lineVat).toBe(false)
-		expect(receiptTextLines(same, 48).body.join("\n")).not.toContain(
-			"(VAT",
-		)
+		expect(receiptTextLines(same, 48).body.join("\n")).not.toContain("(VAT")
 	})
 
 	it("AED or د.إ by language setting; text mode stays Latin", () => {
@@ -391,6 +389,17 @@ describe("UAE tax invoice (SPEC section 7)", () => {
 			symbolMode: "د.إ",
 		})
 		expect(fixed.symbol).toBe("د.إ")
+	})
+
+	it("local invoices (VAT total only) print the profile's VAT rate", () => {
+		const m = buildReceiptModel(OFFLINE_DOC, { vatRate: 5 })
+		expect(m.taxes).toEqual([{ label: "VAT", amount: 0.28, rate: 5 }])
+		const bi = layoutReceipt(m, { widthDots: 576 }).find(
+			(o) => o.type === "bi" && o.en === "VAT 5%",
+		)
+		expect(bi.ar).toBe("ضريبة القيمة المضافة 5%")
+		expect(buildReceiptModel(OFFLINE_DOC, {}).taxes).toEqual([])
+		expect(buildReceiptModel(SERVER_DOC, { vatRate: 5 }).taxes).toHaveLength(1)
 	})
 
 	it("text mode leaves Arabic footer lines out", () => {
