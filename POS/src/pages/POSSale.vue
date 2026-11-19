@@ -188,6 +188,7 @@
 						</svg>
 						<span>{{ __("Lock Screen") }}</span>
 					</button>
+					<SourceCodeMenuItem />
 				</template>
 				<template #additional-actions>
 					<button
@@ -1019,6 +1020,7 @@ import HeldCartsDialog from "@/plus/components/HeldCartsDialog.vue"; // pos_0001
 import HoldCartDialog from "@/plus/components/HoldCartDialog.vue"; // pos_0001
 import ShortcutsOverlay from "@/plus/components/ShortcutsOverlay.vue"; // pos_0001
 import NewItemMenuItem from "@/plus/components/NewItemMenuItem.vue"; // pos_0001
+import SourceCodeMenuItem from "@/plus/components/SourceCodeMenuItem.vue"; // pos_0001
 import { useShortcuts } from "@/plus/shortcuts/useShortcuts"; // pos_0001
 import InvoiceCart from "@/components/sale/InvoiceCart.vue";
 import InvoiceHistoryDialog from "@/components/sale/InvoiceHistoryDialog.vue";

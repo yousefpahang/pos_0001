@@ -606,7 +606,15 @@ test.describe
 					await menuButton.click()
 					continue
 				}
-				if (screen === "view-shift") await check(page, report, "user-menu")
+				if (screen === "view-shift") {
+					await check(page, report, "user-menu")
+					// AGPL source offer (SPEC section 2): version and source link in the menu.
+					const about = page.getByTestId("about-source-menu")
+					await expect(about).toBeVisible()
+					await expect(about).toContainText(ar("About / Source code"))
+					await expect(about).toContainText("1.0.0")
+					await expect(about).toHaveAttribute("href", /^https?:\/\//)
+				}
 				await entry.click()
 				await expect(page.getByRole("dialog").last()).toBeVisible({
 					timeout: 15_000,
