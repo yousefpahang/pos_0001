@@ -94,6 +94,7 @@ def _upsert_device(
 	if frappe.db.exists(DEVICE, device_id):
 		if cint(frappe.db.get_value(DEVICE, device_id, "disabled")):
 			frappe.throw(_("This till (device {0}) is disabled. Ask a manager to enable it.").format(device_id))
+		values.pop("device_name", None)  # keep a name a manager gave the till
 		frappe.db.set_value(DEVICE, device_id, values, update_modified=False)
 		return device_id
 
