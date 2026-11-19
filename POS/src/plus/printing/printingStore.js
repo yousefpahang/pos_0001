@@ -357,7 +357,12 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 				await runMode("browser", doc, model, { drawer: false })
 			}
 			if (reason !== "test" && !doc.is_test) {
-				await writeSetting(LAST_PREFIX + (profile.value || ""), doc)
+				// Plain copy: the doc may be a reactive proxy (e.g. POS Next's offline print
+				// snapshot in the UI store), which IndexedDB cannot store.
+				await writeSetting(
+					LAST_PREFIX + (profile.value || ""),
+					JSON.parse(JSON.stringify(doc)),
+				)
 			}
 			lastResult.value = {
 				mode: plan.mode,

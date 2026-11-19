@@ -332,6 +332,28 @@ test.describe
 				"test-results/receipt-raster-online.png",
 			)
 
+			// The receipt did not wait for the server; the sale still reaches it (queue empties).
+			const unsyncedSales = () =>
+				page.evaluate(async () => {
+					const db = await new Promise((resolve, reject) => {
+						const req = indexedDB.open("pos_next_offline")
+						req.onsuccess = () => resolve(req.result)
+						req.onerror = () => reject(req.error)
+					})
+					const rows = await new Promise((resolve) => {
+						const req = db
+							.transaction("invoice_queue")
+							.objectStore("invoice_queue")
+							.getAll()
+						req.onsuccess = () => resolve(req.result)
+					})
+					db.close()
+					return rows.filter((r) => !r.synced && !r.sync_failed).length
+				})
+			await expect
+				.poll(unsyncedSales, { timeout: 60_000, intervals: [1_000] })
+				.toBe(0)
+
 			// 2. F9 reprint: same receipt, no drawer kick.
 			await page.keyboard.press("F9")
 			await expect.poll(() => jobs.length, { timeout: 15_000 }).toBe(2)
@@ -436,7 +458,11 @@ test.describe
 			const popup = context.waitForEvent("page", { timeout: 30_000 })
 			await sellForCash(page)
 			const printWindow = await popup
-			await expect(printWindow).toHaveURL(/printview|about:blank/)
+			// Online cash sales print from the local invoice (DECISIONS item 13), so the
+			// browser fallback is POS Next's local receipt window, not /printview.
+			await expect(printWindow.getByText("Invoice #:").first()).toBeVisible({
+				timeout: 15_000,
+			})
 			await printWindow.close()
 			const bad = unexpected(errors)
 			expect(bad, bad.join("\n")).toEqual([])
