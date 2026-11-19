@@ -82,6 +82,23 @@ A till with no printer profile keeps POS Next's printing exactly as before (Sile
 When a mode needs QZ Tray and QZ Tray is not connected, the header shows a **red printer badge** and receipts
 print through the browser instead. The badge panel has **Connect QZ Tray**.
 
+### UAE tax invoice (Phase 7, SPEC section 7)
+
+Every pos_0001 receipt is the bilingual **UAE Tax Invoice**: title, seller TRN, invoice number, date, till,
+cashier, sales person, customer and customer TRN, lines with the Arabic item name, VAT rate per line when rates
+differ, "VAT 5%" in AED, rounding, payments, change. Returns print as **Tax Credit Note** with the original invoice.
+
+- `raster` and `browser` print English and Arabic (the browser's text engine shapes Arabic).
+- `escpos_text` prints the English half only, with "AED": printer fonts have no Arabic. Footer lines that contain
+  Arabic are left out in this mode. Use `raster` for Arabic receipts.
+- `qz_html` and desk reprints use the print format **UAE Tax Invoice 80mm** (POS Profile "Receipt Print Format",
+  the pos_0001 default when the profile has none).
+- POS Profile **Receipt Title**: Tax Invoice, Simplified Tax Invoice, or Auto (full tax invoice only when the
+  customer has a TRN). Check the current FTA rules with the client before go-live.
+- POS 0001 Settings **AED Symbol**: By language ("AED" in English, "د.إ" in Arabic), or always one of them.
+- A receipt printed before the server answers shows the rounded total, rounding and change that ERPNext will
+  record (POS Profile "Disable Rounded Total", currency fraction, system rounding method).
+
 ## 4. Cash drawer
 
 - Connect the drawer's RJ11 cable to the receipt printer's "DK" port.

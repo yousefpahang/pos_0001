@@ -299,6 +299,28 @@ mm layouts). UI: `plus/components/LabelPrintPanel.vue` in the header `LabelButto
   overrides for absolute icons/padding; `Toast.vue` and `ReturnInvoiceDialog.vue` check RTL. Upstream branch
   `Feat/RTL` has more work.
 
+**After Phase 7** (SPEC section 7, DECISIONS item 8):
+- Receipt wording: `plus/core/receiptLabels.js` (English + Arabic per label, title rule Tax Invoice / Simplified /
+  Auto, credit note), checked by Vitest against `ar.csv`; the Python copy `pos_0001/uae.py` takes the Arabic from
+  `ar.csv` with `_(text, "ar")`. `plus/core/receipt.js` builds the bilingual model and the raster draw ops (new op
+  `bi`: English label, Arabic label, value), `plus/core/receiptHtml.js` the same receipt as an HTML page for
+  `browser` mode and for local invoices in `qz_html` mode (`plus/printing/browserReceipt.js`). Text mode stays
+  English. Print format **UAE Tax Invoice 80mm** (`pos_0001/print_format/`, Jinja) gets its data from the Jinja
+  method `uae_receipt(doc)`.
+- Printing cache (`printing.get_printing_cache`) also sends `invoice_title` (POS Profile `pos0001_invoice_title`),
+  `currency_symbol` (POS 0001 Settings), `vat_rate` (profile template, for local invoices that carry only the VAT
+  total) and `rounding` (profile Disable Rounded Total, currency fraction, rounding method).
+  `plus/core/rounding.js` mirrors Frappe's rounded total so local receipts show ERPNext's total and change
+  (vectors in `pos_0001/tests/rounding_vectors.json`, checked on both sides).
+- AED: `plus/core/money.js` (`currencySymbol`, `formatMoney`); POS Next's `utils/currency.js` uses it for AED.
+- `item_name_ar` is in POS Next's `get_items` result, so the Dexie item cache, the search index, receipts and cart
+  lines have it. `plus/core/itemName.js` shows the Arabic name on an Arabic till.
+- RTL: `plus/core/bidi.js` (left-to-right isolates for dates in POS Next's formatters), `dir="auto"` on item
+  names, header and cart line fixes (UPSTREAM_PATCHES 50-55). `e2e/uae-rtl.spec.js` audits every till screen in
+  Arabic at 1280 x 720 and 1024 x 768.
+- E-invoicing hook: `pos_0001/einvoice.py`, called once from POS Next's `submit_invoice()` (the one service
+  function every POS sale goes through) for handlers under the hook `pos0001_after_invoice_submit`.
+
 ### 2.10 Extension points
 
 - **Event bus:** `stores/posEvents.js` + `composables/usePOSEvents.js` (`on`, `emit`, `settings:*`,
