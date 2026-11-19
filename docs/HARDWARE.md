@@ -173,3 +173,17 @@ Profile's tax template, or the item's own Item Tax Template).
 
 A4 sheets: **Print A4 sheet** opens the browser print dialog (works offline); **Download PDF** makes the same
 sheet on the server (WeasyPrint). Print at 100 % without "fit to page".
+
+## 9. Barcode scanners (SPEC section 6)
+
+Any USB or Bluetooth scanner in **HID keyboard mode** (keyboard wedge) works; no driver or QZ Tray needed.
+
+- Set the scanner to send **Enter** (or Tab) after each code. Most scanners do this by default.
+- Scans work **without clicking the search box**. When no text field has focus, the till treats keys that
+  arrive at most 30 ms apart and end with Enter (at least 4 characters) as a scan. A person typing is slower
+  and is ignored.
+- When a text field has focus (customer search, payment amount, a note), the scan goes into that field, as
+  with any keyboard. The item search box handles scans as before.
+- Scans are ignored while a dialog is open (for example the payment dialog). Close it first.
+- If a scanner is set to a slow "keystroke delay" (some Bluetooth models), set the delay to 0-10 ms;
+  over 30 ms between characters the till cannot tell it from typing.

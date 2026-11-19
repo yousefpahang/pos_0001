@@ -214,6 +214,19 @@ invoices are flagged by `pos_0001.api.sync` and never rejected for it). Script R
 - Server-side draft endpoints exist but the SPA does not call them: `api.invoices.get_draft_invoices`
   (by opening shift), `delete_invoice`, `cleanup_old_drafts(max_age_hours=48)` (no scheduler entry).
 
+**After Phase 6** (SPEC F7, DECISIONS item 6): a held cart is a **draft Sales Invoice** with `pos0001_held = 1`, built
+by POS Next's `update_invoice()` from the till's draft payload. Payments, the opening shift and the `offline_id` are
+removed first. With no `posa_pos_opening_shift`, POS Next's shift close does not delete it. The draft is **named by its
+hold id** (`HOLD-<uuid>`, Sales Invoice `before_insert` hook), so held carts never use invoice series numbers. The exact
+cart (lines, offers, sales persons) is in `pos0001_held_cart` (JSON). Endpoints in `pos_0001/api/held_carts.py`:
+`hold_cart` (idempotent per hold id; a Deleted Document of that name means "already resumed"), `list_held_carts`,
+`resume_held_cart` (row lock, returns the cart and deletes the draft: a claim), `delete_held_cart`, daily
+`cleanup_held_carts` (`held_cart_retention_days`). In the browser, POS Next's `stores/posDrafts.js` keeps its API but
+delegates to `plus/heldCarts/heldCartStore.js`. A cart is always saved first in POS Next's `pos_next_drafts` database
+and removed only after the server confirms it (or answers "Resumed"). While offline, or when the server refuses it,
+the cart stays local, shows "On this till" or "Not uploaded", and is uploaded on reconnect.
+`plus/components/HeldCartsDialog.vue` replaces `DraftInvoicesDialog`; `HoldCartDialog.vue` asks for the note.
+
 ### 2.7 Payment dialog
 
 - `components/sale/PaymentDialog.vue` (3,500 lines). Emits `update:modelValue`, `payment-completed`,
@@ -322,6 +335,22 @@ Taxes), POS Coupon (+ Detail), POS Offer (+ Detail), POS Opening Shift (+ Detail
 - Offline search runs in the worker over Dexie indexes (barcode index, then name/code), with a small query cache
   and metrics (`GET_METRICS`). No dedicated search index, no Arabic name field.
 - `utils/lowEndOptimizations.js`, `utils/performanceConfig.js` tune limits per device.
+
+**After Phase 6** (SPEC section 6, numbers in `docs/PERFORMANCE.md`):
+- Search: `plus/search/searchIndex.worker.js` builds rows (`plus/core/searchIndex.js`: name, code, barcodes, Arabic
+  name) from the `pos_next_offline.items` store, reading it only, and keeps them in the IndexedDB database
+  `pos0001_search`. `searchItems()` gets the first 60 results from it without the debounce; the debounced step gets
+  the full list from it too, falling back to POS Next's worker search. `plus/search/startSearchIndex.js`, started by
+  the sync log store, loads the index on start and rebuilds it after a catalogue sync. `window.pos0001Search.status()`
+  shows its state.
+- Grid and list: `plus/perf/useVirtualGrid.js` renders only the rows in view. Pagination (100 per page) is unchanged.
+- Reopen: the cached first page shows at once. A server refresh runs afterwards only when the last item sync is
+  older than `cache_refresh_minutes` (stored in localStorage by the scan cache).
+- Favourites: `pos_0001.api.favourites.get_favourites` (top 30 by quantity, 90 days). Stored in the Dexie
+  `settings` store under `pos0001_favourites::<profile>`.
+- Scanner: `plus/scan/globalScanner.js` (installed by `useSearchInput`) catches scans when no text field has focus.
+- Shortcuts: `plus/core/shortcuts.js` (map), `plus/shortcuts/useShortcuts.js` (used in `POSSale.vue`),
+  `plus/components/ShortcutsOverlay.vue` (`?`).
 
 ## 3. POS Awesome (reference only)
 
