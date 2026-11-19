@@ -1,0 +1,226 @@
+{
+ "actions": [],
+ "autoname": "field:printer_name",
+ "creation": "2026-11-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "printer_name",
+  "purpose",
+  "enabled",
+  "company",
+  "column_break_main",
+  "connection",
+  "qz_printer",
+  "network_host",
+  "network_port",
+  "section_receipt",
+  "print_mode",
+  "paper_width_mm",
+  "dpi",
+  "characters_per_line",
+  "column_break_receipt",
+  "auto_cut",
+  "copies",
+  "drawer_kick",
+  "receipt_barcode",
+  "print_format",
+  "section_label",
+  "label_language"
+ ],
+ "fields": [
+  {
+   "fieldname": "printer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Printer Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "Receipt",
+   "fieldname": "purpose",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Purpose",
+   "options": "Receipt\nLabel",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "description": "Leave empty to use this printer with any company.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "QZ Local Printer",
+   "description": "QZ Local Printer: a printer installed on the till computer. Network: a LAN printer reached by QZ Tray on its IP address and port (raw, usually 9100).",
+   "fieldname": "connection",
+   "fieldtype": "Select",
+   "label": "Connection",
+   "options": "QZ Local Printer\nNetwork",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.connection=='QZ Local Printer'",
+   "description": "Printer name exactly as QZ Tray lists it. Leave empty to use the printer chosen on the till (POS Settings).",
+   "fieldname": "qz_printer",
+   "fieldtype": "Data",
+   "label": "QZ Printer Name"
+  },
+  {
+   "depends_on": "eval:doc.connection=='Network'",
+   "fieldname": "network_host",
+   "fieldtype": "Data",
+   "label": "IP Address or Host",
+   "mandatory_depends_on": "eval:doc.connection=='Network'"
+  },
+  {
+   "default": "9100",
+   "depends_on": "eval:doc.connection=='Network'",
+   "fieldname": "network_port",
+   "fieldtype": "Int",
+   "label": "Port"
+  },
+  {
+   "depends_on": "eval:doc.purpose=='Receipt'",
+   "fieldname": "section_receipt",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "default": "raster",
+   "description": "raster: the receipt is drawn as an image (Arabic, logos, any printer). escpos_text: printer fonts, fastest, English only. qz_html: the Receipt Print Format through QZ Tray. browser: the browser print dialog (no QZ Tray needed). When QZ Tray is not running, the till prints through the browser.",
+   "fieldname": "print_mode",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Print Mode",
+   "options": "raster\nescpos_text\nqz_html\nbrowser"
+  },
+  {
+   "default": "80",
+   "fieldname": "paper_width_mm",
+   "fieldtype": "Select",
+   "label": "Paper Width (mm)",
+   "options": "80\n58"
+  },
+  {
+   "default": "203",
+   "fieldname": "dpi",
+   "fieldtype": "Select",
+   "label": "DPI",
+   "options": "203\n300"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.print_mode=='escpos_text'",
+   "description": "0 = automatic (48 on 80 mm, 32 on 58 mm).",
+   "fieldname": "characters_per_line",
+   "fieldtype": "Int",
+   "label": "Characters per Line"
+  },
+  {
+   "fieldname": "column_break_receipt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_cut",
+   "fieldtype": "Check",
+   "label": "Auto Cut"
+  },
+  {
+   "default": "1",
+   "description": "1 to 3.",
+   "fieldname": "copies",
+   "fieldtype": "Int",
+   "label": "Copies"
+  },
+  {
+   "default": "1",
+   "description": "Open the cash drawer (connected to this printer) after sales paid in cash.",
+   "fieldname": "drawer_kick",
+   "fieldtype": "Check",
+   "label": "Open Cash Drawer"
+  },
+  {
+   "default": "Code128",
+   "description": "Barcode of the invoice number for fast returns. Code128 switches to QR when the number is too long for the paper (offline receipts).",
+   "fieldname": "receipt_barcode",
+   "fieldtype": "Select",
+   "label": "Receipt Barcode",
+   "options": "Code128\nQR\nNone"
+  },
+  {
+   "depends_on": "eval:doc.print_mode=='qz_html'",
+   "description": "Leave empty to use the POS Profile's Receipt Print Format, then POS Next Receipt.",
+   "fieldname": "print_format",
+   "fieldtype": "Link",
+   "label": "Print Format",
+   "options": "Print Format"
+  },
+  {
+   "depends_on": "eval:doc.purpose=='Label'",
+   "fieldname": "section_label",
+   "fieldtype": "Section Break",
+   "label": "Label"
+  },
+  {
+   "default": "ZPL",
+   "fieldname": "label_language",
+   "fieldtype": "Select",
+   "label": "Label Language",
+   "options": "ZPL\nEPL\nTSPL"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Printer Profile",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nexus POS Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "POSNext Cashier"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,137 @@
+{
+ "actions": [],
+ "autoname": "field:event_id",
+ "creation": "2026-11-19 12:00:00.000000",
+ "description": "Cash drawer opened without a sale (No Sale), logged by the till. Kept offline and uploaded on reconnect.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_id",
+  "event_type",
+  "opened_at",
+  "user",
+  "permitted",
+  "column_break_main",
+  "pos_profile",
+  "pos_device",
+  "pos_opening_shift",
+  "was_offline",
+  "reason"
+ ],
+ "fields": [
+  {
+   "description": "Id made by the till, so an event uploaded twice is stored once.",
+   "fieldname": "event_id",
+   "fieldtype": "Data",
+   "label": "Event ID",
+   "read_only": 1,
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "No Sale",
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Event",
+   "options": "No Sale",
+   "read_only": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Opened At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "description": "Unticked when the user did not have the No Sale role when the event reached the server (for example the role was removed while the till was offline).",
+   "fieldname": "permitted",
+   "fieldtype": "Check",
+   "label": "Permitted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pos_profile",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "POS Profile",
+   "options": "POS Profile",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_device",
+   "fieldtype": "Link",
+   "label": "POS Device",
+   "options": "POS Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pos_opening_shift",
+   "fieldtype": "Link",
+   "label": "POS Opening Shift",
+   "options": "POS Opening Shift",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "was_offline",
+   "fieldtype": "Check",
+   "label": "Opened While Offline",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Drawer Event",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  },
+  {
+   "export": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nexus POS Manager"
+  }
+ ],
+ "sort_field": "opened_at",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "event_type",
+ "track_changes": 0
+}

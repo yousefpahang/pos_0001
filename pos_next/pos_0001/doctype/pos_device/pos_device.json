@@ -9,6 +9,8 @@
   "device_name",
   "pos_profile",
   "disabled",
+  "receipt_printer",
+  "label_printer",
   "column_break_main",
   "last_seen",
   "last_user",
@@ -49,6 +51,20 @@
    "label": "Disabled"
   },
   {
+   "description": "Receipt printer of this till. Empty = the POS Profile's Receipt Printer.",
+   "fieldname": "receipt_printer",
+   "fieldtype": "Link",
+   "label": "Receipt Printer",
+   "options": "POS Printer Profile"
+  },
+  {
+   "description": "Label printer of this till (used by label printing).",
+   "fieldname": "label_printer",
+   "fieldtype": "Link",
+   "label": "Label Printer",
+   "options": "POS Printer Profile"
+  },
+  {
    "fieldname": "column_break_main",
    "fieldtype": "Column Break"
   },
@@ -81,7 +97,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-11-19 12:00:00.000000",
+ "modified": "2026-11-20 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "POS 0001",
  "name": "POS Device",

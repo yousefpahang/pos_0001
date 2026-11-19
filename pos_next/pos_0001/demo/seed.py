@@ -65,8 +65,47 @@ def run(item_count: int = 20000) -> None:
 		ensure_pos_profile(name, modes)
 	ensure_scale_barcodes()
 	ensure_sales_person_setup()
+	ensure_printing_setup()
 	frappe.db.commit()
 	print("Seed done:", summary())
+
+
+# Phase 4 (F9): two receipt printer profiles (not assigned to a profile, so the demo till
+# keeps POS Next printing until a manager picks one) and a No Sale role for the cashier.
+DEMO_PRINTERS = {
+	"Receipt 80mm Raster": {"print_mode": "raster", "paper_width_mm": "80"},
+	"Receipt 58mm Text": {"print_mode": "escpos_text", "paper_width_mm": "58"},
+}
+NO_SALE_ROLE = "POS No Sale"
+
+
+def ensure_printing_setup() -> None:
+	for name, values in DEMO_PRINTERS.items():
+		if not frappe.db.exists("POS Printer Profile", name):
+			frappe.get_doc(
+				{
+					"doctype": "POS Printer Profile",
+					"printer_name": name,
+					"purpose": "Receipt",
+					"connection": "QZ Local Printer",
+					"auto_cut": 1,
+					"copies": 1,
+					"drawer_kick": 1,
+					"receipt_barcode": "Code128",
+					**values,
+				}
+			).insert(ignore_permissions=True)
+	if not frappe.db.exists("Role", NO_SALE_ROLE):
+		frappe.get_doc({"doctype": "Role", "role_name": NO_SALE_ROLE, "desk_access": 0}).insert(
+			ignore_permissions=True
+		)
+	user = frappe.get_doc("User", "cashier@pos.test")
+	if NO_SALE_ROLE not in {r.role for r in user.roles}:
+		user.append("roles", {"role": NO_SALE_ROLE})
+		user.save(ignore_permissions=True)
+	for profile in ("Main Till", "Express Till"):
+		if frappe.db.exists("POS Profile", profile):
+			frappe.db.set_value("POS Profile", profile, "pos0001_no_sale_role", NO_SALE_ROLE)
 
 
 # Phase 3 (F6): badge barcodes, a default for the demo cashier, one profile per mode.

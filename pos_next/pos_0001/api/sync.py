@@ -336,5 +336,7 @@ def register_device(
 	device = frappe.db.get_value(
 		DEVICE, name, ["device_id", "device_name", "pos_profile", "last_seen"], as_dict=True
 	)
-	# Printer profiles arrive with POS Printer Profile in Phase 4.
-	return {**device, "printer_profiles": []}
+	from pos_next.pos_0001.api.printing import resolve_printers
+
+	printers = resolve_printers(pos_profile or device.pos_profile, device_id)
+	return {**device, "printer_profiles": [p for p in (printers["receipt"], printers["label"]) if p]}
