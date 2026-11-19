@@ -30,7 +30,9 @@ export function eplEscape(value) {
  */
 export function eplBarcode({ value, kind, x, y, height, module }) {
 	const ean = kind === "EAN13"
-	const data = (ean ? value.slice(0, 12) : value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+	const data = (ean ? value.slice(0, 12) : value)
+		.replace(/\\/g, "\\\\")
+		.replace(/"/g, '\\"')
 	return `B${x},${y},0,${ean ? "E30" : "1"},${module},${module},${height},B,"${data}"`
 }
 
@@ -47,6 +49,7 @@ export function eplBitmap(x, y, bitmap) {
 	)
 	const out = new Uint8Array(head.length + bitmap.data.length)
 	out.set(head, 0)
-	for (let i = 0; i < bitmap.data.length; i++) out[head.length + i] = bitmap.data[i] ^ 0xff
+	for (let i = 0; i < bitmap.data.length; i++)
+		out[head.length + i] = bitmap.data[i] ^ 0xff
 	return out
 }

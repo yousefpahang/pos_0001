@@ -66,7 +66,8 @@ export class LabelTemplateError extends Error {
 /** @param {string} raw @returns {{kind: "num"|"str"|"var", value: any}} */
 function parseArg(raw) {
 	if (/^-?\d/.test(raw)) return { kind: "num", value: Number(raw) }
-	if (raw[0] === "'" || raw[0] === '"') return { kind: "str", value: raw.slice(1, -1) }
+	if (raw[0] === "'" || raw[0] === '"')
+		return { kind: "str", value: raw.slice(1, -1) }
 	return { kind: "var", value: raw }
 }
 
@@ -98,7 +99,8 @@ function parseExpr(expr) {
 /** @param {string} keyword @param {string} inner */
 function parseCond(keyword, inner) {
 	const m = COND_RE.exec(inner.trim().slice(keyword.length))
-	if (!m) throw new LabelTemplateError(`Unsupported condition: {% ${inner.trim()} %}`)
+	if (!m)
+		throw new LabelTemplateError(`Unsupported condition: {% ${inner.trim()} %}`)
 	if (!VARIABLES.includes(m[2]))
 		throw new LabelTemplateError(`Unknown value ${m[2]} in {% ${keyword} %}.`)
 	return { neg: Boolean(m[1]), name: m[2] }
@@ -117,13 +119,16 @@ export function parseTemplate(body) {
 	const root = []
 	/** @type {Array<{node: any, branch: any}>} */
 	const stack = []
-	const current = () => (stack.length ? stack[stack.length - 1].branch.body : root)
+	const current = () =>
+		stack.length ? stack[stack.length - 1].branch.body : root
 	let pos = 0
 	let lineStarting = true
 	TAG_RE.lastIndex = 0
 	for (let m = TAG_RE.exec(src); m; m = TAG_RE.exec(src)) {
 		if (m[0] === "{#")
-			throw new LabelTemplateError("Comments ({# #}) are not supported in label templates.")
+			throw new LabelTemplateError(
+				"Comments ({# #}) are not supported in label templates.",
+			)
 		const isBlock = m[2] !== undefined
 		const inner = isBlock ? m[2] : m[1]
 		if (/^[-+]/.test(inner) || /[-+]$/.test(inner))
@@ -151,23 +156,29 @@ export function parseTemplate(body) {
 		const words = inner.trim().split(/\s+/)
 		const keyword = words[0] || ""
 		if (keyword === "if") {
-			const node = { type: "if", branches: [{ ...parseCond("if", inner), body: [] }] }
+			const node = {
+				type: "if",
+				branches: [{ ...parseCond("if", inner), body: [] }],
+			}
 			current().push(/** @type {Node} */ (node))
 			stack.push({ node, branch: node.branches[0] })
 		} else if (keyword === "elif") {
-			if (!stack.length) throw new LabelTemplateError("{% elif %} without {% if %}.")
+			if (!stack.length)
+				throw new LabelTemplateError("{% elif %} without {% if %}.")
 			const top = stack[stack.length - 1]
 			const branch = { ...parseCond("elif", inner), body: [] }
 			top.node.branches.push(branch)
 			top.branch = branch
 		} else if (keyword === "else" && words.length === 1) {
-			if (!stack.length) throw new LabelTemplateError("{% else %} without {% if %}.")
+			if (!stack.length)
+				throw new LabelTemplateError("{% else %} without {% if %}.")
 			const top = stack[stack.length - 1]
 			const branch = { neg: false, name: null, body: [] }
 			top.node.branches.push(branch)
 			top.branch = branch
 		} else if (keyword === "endif" && words.length === 1) {
-			if (!stack.length) throw new LabelTemplateError("{% endif %} without {% if %}.")
+			if (!stack.length)
+				throw new LabelTemplateError("{% endif %} without {% if %}.")
 			stack.pop()
 		} else {
 			throw new LabelTemplateError(`Unsupported tag: {% ${inner.trim()} %}`)
@@ -176,7 +187,8 @@ export function parseTemplate(body) {
 	const rest = src.slice(pos)
 	if (/\{\{|\{%|\}\}|%\}/.test(src.replace(TAG_RE, "")))
 		throw new LabelTemplateError("Unclosed {{ or {% in the template.")
-	if (stack.length) throw new LabelTemplateError("{% if %} without {% endif %}.")
+	if (stack.length)
+		throw new LabelTemplateError("{% if %} without {% endif %}.")
 	if (rest) current().push({ type: "text", text: rest })
 	return root
 }
@@ -221,7 +233,9 @@ export function renderNodes(nodes, ctx, env) {
 		if (node.type === "text") out += node.text
 		else if (node.type === "var") out += env.escape(ctx[node.name])
 		else if (node.type === "call") {
-			const args = node.args.map((a) => (a.kind === "var" ? ctx[a.value] : a.value))
+			const args = node.args.map((a) =>
+				a.kind === "var" ? ctx[a.value] : a.value,
+			)
 			out += env.helpers[node.name](...args)
 		} else if (node.type === "if") {
 			for (const branch of node.branches) {

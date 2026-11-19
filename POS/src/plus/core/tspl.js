@@ -12,7 +12,10 @@ import { stripControls } from "./zpl.js"
  * @param {unknown} value
  */
 export function tsplEscape(value) {
-	return stripControls(value == null ? "" : String(value)).replace(/"/g, '\\["]')
+	return stripControls(value == null ? "" : String(value)).replace(
+		/"/g,
+		'\\["]',
+	)
 }
 
 /**
@@ -38,6 +41,7 @@ export function tsplBitmap(x, y, bitmap) {
 	)
 	const out = new Uint8Array(head.length + bitmap.data.length)
 	out.set(head, 0)
-	for (let i = 0; i < bitmap.data.length; i++) out[head.length + i] = bitmap.data[i] ^ 0xff
+	for (let i = 0; i < bitmap.data.length; i++)
+		out[head.length + i] = bitmap.data[i] ^ 0xff
 	return out
 }

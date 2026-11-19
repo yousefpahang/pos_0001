@@ -24,9 +24,14 @@ export function mmToDots(mm, dpi) {
 	return Math.round((Number(mm) * Number(dpi)) / 25.4)
 }
 
-/** @param {string} text */
+/** Control characters become spaces (they would break a command line). @param {string} text */
 export function stripControls(text) {
-	return text.replace(/[\x00-\x1f\x7f]/g, " ")
+	let out = ""
+	for (const ch of text) {
+		const code = ch.charCodeAt(0)
+		out += code < 32 || code === 127 ? " " : ch
+	}
+	return out
 }
 
 /**
@@ -34,7 +39,10 @@ export function stripControls(text) {
  * @param {unknown} value
  */
 export function zplEscape(value) {
-	return stripControls(value == null ? "" : String(value)).replace(/[\^~]/g, " ")
+	return stripControls(value == null ? "" : String(value)).replace(
+		/[\^~]/g,
+		" ",
+	)
 }
 
 /**

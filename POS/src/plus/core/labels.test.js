@@ -40,11 +40,21 @@ import { mmToDots, zplBarcode, zplBitmap, zplEscape } from "./zpl.js"
 const here = path.dirname(fileURLToPath(import.meta.url))
 const appRoot = path.resolve(here, "../../../..")
 const DEFAULTS = JSON.parse(
-	fs.readFileSync(path.join(appRoot, "pos_next/pos_0001/default_label_templates.json"), "utf8"),
+	fs.readFileSync(
+		path.join(appRoot, "pos_next/pos_0001/default_label_templates.json"),
+		"utf8",
+	),
 ).map((t) => ({ ...t, name: t.template_name }))
-const SNAPSHOT_FILE = path.join(appRoot, "pos_next/pos_0001/tests/label_snapshots.json")
+const SNAPSHOT_FILE = path.join(
+	appRoot,
+	"pos_next/pos_0001/tests/label_snapshots.json",
+)
 
-const BASE = { currency: "AED", company: "Demo Trading LLC", date: "21-11-2026" }
+const BASE = {
+	currency: "AED",
+	company: "Demo Trading LLC",
+	date: "21-11-2026",
+}
 const ROWS = [
 	{
 		item_code: "ITM-00001",
@@ -104,7 +114,12 @@ function buildCases() {
 	for (const template of DEFAULTS) {
 		const rows = withBarcodeTypes(template, ROWS)
 		if (template.language === "PDF") {
-			cases.push({ kind: "pdf_html", template, rows, output: renderPdfHtml(template, rows, BASE) })
+			cases.push({
+				kind: "pdf_html",
+				template,
+				rows,
+				output: renderPdfHtml(template, rows, BASE),
+			})
 		} else {
 			cases.push({
 				kind: "raw",
@@ -142,7 +157,10 @@ describe("label snapshots shared with Python", () => {
 	it("default templates and template subset render the stored bytes", () => {
 		const cases = buildCases()
 		if (process.env.UPDATE_LABEL_SNAPSHOTS) {
-			fs.writeFileSync(SNAPSHOT_FILE, `${JSON.stringify({ base: BASE, cases }, null, 1)}\n`)
+			fs.writeFileSync(
+				SNAPSHOT_FILE,
+				`${JSON.stringify({ base: BASE, cases }, null, 1)}\n`,
+			)
 		}
 		const stored = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, "utf8"))
 		expect(stored.cases.length).toBe(cases.length)
@@ -161,7 +179,9 @@ describe("label snapshots shared with Python", () => {
 		expect(text).toContain("^FO20,104^BY2,3,52^BEN,52,Y,N^FD629000000001^FS")
 		expect(text).toContain("^PQ2\n^XZ")
 		expect(parts).toHaveLength(1)
-		expect(new TextDecoder().decode(parts[0])).toMatch(/^\^FO10,32\^GFA,\d+,\d+,6,[0-9A-F]+\^FS$/)
+		expect(new TextDecoder().decode(parts[0])).toMatch(
+			/^\^FO10,32\^GFA,\d+,\d+,6,[0-9A-F]+\^FS$/,
+		)
 	})
 })
 
@@ -182,24 +202,49 @@ describe("label commands", () => {
 	})
 
 	it("builds barcode fields", () => {
-		const ean = { value: "6290000000016", kind: "EAN13", x: 1, y: 2, height: 40, module: 2 }
+		const ean = {
+			value: "6290000000016",
+			kind: "EAN13",
+			x: 1,
+			y: 2,
+			height: 40,
+			module: 2,
+		}
 		expect(zplBarcode(ean)).toBe("^FO1,2^BY2,3,40^BEN,40,Y,N^FD629000000001^FS")
 		expect(eplBarcode(ean)).toBe('B1,2,0,E30,2,2,40,B,"629000000001"')
-		expect(tsplBarcode(ean)).toBe('BARCODE 1,2,"EAN13",40,1,0,2,2,"629000000001"')
-		const c128 = { value: 'A>"1', kind: "Code128", x: 0, y: 0, height: 9, module: 1 }
+		expect(tsplBarcode(ean)).toBe(
+			'BARCODE 1,2,"EAN13",40,1,0,2,2,"629000000001"',
+		)
+		const c128 = {
+			value: 'A>"1',
+			kind: "Code128",
+			x: 0,
+			y: 0,
+			height: 9,
+			module: 1,
+		}
 		expect(zplBarcode(c128)).toBe('^FO0,0^BY1,3,9^BCN,9,Y,N,N^FDA><"1^FS')
 		expect(eplBarcode(c128)).toBe('B0,0,0,1,1,1,9,B,"A>\\"1"')
 		expect(tsplBarcode(c128)).toBe('BARCODE 0,0,"128",9,1,0,1,1,"A>\\["]1"')
 	})
 
 	it("writes bitmaps: ZPL hex with 1 = black, EPL and TSPL binary with 0 = black", () => {
-		const bmp = { width: 10, height: 2, bytesPerRow: 2, data: Uint8Array.from([0xff, 0xc0, 0x00, 0x00]) }
-		expect(new TextDecoder().decode(zplBitmap(3, 4, bmp))).toBe("^FO3,4^GFA,4,4,2,FFC00000^FS")
+		const bmp = {
+			width: 10,
+			height: 2,
+			bytesPerRow: 2,
+			data: Uint8Array.from([0xff, 0xc0, 0x00, 0x00]),
+		}
+		expect(new TextDecoder().decode(zplBitmap(3, 4, bmp))).toBe(
+			"^FO3,4^GFA,4,4,2,FFC00000^FS",
+		)
 		const epl = eplBitmap(3, 4, bmp)
 		expect(new TextDecoder().decode(epl.slice(0, 10))).toBe("GW3,4,2,2,")
 		expect([...epl.slice(-4)]).toEqual([0x00, 0x3f, 0xff, 0xff])
 		const tspl = tsplBitmap(3, 4, bmp)
-		expect(new TextDecoder().decode(tspl.slice(0, 17))).toBe("BITMAP 3,4,2,2,0,")
+		expect(new TextDecoder().decode(tspl.slice(0, 17))).toBe(
+			"BITMAP 3,4,2,2,0,",
+		)
 		expect([...tspl.slice(-4)]).toEqual([0x00, 0x3f, 0xff, 0xff])
 	})
 
@@ -228,7 +273,7 @@ describe("label commands", () => {
 			language: "TSPL",
 			width_mm: 30,
 			height_mm: 20,
-			body: "CLS\nTEXT 1,1,\"1\",0,1,1,\"{{ item_code }}\"\nPRINT 1\n",
+			body: 'CLS\nTEXT 1,1,"1",0,1,1,"{{ item_code }}"\nPRINT 1\n',
 		}
 		expect(usesQty(template.body)).toBe(false)
 		const out = new TextDecoder().decode(
@@ -241,9 +286,9 @@ describe("label commands", () => {
 	it("limits rows and quantities", () => {
 		expect(checkRows([{ qty: 2 }, { qty: 3 }])).toBe(5)
 		expect(() => checkRows([{ qty: 1000 }])).toThrow(/between 1 and 999/)
-		expect(() => checkRows(Array.from({ length: 3 }, () => ({ qty: 999 })))).toThrow(
-			/At most 2000 labels/,
-		)
+		expect(() =>
+			checkRows(Array.from({ length: 3 }, () => ({ qty: 999 }))),
+		).toThrow(/At most 2000 labels/)
 	})
 })
 
@@ -253,28 +298,44 @@ describe("template subset", () => {
 	})
 
 	it("rejects Jinja outside the subset with a plain message", () => {
-		expect(templateError("{{ item_name|upper }}")).toMatch(/Unsupported expression/)
+		expect(templateError("{{ item_name|upper }}")).toMatch(
+			/Unsupported expression/,
+		)
 		expect(templateError("{{ nope }}")).toMatch(/Unknown value/)
 		expect(templateError("{{ draw_qr(1) }}")).toMatch(/Unknown helper/)
-		expect(templateError("{% for x in y %}{% endfor %}")).toMatch(/Unsupported tag/)
+		expect(templateError("{% for x in y %}{% endfor %}")).toMatch(
+			/Unsupported tag/,
+		)
 		expect(templateError("{% if item_code %}")).toMatch(/without \{% endif %\}/)
 		expect(templateError("{% endif %}")).toMatch(/without \{% if %\}/)
 		expect(templateError("{# note #}")).toMatch(/Comments/)
-		expect(templateError("{%- if item_code %}{% endif %}")).toMatch(/Whitespace control/)
+		expect(templateError("{%- if item_code %}{% endif %}")).toMatch(
+			/Whitespace control/,
+		)
 		expect(templateError("{{ item_code")).toMatch(/Unclosed/)
-		expect(templateError("{% if price > 1 %}{% endif %}")).toMatch(/Unsupported condition/)
+		expect(templateError("{% if price > 1 %}{% endif %}")).toMatch(
+			/Unsupported condition/,
+		)
 	})
 })
 
 describe("A4 sheet", () => {
 	it("centres the grid and checks it fits", () => {
-		const g = gridLayout({ a4_columns: 3, a4_rows: 8, width_mm: 70, height_mm: 37, margins_mm: 3 })
+		const g = gridLayout({
+			a4_columns: 3,
+			a4_rows: 8,
+			width_mm: 70,
+			height_mm: 37,
+			margins_mm: 3,
+		})
 		expect(g.left).toBe(0)
 		expect(g.top).toBe(0.5)
-		expect(() => gridLayout({ a4_columns: 3, a4_rows: 8, width_mm: 71, height_mm: 37 })).toThrow(
-			/does not fit/,
-		)
-		expect(() => gridLayout({ a4_columns: 0, a4_rows: 8, width_mm: 70, height_mm: 37 })).toThrow()
+		expect(() =>
+			gridLayout({ a4_columns: 3, a4_rows: 8, width_mm: 71, height_mm: 37 }),
+		).toThrow(/does not fit/)
+		expect(() =>
+			gridLayout({ a4_columns: 0, a4_rows: 8, width_mm: 70, height_mm: 37 }),
+		).toThrow()
 	})
 
 	it("puts each label qty times, 24 per page, with SVG barcodes and Arabic", () => {
@@ -283,7 +344,9 @@ describe("A4 sheet", () => {
 		const html = renderPdfHtml(template, rows, BASE)
 		expect(html.match(/class="page"/g)).toHaveLength(2)
 		expect(html.match(/class="cell"/g)).toHaveLength(25)
-		expect(html).toContain('<span class="ar" dir="rtl" lang="ar">مناديل فاخرة</span>')
+		expect(html).toContain(
+			'<span class="ar" dir="rtl" lang="ar">مناديل فاخرة</span>',
+		)
 		expect(html).toContain('<div class="bc-text">6290000000016</div>')
 		expect(html).toContain("left:140mm;top:259.5mm")
 	})
@@ -298,7 +361,12 @@ describe("A4 sheet", () => {
 })
 
 describe("label rows offline", () => {
-	const cache = { currency: "AED", vat_rate: 5, prices_include_vat: 0, item_vat: { ZERO: 0 } }
+	const cache = {
+		currency: "AED",
+		vat_rate: 5,
+		prices_include_vat: 0,
+		item_vat: { ZERO: 0 },
+	}
 	const item = {
 		item_code: "ITM-00001",
 		item_name: "Premium Tissue",
@@ -313,13 +381,18 @@ describe("label rows offline", () => {
 		rules: [RULE_A, RULE_B],
 		plu_map: { 12345: "PLU-12345" },
 		uom_barcodes: {
-			"6290000000023": { item_code: "ITM-00001", uom: "Box" },
-			"6290000000016": { item_code: "ITM-00001", uom: "Nos" },
+			6290000000023: { item_code: "ITM-00001", uom: "Box" },
+			6290000000016: { item_code: "ITM-00001", uom: "Nos" },
 		},
 	}
 
 	it("prices incl. VAT per UOM with that UOM's barcode", () => {
-		const nos = resolveRow({ item_code: "ITM-00001", qty: 2 }, item, cache, scan)
+		const nos = resolveRow(
+			{ item_code: "ITM-00001", qty: 2 },
+			item,
+			cache,
+			scan,
+		)
 		expect(nos).toMatchObject({
 			uom: "Nos",
 			barcode: "6290000000016",
@@ -329,13 +402,27 @@ describe("label rows offline", () => {
 			qty: 2,
 			uoms: ["Nos", "Box"],
 		})
-		const box = resolveRow({ item_code: "ITM-00001", uom: "Box", qty: 1 }, item, cache, scan)
-		expect(box).toMatchObject({ uom: "Box", barcode: "6290000000023", price: 472.5 })
+		const box = resolveRow(
+			{ item_code: "ITM-00001", uom: "Box", qty: 1 },
+			item,
+			cache,
+			scan,
+		)
+		expect(box).toMatchObject({
+			uom: "Box",
+			barcode: "6290000000023",
+			price: 472.5,
+		})
 	})
 
 	it("falls back to the item code when a UOM has no barcode, keeps price overrides", () => {
 		const bare = { ...item, barcodes: [] }
-		const row = resolveRow({ item_code: "ITM-00001", uom: "Box", price: "9.5" }, bare, cache, {})
+		const row = resolveRow(
+			{ item_code: "ITM-00001", uom: "Box", price: "9.5" },
+			bare,
+			cache,
+			{},
+		)
 		expect(row.barcode).toBe("ITM-00001")
 		expect(row.price).toBe(9.5)
 		expect(row.price_label).toBe("AED 9.50")
@@ -344,7 +431,12 @@ describe("label rows offline", () => {
 	it("uses an item's own VAT rate and prices that already include VAT", () => {
 		expect(priceInclVat(10, 5, 0)).toBe(10.5)
 		expect(priceInclVat(10, 5, 1)).toBe(10)
-		const zero = resolveRow({ item_code: "ZERO" }, { ...item, item_code: "ZERO" }, cache, {})
+		const zero = resolveRow(
+			{ item_code: "ZERO" },
+			{ ...item, item_code: "ZERO" },
+			cache,
+			{},
+		)
 		expect(zero.price).toBe(39.01)
 	})
 
@@ -373,18 +465,40 @@ describe("label rows offline", () => {
 			{ ...cache, prices_include_vat: 1 },
 			scan,
 		)
-		expect(price).toMatchObject({ barcode: "2212345025008", price: 25, weight_label: "" })
-		expect(withBarcodeTypes({ barcode_type: "Code128" }, [price])[0].barcode_type).toBe("EAN13")
+		expect(price).toMatchObject({
+			barcode: "2212345025008",
+			price: 25,
+			weight_label: "",
+		})
+		expect(
+			withBarcodeTypes({ barcode_type: "Code128" }, [price])[0].barcode_type,
+		).toBe("EAN13")
 	})
 
 	it("explains rows that cannot be printed", () => {
-		const plu = { item_code: "X", item_name: "X", stock_uom: "Nos", price_list_rate: 1 }
+		const plu = {
+			item_code: "X",
+			item_name: "X",
+			stock_uom: "Nos",
+			price_list_rate: 1,
+		}
 		expect(() =>
-			resolveRow({ item_code: "X", scale_rule: RULE_A.name, scale_value: 1 }, plu, cache, scan),
+			resolveRow(
+				{ item_code: "X", scale_rule: RULE_A.name, scale_value: 1 },
+				plu,
+				cache,
+				scan,
+			),
 		).toThrow("plu")
-		expect(() => resolveRow({ item_code: "X", uom: "Box" }, plu, cache, scan)).toThrow("uom")
-		expect(() => resolveRow({ item_code: "X", qty: 0 }, plu, cache, scan)).toThrow("qty")
-		expect(itemPlu(normalizeRule(RULE_A), { item_code: "PLU-12345" }, scan.plu_map)).toBe("12345")
+		expect(() =>
+			resolveRow({ item_code: "X", uom: "Box" }, plu, cache, scan),
+		).toThrow("uom")
+		expect(() =>
+			resolveRow({ item_code: "X", qty: 0 }, plu, cache, scan),
+		).toThrow("qty")
+		expect(
+			itemPlu(normalizeRule(RULE_A), { item_code: "PLU-12345" }, scan.plu_map),
+		).toBe("12345")
 	})
 
 	it("picks barcodes per UOM", () => {

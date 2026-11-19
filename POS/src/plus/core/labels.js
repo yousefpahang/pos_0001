@@ -23,13 +23,24 @@ import {
 	roundTo,
 } from "./scaleBarcode.js"
 import { tsplBarcode, tsplBitmap, tsplEscape } from "./tspl.js"
-import { mmToDots, stripControls, zplBarcode, zplBitmap, zplEscape } from "./zpl.js"
+import {
+	mmToDots,
+	stripControls,
+	zplBarcode,
+	zplBitmap,
+	zplEscape,
+} from "./zpl.js"
 
 export { LabelTemplateError, mmToDots }
 
 export const LANGUAGES = Object.freeze(["ZPL", "EPL", "TSPL", "PDF"])
 export const RAW_LANGUAGES = Object.freeze(["ZPL", "EPL", "TSPL"])
-export const NEWLINE = Object.freeze({ ZPL: "\n", EPL: "\n", TSPL: "\r\n", PDF: "\n" })
+export const NEWLINE = Object.freeze({
+	ZPL: "\n",
+	EPL: "\n",
+	TSPL: "\r\n",
+	PDF: "\n",
+})
 export const MAX_ROWS = 500
 export const MAX_QTY = 999
 export const MAX_LABELS = 2000
@@ -105,20 +116,27 @@ export function escapeFor(language, value) {
 /** First n characters (code points). */
 export function fitText(value, length) {
 	const n = Math.max(Math.trunc(Number(length) || 0), 0)
-	return Array.from(String(value ?? "")).slice(0, n).join("")
+	return Array.from(String(value ?? ""))
+		.slice(0, n)
+		.join("")
 }
 
 /** Round half up like Python's floor(x + 0.5). */
 function num(value, fallback = 0) {
 	const n = Number(value)
-	return value === undefined || value === null || value === "" || Number.isNaN(n)
+	return value === undefined ||
+		value === null ||
+		value === "" ||
+		Number.isNaN(n)
 		? fallback
 		: Math.floor(n + 0.5)
 }
 
 /** EAN-13 only when wanted and valid; anything else prints as Code128. */
 export function effectiveBarcodeType(preferred, value) {
-	return preferred === "EAN13" && isValidEan13(String(value ?? "")) ? "EAN13" : "Code128"
+	return preferred === "EAN13" && isValidEan13(String(value ?? ""))
+		? "EAN13"
+		: "Code128"
 }
 
 /** Printable ASCII for Code128, falling back to the item code. */
@@ -153,7 +171,10 @@ export function packBits(width, height, isBlack) {
 
 /** Deterministic stand-in used by tests in both languages. @type {BitmapRenderer} */
 export function fakeBitmap(text, height, maxWidth) {
-	const width = Math.max(1, Math.min(Math.trunc(maxWidth), 4 * Array.from(text).length))
+	const width = Math.max(
+		1,
+		Math.min(Math.trunc(maxWidth), 4 * Array.from(text).length),
+	)
 	const h = Math.max(1, Math.min(Math.trunc(height), 6))
 	return packBits(width, h, (x, y) => (x + y) % 3 === 0)
 }
@@ -249,11 +270,14 @@ export function itemPlu(rule, item, pluMap = {}) {
 		const plu =
 			item.scale_plu ||
 			Object.keys(pluMap || {}).find((p) => pluMap[p] === item.item_code)
-		return plu && isDigits(plu) && plu.length <= rule.item_code_length ? plu : null
+		return plu && isDigits(plu) && plu.length <= rule.item_code_length
+			? plu
+			: null
 	}
 	return (
-		itemBarcodes(item).find((b) => isDigits(b) && b.length <= rule.item_code_length) ||
-		null
+		itemBarcodes(item).find(
+			(b) => isDigits(b) && b.length <= rule.item_code_length,
+		) || null
 	)
 }
 
@@ -279,7 +303,8 @@ export class LabelRowError extends Error {
  */
 export function resolveRow(row, item, cache, scan = {}) {
 	const qty = Math.trunc(Number(row.qty ?? 1))
-	if (!(qty >= 1 && qty <= MAX_QTY)) throw new LabelRowError("qty", { max: MAX_QTY })
+	if (!(qty >= 1 && qty <= MAX_QTY))
+		throw new LabelRowError("qty", { max: MAX_QTY })
 	const vatRate = cache.item_vat?.[item.item_code] ?? cache.vat_rate ?? 0
 	const include = cache.prices_include_vat ?? 0
 	const stockUom = item.stock_uom || item.uom
@@ -298,7 +323,8 @@ export function resolveRow(row, item, cache, scan = {}) {
 		const rule = normalizeRule(raw)
 		if (!rule) throw new LabelRowError("rule", { rule: row.scale_rule })
 		const value = Number(row.scale_value)
-		if (!(value > 0)) throw new LabelRowError("scale_value", { item_code: item.item_code })
+		if (!(value > 0))
+			throw new LabelRowError("scale_value", { item_code: item.item_code })
 		const plu = itemPlu(rule, item, scan.plu_map)
 		if (!plu)
 			throw new LabelRowError("plu", {
@@ -308,7 +334,8 @@ export function resolveRow(row, item, cache, scan = {}) {
 			})
 		const uom = rule.uom || stockUom
 		const info = itemUomRate(item, uom)
-		if (!info) throw new LabelRowError("uom", { item_code: item.item_code, uom })
+		if (!info)
+			throw new LabelRowError("uom", { item_code: item.item_code, uom })
 		const code = generateScaleBarcode(rule, plu, value)
 		let amount
 		if (rule.value_type === "Weight") {
@@ -329,9 +356,13 @@ export function resolveRow(row, item, cache, scan = {}) {
 	} else {
 		const uom = row.uom || stockUom
 		const info = itemUomRate(item, uom)
-		if (!info) throw new LabelRowError("uom", { item_code: item.item_code, uom })
+		if (!info)
+			throw new LabelRowError("uom", { item_code: item.item_code, uom })
 		price = priceInclVat(info.unitRate, vatRate, include)
-		Object.assign(out, { uom, barcode: barcodeFor(item, uom, scan.uom_barcodes) })
+		Object.assign(out, {
+			uom,
+			barcode: barcodeFor(item, uom, scan.uom_barcodes),
+		})
 	}
 	if (row.price !== undefined && row.price !== null && row.price !== "") {
 		price = roundTo(Number(row.price), 2)
@@ -372,7 +403,9 @@ export function withBarcodeTypes(template, rows) {
 export function labelContext(template, row, base) {
 	const dpi = Number(template.dpi) || 203
 	const gap =
-		template.gap_mm === undefined || template.gap_mm === null || template.gap_mm === ""
+		template.gap_mm === undefined ||
+		template.gap_mm === null ||
+		template.gap_mm === ""
 			? 2
 			: Number(template.gap_mm)
 	return {
@@ -482,14 +515,20 @@ export function renderLabel(template, row, base, bitmap) {
 			if (!value.trim()) return ""
 			if (language === "PDF")
 				return `<span class="ar" dir="rtl" lang="ar">${htmlEscape(value)}</span>`
-			if (!bitmap) throw new LabelTemplateError("No Arabic text renderer available.")
+			if (!bitmap)
+				throw new LabelTemplateError("No Arabic text renderer available.")
 			const height = Math.max(num(args[2], 24), 8)
 			const maxWidth = Math.max(num(args[3], ctx.width_dots), 8)
 			return placeholder(
-				RAW_BITMAP[language](num(args[0], 0), num(args[1], 0), bitmap(value, height, maxWidth)),
+				RAW_BITMAP[language](
+					num(args[0], 0),
+					num(args[1], 0),
+					bitmap(value, height, maxWidth),
+				),
 			)
 		},
-		fit: (value = "", length = 0) => escapeFor(language, fitText(value, length)),
+		fit: (value = "", length = 0) =>
+			escapeFor(language, fitText(value, length)),
 	}
 	let text = renderNodes(nodesFor(template.body), ctx, {
 		escape: (value) =>
@@ -509,9 +548,9 @@ export function renderLabel(template, row, base, bitmap) {
 export function assemble(text, parts) {
 	const enc = new TextEncoder()
 	/** @type {Uint8Array[]} */
-	const chunks = text.split("\u0000").map((piece, k) =>
-		k % 2 === 0 ? enc.encode(piece) : parts[Number(piece)],
-	)
+	const chunks = text
+		.split("\u0000")
+		.map((piece, k) => (k % 2 === 0 ? enc.encode(piece) : parts[Number(piece)]))
 	return concat(chunks)
 }
 
@@ -538,7 +577,9 @@ export function checkRows(rows) {
 	for (const row of rows) {
 		const qty = Math.trunc(Number(row.qty ?? 1) || 1)
 		if (qty < 1 || qty > MAX_QTY)
-			throw new LabelTemplateError(`Label quantity must be between 1 and ${MAX_QTY}.`)
+			throw new LabelTemplateError(
+				`Label quantity must be between 1 and ${MAX_QTY}.`,
+			)
 		total += qty
 	}
 	if (total > MAX_LABELS)
@@ -584,8 +625,13 @@ export function gridLayout(template) {
 		throw new LabelTemplateError("A4 Columns and A4 Rows must be at least 1.")
 	if (width <= 0 || height <= 0)
 		throw new LabelTemplateError("Label width and height must be more than 0.")
-	if (cols * width > A4_WIDTH_MM + 0.001 || rows * height > A4_HEIGHT_MM + 0.001)
-		throw new LabelTemplateError("The grid does not fit on an A4 sheet (210 x 297 mm).")
+	if (
+		cols * width > A4_WIDTH_MM + 0.001 ||
+		rows * height > A4_HEIGHT_MM + 0.001
+	)
+		throw new LabelTemplateError(
+			"The grid does not fit on an A4 sheet (210 x 297 mm).",
+		)
 	return {
 		cols,
 		rows,
@@ -626,25 +672,8 @@ export function renderPdfHtml(template, rows, base) {
 		})
 		pages.push(`<div class="page">${chunk}</div>`)
 	}
-	const css =
-		"@page{size:A4;margin:0}" +
-		"html,body{margin:0;padding:0}" +
-		`body{font-family:${FONT_STACK};color:#000}` +
-		`.page{position:relative;width:${A4_WIDTH_MM}mm;height:296mm;overflow:hidden;page-break-after:always}` +
-		".page:last-child{page-break-after:auto}" +
-		`.cell{position:absolute;box-sizing:border-box;width:${fmtNumber(g.width)}mm;` +
-		`height:${fmtNumber(g.height)}mm;padding:${fmtNumber(g.padding)}mm;overflow:hidden;font-size:9pt;line-height:1.2}` +
-		".name{font-weight:bold;white-space:nowrap;overflow:hidden}" +
-		".ar{display:block;direction:rtl;text-align:right;white-space:nowrap;overflow:hidden}" +
-		".price{font-size:13pt;font-weight:bold}" +
-		".small{font-size:7pt}" +
-		".bc{display:block;width:100%}" +
-		".bc-text{font-size:7pt;text-align:center;letter-spacing:1px}"
-	return (
-		'<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8">' +
-		`<title>${htmlEscape(template.name)}</title><style>${css}</style></head>` +
-		`<body>${pages.join("")}</body></html>`
-	)
+	const css = `@page{size:A4;margin:0}html,body{margin:0;padding:0}body{font-family:${FONT_STACK};color:#000}.page{position:relative;width:${A4_WIDTH_MM}mm;height:296mm;overflow:hidden;page-break-after:always}.page:last-child{page-break-after:auto}.cell{position:absolute;box-sizing:border-box;width:${fmtNumber(g.width)}mm;height:${fmtNumber(g.height)}mm;padding:${fmtNumber(g.padding)}mm;overflow:hidden;font-size:9pt;line-height:1.2}.name{font-weight:bold;white-space:nowrap;overflow:hidden}.ar{display:block;direction:rtl;text-align:right;white-space:nowrap;overflow:hidden}.price{font-size:13pt;font-weight:bold}.small{font-size:7pt}.bc{display:block;width:100%}.bc-text{font-size:7pt;text-align:center;letter-spacing:1px}`
+	return `<!DOCTYPE html><html dir="ltr"><head><meta charset="utf-8"><title>${htmlEscape(template.name)}</title><style>${css}</style></head><body>${pages.join("")}</body></html>`
 }
 
 /** Bytes to base64 (for QZ raw jobs and snapshots). @param {Uint8Array} bytes */
