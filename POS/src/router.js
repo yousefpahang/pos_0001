@@ -9,6 +9,12 @@ const routes = [
 		name: "POSSale",
 		component: () => import("@/pages/POSSale.vue"),
 	},
+	// pos_0001: barcode label printing page (desk page pos-labels shows it)
+	{
+		path: "/labels",
+		name: "Labels",
+		component: () => import("@/plus/pages/LabelsPage.vue"),
+	},
 	{
 		name: "Login",
 		path: "/account/login",

@@ -128,6 +128,7 @@
 					<!-- pos_0001: sync badge + sync log panel -->
 					<SyncBadge />
 					<PrinterBadge />
+					<LabelButton />
 
 					<!-- Cache Status Indicator -->
 					<div class="relative">
@@ -397,6 +398,7 @@ import UserMenu from "@/components/common/UserMenu.vue";
 import LanguageSwitcher from "@/components/common/LanguageSwitcher.vue";
 import SyncBadge from "@/plus/components/SyncBadge.vue";
 import PrinterBadge from "@/plus/components/PrinterBadge.vue";
+import LabelButton from "@/plus/components/LabelButton.vue";
 import { DEFAULT_LOCALE } from "@/utils/currency";
 import { ref } from "vue";
 import { version } from "../../../package.json";
