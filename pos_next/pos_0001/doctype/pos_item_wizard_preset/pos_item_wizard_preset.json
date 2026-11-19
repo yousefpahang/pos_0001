@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "autoname": "field:preset_name",
+ "creation": "2026-11-19 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "preset_name",
+  "preset_name_ar",
+  "description",
+  "is_standard",
+  "column_break_main",
+  "item_group",
+  "stock_uom",
+  "sold_on_scale",
+  "item_tax_template",
+  "prices_include_vat",
+  "buying_section",
+  "buying_units",
+  "selling_section",
+  "selling_units"
+ ],
+ "fields": [
+  {
+   "fieldname": "preset_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Preset Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "preset_name_ar",
+   "fieldtype": "Data",
+   "label": "Preset Name (Arabic)"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "is_standard",
+   "fieldtype": "Check",
+   "label": "Shipped with POS 0001",
+   "read_only": 1,
+   "description": "Shipped presets are created on install and never overwritten."
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "item_group",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item Group",
+   "options": "Item Group"
+  },
+  {
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Stock Unit",
+   "options": "UOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sold_on_scale",
+   "fieldtype": "Check",
+   "label": "Sold on the Scale"
+  },
+  {
+   "fieldname": "item_tax_template",
+   "fieldtype": "Link",
+   "label": "Item Tax Template",
+   "options": "Item Tax Template"
+  },
+  {
+   "fieldname": "prices_include_vat",
+   "fieldtype": "Check",
+   "label": "Prices Include VAT",
+   "default": "1"
+  },
+  {
+   "fieldname": "buying_section",
+   "fieldtype": "Section Break",
+   "label": "How You Buy It"
+  },
+  {
+   "fieldname": "buying_units",
+   "fieldtype": "Table",
+   "label": "Buying Units",
+   "options": "POS Item Wizard Preset Buying Unit",
+   "description": "Largest unit first, for example Carton = 12 Pack, then Pack = 500 Gram."
+  },
+  {
+   "fieldname": "selling_section",
+   "fieldtype": "Section Break",
+   "label": "How You Sell It"
+  },
+  {
+   "fieldname": "selling_units",
+   "fieldtype": "Table",
+   "label": "Selling Units",
+   "options": "POS Item Wizard Preset Selling Unit"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Item Wizard Preset",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nexus POS Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "POS Item Wizard",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

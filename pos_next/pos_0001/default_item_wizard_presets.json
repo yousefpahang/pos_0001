@@ -1,0 +1,59 @@
+[
+ {
+  "preset_name": "Bulk by weight (sack/bag → kg)",
+  "preset_name_ar": "سائب بالوزن (كيس ← كغ)",
+  "description": "Bought in 25 kg bags, sold by the kg on the scale, in 500 g packs and as a whole bag.",
+  "stock_uom": "Kg",
+  "sold_on_scale": 1,
+  "prices_include_vat": 1,
+  "buying_units": [{"uom": "Bag", "size": 25, "parent_uom": "Kg"}],
+  "selling_units": [
+   {"uom": "Kg", "size": 1, "size_uom": "Kg", "priced": 1},
+   {"uom": "Pack", "size": 500, "size_uom": "Gram", "priced": 1},
+   {"uom": "Bag", "size": 1, "size_uom": "Bag", "priced": 1}
+  ]
+ },
+ {
+  "preset_name": "Liquid (drum/can → litre)",
+  "preset_name_ar": "سائل (برميل/علبة ← لتر)",
+  "description": "Bought in 200 litre drums, sold by the litre and in 5 litre cans.",
+  "stock_uom": "Litre",
+  "sold_on_scale": 0,
+  "prices_include_vat": 1,
+  "buying_units": [{"uom": "Drum", "size": 200, "parent_uom": "Litre"}],
+  "selling_units": [
+   {"uom": "Litre", "size": 1, "size_uom": "Litre", "priced": 1},
+   {"uom": "Can", "size": 5, "size_uom": "Litre", "priced": 1}
+  ]
+ },
+ {
+  "preset_name": "Pieces in a carton",
+  "preset_name_ar": "قطع في كرتونة",
+  "description": "Bought in cartons of 24 pieces, sold by the piece and by the carton.",
+  "stock_uom": "Nos",
+  "sold_on_scale": 0,
+  "prices_include_vat": 1,
+  "buying_units": [{"uom": "Carton", "size": 24, "parent_uom": "Nos"}],
+  "selling_units": [
+   {"uom": "Nos", "size": 1, "size_uom": "Nos", "priced": 1},
+   {"uom": "Carton", "size": 1, "size_uom": "Carton", "priced": 1}
+  ]
+ },
+ {
+  "preset_name": "Pre-packed portions from bulk",
+  "preset_name_ar": "عبوات جاهزة من السائب",
+  "description": "Bought in cartons of 12 packs of 500 g, sold by the pack, the carton or loose by the kg.",
+  "stock_uom": "Kg",
+  "sold_on_scale": 0,
+  "prices_include_vat": 1,
+  "buying_units": [
+   {"uom": "Carton", "size": 12, "parent_uom": "Pack"},
+   {"uom": "Pack", "size": 500, "parent_uom": "Gram"}
+  ],
+  "selling_units": [
+   {"uom": "Pack", "size": 1, "size_uom": "Pack", "priced": 1},
+   {"uom": "Carton", "size": 1, "size_uom": "Carton", "priced": 1},
+   {"uom": "Kg", "size": 1, "size_uom": "Kg", "priced": 1}
+  ]
+ }
+]

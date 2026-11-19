@@ -69,3 +69,36 @@ def ensure_workspace_blocks() -> None:
 			frappe.get_doc({"doctype": "Custom HTML Block", "name": name, "private": 0, **parts}).insert(
 				ignore_permissions=True, set_name=name
 			)
+
+
+PRESETS_FILE = os.path.join(os.path.dirname(__file__), "default_item_wizard_presets.json")
+ITEM_WIZARD_ROLE = "POS Item Wizard"
+
+
+def default_item_wizard_presets() -> list[dict]:
+	with open(PRESETS_FILE, encoding="utf-8") as handle:
+		return json.load(handle)
+
+
+def ensure_item_wizard_setup() -> None:
+	"""Role "POS Item Wizard" and the four shipped presets (SPEC F13). Never overwrites edits."""
+	if not frappe.db.exists("Role", ITEM_WIZARD_ROLE):
+		frappe.get_doc({"doctype": "Role", "role_name": ITEM_WIZARD_ROLE, "desk_access": 1}).insert(
+			ignore_permissions=True
+		)
+	if not frappe.db.table_exists("POS Item Wizard Preset"):
+		return
+	from pos_next.pos_0001.item_wizard import ensure_uoms
+
+	for row in default_item_wizard_presets():
+		if frappe.db.exists("POS Item Wizard Preset", row["preset_name"]):
+			continue
+		units = [row["stock_uom"]]
+		for unit in row.get("buying_units", []):
+			units += [unit["uom"], unit.get("parent_uom")]
+		for unit in row.get("selling_units", []):
+			units += [unit["uom"], unit.get("size_uom")]
+		ensure_uoms([u for u in dict.fromkeys(units) if u])
+		doc = frappe.get_doc({"doctype": "POS Item Wizard Preset", "is_standard": 1, **row})
+		doc.flags.ignore_permissions = True
+		doc.insert()

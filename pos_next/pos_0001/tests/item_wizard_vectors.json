@@ -1,0 +1,629 @@
+[
+ {
+  "name": "rice: SPEC F13 worked example",
+  "vat_rate": 5,
+  "profile_inclusive": 0,
+  "payload": {
+   "stock_uom": "Kg",
+   "buying_units": [
+    {
+     "uom": "Bag",
+     "size": 25
+    }
+   ],
+   "buying_price": 75,
+   "selling_units": [
+    {
+     "uom": "Kg",
+     "size": 1
+    },
+    {
+     "uom": "Pack",
+     "size": 500,
+     "size_uom": "Gram",
+     "price": 2.5
+    },
+    {
+     "uom": "Bag",
+     "size": 1,
+     "size_uom": "Bag",
+     "price": 99
+    }
+   ],
+   "base_price": 4.5,
+   "prices_include_vat": 1,
+   "opening_stock": {
+    "qty": 4,
+    "uom": "Bag",
+    "warehouse": "Stores"
+   }
+  },
+  "expected": {
+   "factors": {
+    "Kg": 1.0,
+    "Gram": 0.001,
+    "Bag": 25.0,
+    "Pack": 0.5
+   },
+   "purchase_uom": "Bag",
+   "cost_per_stock_uom": 3.0,
+   "base_price": 4.5,
+   "units": [
+    {
+     "uom": "Kg",
+     "factor": 1.0,
+     "priced": 1,
+     "calculated": 4.5,
+     "price": 4.5,
+     "overridden": 0,
+     "cost": 3.0,
+     "margin_pct": 50.0,
+     "list_rate": 4.29,
+     "shelf_price": 4.5
+    },
+    {
+     "uom": "Pack",
+     "factor": 0.5,
+     "priced": 1,
+     "calculated": 2.25,
+     "price": 2.5,
+     "overridden": 1,
+     "cost": 1.5,
+     "margin_pct": 66.7,
+     "list_rate": 2.38,
+     "shelf_price": 2.5
+    },
+    {
+     "uom": "Bag",
+     "factor": 25.0,
+     "priced": 1,
+     "calculated": 112.5,
+     "price": 99.0,
+     "overridden": 1,
+     "cost": 75.0,
+     "margin_pct": 32.0,
+     "list_rate": 94.29,
+     "shelf_price": 99.0
+    }
+   ],
+   "opening_stock_qty": 100.0,
+   "warnings": [],
+   "errors": [],
+   "payload_errors": [
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_name"
+    },
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_group"
+    }
+   ]
+  }
+ },
+ {
+  "name": "rice by margin, profile prices include VAT",
+  "vat_rate": 5,
+  "profile_inclusive": 1,
+  "payload": {
+   "stock_uom": "Kg",
+   "buying_units": [
+    {
+     "uom": "Bag",
+     "size": 25,
+     "parent_uom": "Kg"
+    }
+   ],
+   "buying_price": 75,
+   "selling_units": [
+    {
+     "uom": "Kg"
+    },
+    {
+     "uom": "Bag",
+     "size": 25,
+     "margin": 30
+    }
+   ],
+   "price_mode": "margin",
+   "margin_pct": 50,
+   "prices_include_vat": 1
+  },
+  "expected": {
+   "factors": {
+    "Kg": 1.0,
+    "Gram": 0.001,
+    "Bag": 25.0
+   },
+   "purchase_uom": "Bag",
+   "cost_per_stock_uom": 3.0,
+   "base_price": 4.5,
+   "units": [
+    {
+     "uom": "Kg",
+     "factor": 1.0,
+     "priced": 1,
+     "calculated": 4.5,
+     "price": 4.5,
+     "overridden": 0,
+     "cost": 3.0,
+     "margin_pct": 50.0,
+     "list_rate": 4.5,
+     "shelf_price": 4.5
+    },
+    {
+     "uom": "Bag",
+     "factor": 25.0,
+     "priced": 1,
+     "calculated": 97.5,
+     "price": 97.5,
+     "overridden": 0,
+     "cost": 75.0,
+     "margin_pct": 30.0,
+     "list_rate": 97.5,
+     "shelf_price": 97.5
+    }
+   ],
+   "opening_stock_qty": null,
+   "warnings": [],
+   "errors": [],
+   "payload_errors": [
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_name"
+    },
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_group"
+    }
+   ]
+  }
+ },
+ {
+  "name": "pre-packed: two buying levels listed bottom first, prices excl. VAT",
+  "vat_rate": 5,
+  "profile_inclusive": 0,
+  "payload": {
+   "stock_uom": "Kg",
+   "buying_units": [
+    {
+     "uom": "Pack",
+     "size": 500,
+     "parent_uom": "Gram"
+    },
+    {
+     "uom": "Carton",
+     "size": 12,
+     "parent_uom": "Pack"
+    }
+   ],
+   "buying_price": 30,
+   "selling_units": [
+    {
+     "uom": "Pack",
+     "size": 1,
+     "size_uom": "Pack"
+    },
+    {
+     "uom": "Carton",
+     "size": 1,
+     "size_uom": "Carton",
+     "price": 32
+    }
+   ],
+   "base_price": 5.99,
+   "prices_include_vat": 0,
+   "opening_stock": {
+    "qty": 2,
+    "uom": "Carton",
+    "warehouse": "Stores",
+    "cost": 30
+   }
+  },
+  "expected": {
+   "factors": {
+    "Kg": 1.0,
+    "Gram": 0.001,
+    "Pack": 0.5,
+    "Carton": 6.0
+   },
+   "purchase_uom": "Carton",
+   "cost_per_stock_uom": 5.0,
+   "base_price": 5.99,
+   "units": [
+    {
+     "uom": "Pack",
+     "factor": 0.5,
+     "priced": 1,
+     "calculated": 3.0,
+     "price": 3.0,
+     "overridden": 0,
+     "cost": 2.5,
+     "margin_pct": 20.0,
+     "list_rate": 3.0,
+     "shelf_price": 3.15
+    },
+    {
+     "uom": "Carton",
+     "factor": 6.0,
+     "priced": 1,
+     "calculated": 35.94,
+     "price": 32.0,
+     "overridden": 1,
+     "cost": 30.0,
+     "margin_pct": 6.7,
+     "list_rate": 32.0,
+     "shelf_price": 33.6
+    }
+   ],
+   "opening_stock_qty": 12.0,
+   "warnings": [],
+   "errors": [],
+   "payload_errors": [
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_name"
+    },
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_group"
+    }
+   ]
+  }
+ },
+ {
+  "name": "liquid with below-cost can and VAT rounding",
+  "vat_rate": 5,
+  "profile_inclusive": 0,
+  "payload": {
+   "stock_uom": "Litre",
+   "buying_units": [
+    {
+     "uom": "Drum",
+     "size": 200
+    }
+   ],
+   "buying_price": 1000,
+   "selling_units": [
+    {
+     "uom": "Litre",
+     "size": 1
+    },
+    {
+     "uom": "Can",
+     "size": 5,
+     "price": 25.1
+    },
+    {
+     "uom": "Millilitre",
+     "size": 1,
+     "size_uom": "Millilitre"
+    }
+   ],
+   "base_price": 0.1,
+   "prices_include_vat": 1
+  },
+  "expected": {
+   "factors": {
+    "Litre": 1.0,
+    "Millilitre": 0.001,
+    "Drum": 200.0,
+    "Can": 5.0
+   },
+   "purchase_uom": "Drum",
+   "cost_per_stock_uom": 5.0,
+   "base_price": 0.1,
+   "units": [
+    {
+     "uom": "Litre",
+     "factor": 1.0,
+     "priced": 1,
+     "calculated": 0.1,
+     "price": 0.1,
+     "overridden": 0,
+     "cost": 5.0,
+     "margin_pct": -98.0,
+     "list_rate": 0.1,
+     "shelf_price": 0.11
+    },
+    {
+     "uom": "Can",
+     "factor": 5.0,
+     "priced": 1,
+     "calculated": 0.5,
+     "price": 25.1,
+     "overridden": 1,
+     "cost": 25.0,
+     "margin_pct": 0.4,
+     "list_rate": 23.9,
+     "shelf_price": 25.1
+    }
+   ],
+   "opening_stock_qty": null,
+   "warnings": [
+    {
+     "step": "prices",
+     "code": "below_cost",
+     "uom": "Litre"
+    },
+    {
+     "step": "prices",
+     "code": "vat_rounding",
+     "uom": "Litre",
+     "shelf_price": 0.11
+    },
+    {
+     "step": "prices",
+     "code": "below_cost",
+     "uom": "Can"
+    }
+   ],
+   "errors": [
+    {
+     "step": "selling",
+     "code": "entry_unit_not_sold",
+     "uom": "Millilitre"
+    }
+   ],
+   "payload_errors": [
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_name"
+    },
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_group"
+    },
+    {
+     "step": "selling",
+     "code": "entry_unit_not_sold",
+     "uom": "Millilitre"
+    }
+   ]
+  }
+ },
+ {
+  "name": "pieces, zero rated, no cost",
+  "vat_rate": 0,
+  "profile_inclusive": 0,
+  "payload": {
+   "stock_uom": "Nos",
+   "buying_units": [
+    {
+     "uom": "Carton",
+     "size": 24
+    }
+   ],
+   "selling_units": [
+    {
+     "uom": "Nos"
+    },
+    {
+     "uom": "Carton",
+     "size": 1,
+     "size_uom": "Carton"
+    }
+   ],
+   "base_price": 1.25,
+   "prices_include_vat": 1
+  },
+  "expected": {
+   "factors": {
+    "Nos": 1.0,
+    "Carton": 24.0
+   },
+   "purchase_uom": "Carton",
+   "cost_per_stock_uom": null,
+   "base_price": 1.25,
+   "units": [
+    {
+     "uom": "Nos",
+     "factor": 1.0,
+     "priced": 1,
+     "calculated": 1.25,
+     "price": 1.25,
+     "overridden": 0,
+     "cost": null,
+     "margin_pct": null,
+     "list_rate": 1.25,
+     "shelf_price": 1.25
+    },
+    {
+     "uom": "Carton",
+     "factor": 24.0,
+     "priced": 1,
+     "calculated": 30.0,
+     "price": 30.0,
+     "overridden": 0,
+     "cost": null,
+     "margin_pct": null,
+     "list_rate": 30.0,
+     "shelf_price": 30.0
+    }
+   ],
+   "opening_stock_qty": null,
+   "warnings": [],
+   "errors": [],
+   "payload_errors": [
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_name"
+    },
+    {
+     "step": "basics",
+     "code": "required",
+     "field": "item_group"
+    }
+   ]
+  }
+ },
+ {
+  "name": "errors: unknown unit, conflicting size, bad barcodes, missing price",
+  "vat_rate": 5,
+  "profile_inclusive": 0,
+  "payload": {
+   "item_name": "Broken",
+   "item_group": "Groceries",
+   "stock_uom": "Kg",
+   "buying_units": [
+    {
+     "uom": "Sack",
+     "size": 2,
+     "parent_uom": "Crate"
+    },
+    {
+     "uom": "Bag",
+     "size": 0
+    }
+   ],
+   "selling_units": [
+    {
+     "uom": "Kg",
+     "barcode": "2900000000018"
+    },
+    {
+     "uom": "Pack",
+     "size": 0.5,
+     "barcode": "2900000000018"
+    },
+    {
+     "uom": "Pack",
+     "size": 0.25
+    },
+    {
+     "uom": "Box",
+     "size": 2,
+     "size_uom": "Box",
+     "barcode": "1234567890123"
+    }
+   ],
+   "sold_on_scale": 1,
+   "opening_stock": {
+    "qty": 3,
+    "uom": "Crate"
+   }
+  },
+  "expected": {
+   "factors": {
+    "Kg": 1.0,
+    "Gram": 0.001,
+    "Pack": 0.5
+   },
+   "purchase_uom": "Kg",
+   "cost_per_stock_uom": null,
+   "base_price": null,
+   "units": [
+    {
+     "uom": "Kg",
+     "factor": 1.0,
+     "priced": 1,
+     "calculated": null,
+     "price": null,
+     "overridden": 0,
+     "cost": null,
+     "margin_pct": null,
+     "list_rate": null,
+     "shelf_price": null
+    },
+    {
+     "uom": "Pack",
+     "factor": 0.5,
+     "priced": 1,
+     "calculated": null,
+     "price": null,
+     "overridden": 0,
+     "cost": null,
+     "margin_pct": null,
+     "list_rate": null,
+     "shelf_price": null
+    }
+   ],
+   "opening_stock_qty": null,
+   "warnings": [],
+   "errors": [
+    {
+     "step": "buying",
+     "code": "size_not_positive",
+     "uom": "Bag"
+    },
+    {
+     "step": "buying",
+     "code": "unknown_unit",
+     "uom": "Sack",
+     "parent_uom": "Crate"
+    },
+    {
+     "step": "selling",
+     "code": "duplicate_unit",
+     "uom": "Pack"
+    },
+    {
+     "step": "selling",
+     "code": "unknown_unit",
+     "uom": "Box",
+     "parent_uom": "Box"
+    }
+   ],
+   "payload_errors": [
+    {
+     "step": "buying",
+     "code": "size_not_positive",
+     "uom": "Bag"
+    },
+    {
+     "step": "buying",
+     "code": "unknown_unit",
+     "uom": "Sack",
+     "parent_uom": "Crate"
+    },
+    {
+     "step": "selling",
+     "code": "duplicate_unit",
+     "uom": "Pack"
+    },
+    {
+     "step": "selling",
+     "code": "unknown_unit",
+     "uom": "Box",
+     "parent_uom": "Box"
+    },
+    {
+     "step": "prices",
+     "code": "required",
+     "field": "base_price"
+    },
+    {
+     "step": "barcodes",
+     "code": "barcode_repeated",
+     "uom": "Pack",
+     "barcode": "2900000000018"
+    },
+    {
+     "step": "barcodes",
+     "code": "barcode_check_digit",
+     "uom": "Box",
+     "barcode": "1234567890123"
+    },
+    {
+     "step": "stock",
+     "code": "required",
+     "field": "warehouse"
+    },
+    {
+     "step": "stock",
+     "code": "unknown_unit",
+     "uom": "Crate"
+    }
+   ]
+  }
+ }
+]

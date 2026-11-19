@@ -53,8 +53,9 @@ doctype_js = {
 	"Offline Invoice Sync": "pos_0001/client/offline_invoice_sync.js",  # pos_0001
 	"Purchase Receipt": "pos_0001/client/print_labels_button.js",  # pos_0001
 	"Stock Entry": "pos_0001/client/print_labels_button.js",  # pos_0001
+	"Item": "pos_0001/client/item_wizard_buttons.js",  # pos_0001
 }
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {"Item": "pos_0001/client/item_list_wizard.js"}  # pos_0001
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -107,11 +108,13 @@ after_install = [
 	"pos_next.pos_0001.install.ensure_default_label_templates",  # pos_0001
 	"pos_next.pos_0001.install.hide_upstream_workspace",  # pos_0001
 	"pos_next.pos_0001.install.ensure_workspace_blocks",  # pos_0001
+	"pos_next.pos_0001.install.ensure_item_wizard_setup",  # pos_0001
 ]
 after_migrate = [
 	"pos_next.install.after_migrate",
 	"pos_next.pos_0001.install.ensure_default_label_templates",  # pos_0001
 	"pos_next.pos_0001.install.ensure_workspace_blocks",  # pos_0001
+	"pos_next.pos_0001.install.ensure_item_wizard_setup",  # pos_0001
 ]
 
 # Uninstallation

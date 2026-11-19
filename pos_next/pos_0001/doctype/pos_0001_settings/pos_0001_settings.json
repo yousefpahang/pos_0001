@@ -13,6 +13,10 @@
   "default_cash_rounding",
   "column_break_payments",
   "currency_symbol",
+  "item_wizard_section",
+  "internal_barcode_prefix",
+  "column_break_item_wizard",
+  "next_scale_plu",
   "about_section",
   "about_source_url"
  ],
@@ -79,6 +83,30 @@
    "options": "By language\nAED\nد.إ"
   },
   {
+   "fieldname": "item_wizard_section",
+   "fieldtype": "Section Break",
+   "label": "Item Wizard"
+  },
+  {
+   "default": "29",
+   "description": "First 2 or 3 digits of barcodes the Item Wizard generates (internal EAN-13). Use a prefix that no scale barcode rule uses.",
+   "fieldname": "internal_barcode_prefix",
+   "fieldtype": "Data",
+   "label": "Internal Barcode Prefix",
+   "length": 3
+  },
+  {
+   "fieldname": "column_break_item_wizard",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Next scale PLU the Item Wizard gives to items sold on the scale. Empty or used: the wizard takes the next free one.",
+   "fieldname": "next_scale_plu",
+   "fieldtype": "Int",
+   "label": "Next Scale PLU",
+   "non_negative": 1
+  },
+  {
    "fieldname": "about_section",
    "fieldtype": "Section Break",
    "label": "About"
@@ -95,7 +123,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-21 09:00:00.000000",
+ "modified": "2026-11-22 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "POS 0001",
  "name": "POS 0001 Settings",

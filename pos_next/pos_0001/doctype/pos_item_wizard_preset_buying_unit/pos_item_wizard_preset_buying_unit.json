@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "creation": "2026-11-19 12:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "uom",
+  "size",
+  "parent_uom"
+ ],
+ "fields": [
+  {
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Unit",
+   "options": "UOM",
+   "reqd": 1
+  },
+  {
+   "fieldname": "size",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Size",
+   "reqd": 1,
+   "description": "How many of the contained unit are in one of this unit."
+  },
+  {
+   "fieldname": "parent_uom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contains",
+   "options": "UOM",
+   "description": "Contained unit. Empty means the stock unit."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Item Wizard Preset Buying Unit",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
