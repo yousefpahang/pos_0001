@@ -1607,4 +1607,27 @@ Test results (third run, on the running `bench start` stack at http://localhost:
 Manual checks and decisions to review: unchanged from the first and second runs above. The tag stays
 `v1.0.0-rc.1` (decision 1). Once the fresh-v15 and v16 install checks pass, tag `v1.0.0` on the same commit line.
 
-PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB needs approval that an unattended run cannot get); all automated tests pass (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
+### Fourth run (2026-11-19, unattended)
+
+- **Fixed: flaky RTL touch-target check in `held-carts.spec.js`.** The first full `yarn e2e` run failed 1 of 20:
+  "held carts dialog in RTL: touch targets and no overflow" (it passed alone). It read the refresh button with
+  `boundingBox()` while the dialog's opening scale transition ran, the same cause the second run fixed in three
+  other specs but missed here. It now checks `offsetHeight`. The other `boundingBox()` height checks are outside
+  dialogs or already poll. No UI change.
+- **Clean install on a fresh v15 site and v16 bench: still blocked.** Even a read-only check of which database
+  and runtime tools exist (`which mariadb-install-db docker ...`, `docker ps`) was denied by the permission
+  system (needs approval, no one to approve). Nothing was created.
+
+Test results (fourth run, on the running `bench start` stack at http://localhost:8001):
+
+- Vitest `yarn test:run`: **247 tests, 27 files, all pass**.
+- Python `bench --site pos.test run-tests --app pos_next --skip-test-records`: **169 tests, OK**;
+  `--module pos_next.test_promotions` **18 OK**; `--module pos_next.test_packed_items_regression` **3 OK**.
+- Demo data rebuilt after the Python tests: `seed.ensure_item_prices` (20,050 prices), `seed.restock` (0 items).
+- Playwright `yarn e2e`: first run 19 passed, 1 failed (above); `held-carts.spec.js` after the fix 2 passed;
+  full suite again: **20 passed (5.8 min)**.
+
+Manual checks and decisions to review: unchanged from the earlier runs above. The tag stays `v1.0.0-rc.1`
+(decision 1).
+
+PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB or Docker needs approval that an unattended run cannot get); all automated tests pass (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
