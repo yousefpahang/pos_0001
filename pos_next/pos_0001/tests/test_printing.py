@@ -120,7 +120,10 @@ class TestPrintingCache(PrintingTestCase):
 
 		frappe.set_user(CASHIER)
 		registered = sync.register_device(device, None, PROFILE, "test")
-		self.assertEqual([p["name"] for p in registered["printer_profiles"]], [a])
+		# Receipt printer, then the profile's label printer when one is set (Phase 5).
+		label = frappe.db.get_value("POS Profile", PROFILE, "pos0001_label_printer")
+		expected = [a] + ([label] if label and printing.printer_dict(label) else [])
+		self.assertEqual([p["name"] for p in registered["printer_profiles"]], expected)
 		cache = printing.get_printing_cache(PROFILE, device)
 		self.assertEqual(cache["printer"]["name"], a)
 		self.assertEqual(cache["printer"]["paper_width_mm"], 58)
