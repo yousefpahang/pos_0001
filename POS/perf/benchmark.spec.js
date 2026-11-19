@@ -176,11 +176,8 @@ async function routeApi(context) {
 		async (route) => {
 			const req = route.request()
 			const url = new URL(req.url())
-			const headers = {
-				...(await req.allHeaders()),
-				"x-frappe-site-name": API_SITE,
-			}
-			delete headers.host
+			const { host: _host, ...sent } = await req.allHeaders()
+			const headers = { ...sent, "x-frappe-site-name": API_SITE }
 			try {
 				const response = await route.fetch({
 					url: `${API_URL}${url.pathname}${url.search}`,
@@ -607,7 +604,9 @@ test.describe
 					active: document.activeElement?.tagName,
 				}))
 				results.notes.global_scan_diag = JSON.stringify(diag)
-				await page.screenshot({ path: path.join(OUT_DIR, "perf-global-scan.png") })
+				await page.screenshot({
+					path: path.join(OUT_DIR, "perf-global-scan.png"),
+				})
 			}
 			record(
 				"global_scan_to_cart_ms",

@@ -27,7 +27,7 @@ import os
 import random
 
 import frappe
-from frappe.utils import add_days, getdate, nowdate
+from frappe.utils import add_days, flt, getdate, nowdate
 
 COMPANY = "Demo Trading LLC"
 ABBR = "DTL"
@@ -522,6 +522,47 @@ def opening_stock() -> None:
 		sr.submit()
 		frappe.db.commit()
 		print(f"opening stock: {start + len(chunk)}/{len(todo)}")
+
+
+def restock(min_qty: float = 20) -> int:
+	"""Top demo items below ``min_qty`` back up to their opening stock (100 Nos / 50 kg).
+
+	Benchmarks and e2e runs sell the same demo items many times; run this between runs:
+	``bench --site pos.test execute pos_next.pos_0001.demo.seed.restock``.
+	Uses a Material Receipt Stock Entry, so the stock ledger keeps its history.
+	"""
+	bin_ = frappe.qb.DocType("Bin")
+	low = (
+		frappe.qb.from_(bin_)
+		.select(bin_.item_code, bin_.actual_qty, bin_.valuation_rate)
+		.where(bin_.warehouse == WAREHOUSE)
+		.where((bin_.item_code.like("ITM-%")) | (bin_.item_code.like("PLU-%")))
+		.where(bin_.actual_qty < min_qty)
+		.run(as_dict=True)
+	)
+	for start in range(0, len(low), BATCH):
+		chunk = low[start : start + BATCH]
+		se = frappe.get_doc(
+			{
+				"doctype": "Stock Entry",
+				"stock_entry_type": "Material Receipt",
+				"company": COMPANY,
+				"items": [
+					{
+						"item_code": row.item_code,
+						"t_warehouse": WAREHOUSE,
+						"qty": (50 if row.item_code.startswith("PLU-") else 100) - flt(row.actual_qty),
+						"basic_rate": flt(row.valuation_rate) or 1,
+					}
+					for row in chunk
+				],
+			}
+		)
+		se.insert(ignore_permissions=True)
+		se.submit()
+		frappe.db.commit()
+	print(f"restocked: {len(low)} items")
+	return len(low)
 
 
 def ensure_cashier() -> None:
