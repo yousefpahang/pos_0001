@@ -9,10 +9,23 @@
 // - planPrint() / shouldKickDrawer(): which mode runs and when the drawer opens.
 
 import { code128ModuleCount, code128Widths } from "./code128.js"
-import { EscPosBuilder, center, clampCopies, columnsForPaper, concatBytes, leftRight, wrap } from "./escpos.js"
+import {
+	EscPosBuilder,
+	center,
+	clampCopies,
+	columnsForPaper,
+	concatBytes,
+	leftRight,
+	wrap,
+} from "./escpos.js"
 import { encodeQr } from "./qr.js"
 
-export const PRINT_MODES = Object.freeze(["raster", "escpos_text", "qz_html", "browser"])
+export const PRINT_MODES = Object.freeze([
+	"raster",
+	"escpos_text",
+	"qz_html",
+	"browser",
+])
 export const QZ_MODES = Object.freeze(["raster", "escpos_text", "qz_html"])
 
 /**
@@ -73,6 +86,7 @@ export const QZ_MODES = Object.freeze(["raster", "escpos_text", "qz_html"])
  * @property {string} [footer]
  * @property {string|null} [logo]
  * @property {string} [cashier]
+ * @property {string} [currency]     used when the invoice has none (offline queue)
  * @property {boolean} [reprint]
  * @property {(text: string, args?: unknown[]) => string} [t]  translator (POS `__`)
  */
@@ -106,9 +120,21 @@ export function quantity(q) {
 	return String(v)
 }
 
+/**
+ * "9:05:33.123" or "09:05" -> "09:05"; anything else -> "".
+ * @param {unknown} value
+ */
+export function clockTime(value) {
+	const m = /^(\d{1,2}):(\d{2})/.exec(str(value))
+	return m ? `${m[1].padStart(2, "0")}:${m[2]}` : ""
+}
+
 /** Names POS Next gives invoices that are not on the server yet. @param {string} name */
 export function isLocalInvoiceName(name) {
-	return typeof name === "string" && (name.startsWith("pos_offline_") || name.startsWith("OFFLINE-"))
+	return (
+		typeof name === "string" &&
+		(name.startsWith("pos_offline_") || name.startsWith("OFFLINE-"))
+	)
 }
 
 /**
@@ -125,7 +151,10 @@ export function buildReceiptModel(doc, ctx = {}) {
 	const lines = items.map((item) => {
 		const qty = num(item.qty ?? item.quantity)
 		const rate = num(item.rate ?? item.price_list_rate)
-		const amount = item.amount != null ? num(item.amount) : Math.round(qty * rate * 100) / 100
+		const amount =
+			item.amount != null
+				? num(item.amount)
+				: Math.round(qty * rate * 100) / 100
 		return {
 			name: str(item.item_name || item.item_code),
 			nameAr: str(item.item_name_ar) || null,
@@ -136,7 +165,8 @@ export function buildReceiptModel(doc, ctx = {}) {
 			discount: num(item.discount_amount),
 		}
 	})
-	const linesTotal = Math.round(lines.reduce((s, l) => s + l.amount, 0) * 100) / 100
+	const linesTotal =
+		Math.round(lines.reduce((s, l) => s + l.amount, 0) * 100) / 100
 	const taxRows = Array.isArray(doc.taxes) ? doc.taxes : []
 	const taxes = taxRows
 		.map((row) => ({
@@ -160,16 +190,21 @@ export function buildReceiptModel(doc, ctx = {}) {
 			}
 		})
 		.filter((p) => p.amount !== 0)
-	const paid = doc.paid_amount != null ? num(doc.paid_amount) : payments.reduce((s, p) => s + p.amount, 0)
+	const paid =
+		doc.paid_amount != null
+			? num(doc.paid_amount)
+			: payments.reduce((s, p) => s + p.amount, 0)
 	const change = num(doc.change_amount)
 	const outstanding =
-		doc.outstanding_amount != null ? Math.max(0, num(doc.outstanding_amount)) : Math.max(0, total - paid)
+		doc.outstanding_amount != null
+			? Math.max(0, num(doc.outstanding_amount))
+			: Math.max(0, total - paid)
 	const name = str(doc.name)
 	const isReturn = Boolean(Number(doc.is_return))
 	const salesPersons = (Array.isArray(doc.sales_team) ? doc.sales_team : [])
 		.map((m) => str(m.sales_person))
 		.filter(Boolean)
-	const postingTime = str(doc.posting_time).slice(0, 5)
+	const postingTime = clockTime(doc.posting_time)
 	return {
 		title: isReturn ? t("Credit Note") : t("Tax Invoice"),
 		company: str(company.name || doc.company),
@@ -186,7 +221,10 @@ export function buildReceiptModel(doc, ctx = {}) {
 		customerTaxId: str(doc.customer_tax_id || doc.tax_id),
 		salesPersons,
 		lines,
-		net: doc.net_total != null ? num(doc.net_total) : Math.round((grandTotal - taxTotal) * 100) / 100 || linesTotal,
+		net:
+			doc.net_total != null
+				? num(doc.net_total)
+				: Math.round((grandTotal - taxTotal) * 100) / 100 || linesTotal,
 		discount: Math.abs(num(doc.discount_amount)),
 		taxes,
 		taxTotal,
@@ -197,7 +235,7 @@ export function buildReceiptModel(doc, ctx = {}) {
 		paid,
 		change,
 		outstanding,
-		currency: str(doc.currency),
+		currency: str(doc.currency || ctx.currency),
 		isReturn,
 		returnAgainst: str(doc.return_against),
 		offline: Boolean(doc.is_offline) || isLocalInvoiceName(name),
@@ -246,14 +284,17 @@ export function receiptTextLines(m, width, t = identity) {
 	if (m.offline) body.push(center(t("OFFLINE - PENDING SYNC"), width))
 	body.push(rule)
 	body.push(leftRight(t("Invoice"), m.invoiceName, width))
-	if (m.isReturn && m.returnAgainst) body.push(leftRight(t("Against"), m.returnAgainst, width))
+	if (m.isReturn && m.returnAgainst)
+		body.push(leftRight(t("Against"), m.returnAgainst, width))
 	const when = [m.date, m.time].filter(Boolean).join(" ")
 	if (when) body.push(leftRight(t("Date"), when, width))
 	if (m.posProfile) body.push(leftRight(t("Till"), m.posProfile, width))
 	if (m.cashier) body.push(leftRight(t("Cashier"), m.cashier, width))
-	if (m.salesPersons.length) body.push(leftRight(t("Sales person"), m.salesPersons.join(", "), width))
+	if (m.salesPersons.length)
+		body.push(leftRight(t("Sales person"), m.salesPersons.join(", "), width))
 	if (m.customer) body.push(leftRight(t("Customer"), m.customer, width))
-	if (m.customerTaxId) body.push(leftRight(t("Customer TRN"), m.customerTaxId, width))
+	if (m.customerTaxId)
+		body.push(leftRight(t("Customer TRN"), m.customerTaxId, width))
 	body.push(rule)
 	for (const line of m.lines) {
 		for (const row of wrap(line.name, width)) body.push(row)
@@ -262,11 +303,15 @@ export function receiptTextLines(m, width, t = identity) {
 	}
 	body.push(rule)
 	body.push(leftRight(t("Net total"), money(m.net), width))
-	if (m.discount) body.push(leftRight(t("Discount"), `-${money(m.discount)}`, width))
+	if (m.discount)
+		body.push(leftRight(t("Discount"), `-${money(m.discount)}`, width))
 	if (m.taxes.length) {
-		for (const tax of m.taxes) body.push(leftRight(tax.label, money(tax.amount), width))
-	} else if (m.taxTotal) body.push(leftRight(t("VAT"), money(m.taxTotal), width))
-	if (m.roundingAdjustment) body.push(leftRight(t("Rounding"), money(m.roundingAdjustment), width))
+		for (const tax of m.taxes)
+			body.push(leftRight(tax.label, money(tax.amount), width))
+	} else if (m.taxTotal)
+		body.push(leftRight(t("VAT"), money(m.taxTotal), width))
+	if (m.roundingAdjustment)
+		body.push(leftRight(t("Rounding"), money(m.roundingAdjustment), width))
 	return { head, body }
 }
 
@@ -294,19 +339,33 @@ export function textReceipt(m, options = {}) {
 		}
 		for (const row of body) b.line(row)
 		b.bold(true).size(1, 2)
-		b.line(leftRight(t("TOTAL"), `${m.currency ? `${m.currency} ` : ""}${money(m.total)}`, width))
+		b.line(
+			leftRight(
+				t("TOTAL"),
+				`${m.currency ? `${m.currency} ` : ""}${money(m.total)}`,
+				width,
+			),
+		)
 		b.size(1, 1).bold(false)
 		if (m.payments.length) {
-			for (const p of m.payments) b.line(leftRight(p.mode, money(p.amount), width))
+			for (const p of m.payments)
+				b.line(leftRight(p.mode, money(p.amount), width))
 		}
 		if (m.change) b.line(leftRight(t("Change"), money(m.change), width))
-		if (m.outstanding > 0.004) b.line(leftRight(t("Balance due"), money(m.outstanding), width))
+		if (m.outstanding > 0.004)
+			b.line(leftRight(t("Balance due"), money(m.outstanding), width))
 		b.line("-".repeat(width))
-		for (const row of wrap(m.footer || t("Thank you"), width)) b.line(center(row, width))
-		const kind = chooseBarcode(m.barcodeValue, options.barcode || "Code128", widthDots)
+		for (const row of wrap(m.footer || t("Thank you"), width))
+			b.line(center(row, width))
+		const kind = chooseBarcode(
+			m.barcodeValue,
+			options.barcode || "Code128",
+			widthDots,
+		)
 		if (kind) {
 			b.align("center")
-			if (kind === "code128") b.code128(m.barcodeValue, { height: 60, moduleWidth: 2, hri: true })
+			if (kind === "code128")
+				b.code128(m.barcodeValue, { height: 60, moduleWidth: 2, hri: true })
 			else b.qr(m.barcodeValue, { moduleSize: width === 32 ? 4 : 6 })
 			b.align("left")
 		}
@@ -340,9 +399,23 @@ export function layoutReceipt(m, options = {}) {
 	/** @type {DrawOp[]} */
 	const ops = []
 	const text = (value, extra = {}) => {
-		if (str(value)) ops.push({ type: "text", text: str(value), align: "center", size: "md", ...extra })
+		if (str(value))
+			ops.push({
+				type: "text",
+				text: str(value),
+				align: "center",
+				size: "md",
+				...extra,
+			})
 	}
-	const pair = (left, right, extra = {}) => ops.push({ type: "pair", left: str(left), right: str(right), size: "md", ...extra })
+	const pair = (left, right, extra = {}) =>
+		ops.push({
+			type: "pair",
+			left: str(left),
+			right: str(right),
+			size: "md",
+			...extra,
+		})
 	if (m.logo) ops.push({ type: "logo" })
 	text(m.company, { size: "lg", bold: true })
 	text(m.address, { size: "sm" })
@@ -354,36 +427,58 @@ export function layoutReceipt(m, options = {}) {
 	if (m.offline) text(t("OFFLINE - PENDING SYNC"), { size: "sm", bold: true })
 	ops.push({ type: "rule", style: "dashed" })
 	pair(t("Invoice"), m.invoiceName, { size: "sm" })
-	if (m.isReturn && m.returnAgainst) pair(t("Against"), m.returnAgainst, { size: "sm" })
+	if (m.isReturn && m.returnAgainst)
+		pair(t("Against"), m.returnAgainst, { size: "sm" })
 	const when = [m.date, m.time].filter(Boolean).join(" ")
 	if (when) pair(t("Date"), when, { size: "sm" })
 	if (m.posProfile) pair(t("Till"), m.posProfile, { size: "sm" })
 	if (m.cashier) pair(t("Cashier"), m.cashier, { size: "sm" })
-	if (m.salesPersons.length) pair(t("Sales person"), m.salesPersons.join(", "), { size: "sm" })
+	if (m.salesPersons.length)
+		pair(t("Sales person"), m.salesPersons.join(", "), { size: "sm" })
 	if (m.customer) pair(t("Customer"), m.customer, { size: "sm" })
 	if (m.customerTaxId) pair(t("Customer TRN"), m.customerTaxId, { size: "sm" })
 	ops.push({ type: "rule", style: "dashed" })
 	for (const line of m.lines) {
-		ops.push({ type: "text", text: line.name, align: "left", size: "md", bold: true })
-		if (line.nameAr) ops.push({ type: "text", text: line.nameAr, align: "right", size: "md" })
-		pair(`${quantity(line.qty)}${line.uom ? ` ${line.uom}` : ""} x ${money(line.rate)}`, money(line.amount), {
-			size: "sm",
+		ops.push({
+			type: "text",
+			text: line.name,
+			align: "left",
+			size: "md",
+			bold: true,
 		})
+		if (line.nameAr)
+			ops.push({ type: "text", text: line.nameAr, align: "right", size: "md" })
+		pair(
+			`${quantity(line.qty)}${line.uom ? ` ${line.uom}` : ""} x ${money(line.rate)}`,
+			money(line.amount),
+			{
+				size: "sm",
+			},
+		)
 	}
 	ops.push({ type: "rule", style: "dashed" })
 	pair(t("Net total"), money(m.net))
 	if (m.discount) pair(t("Discount"), `-${money(m.discount)}`)
-	if (m.taxes.length) for (const tax of m.taxes) pair(tax.label, money(tax.amount))
+	if (m.taxes.length)
+		for (const tax of m.taxes) pair(tax.label, money(tax.amount))
 	else if (m.taxTotal) pair(t("VAT"), money(m.taxTotal))
 	if (m.roundingAdjustment) pair(t("Rounding"), money(m.roundingAdjustment))
 	ops.push({ type: "rule", style: "solid" })
-	pair(t("TOTAL"), `${m.currency ? `${m.currency} ` : ""}${money(m.total)}`, { size: "lg", bold: true })
+	pair(t("TOTAL"), `${m.currency ? `${m.currency} ` : ""}${money(m.total)}`, {
+		size: "lg",
+		bold: true,
+	})
 	for (const p of m.payments) pair(p.mode, money(p.amount))
 	if (m.change) pair(t("Change"), money(m.change), { bold: true })
-	if (m.outstanding > 0.004) pair(t("Balance due"), money(m.outstanding), { bold: true })
+	if (m.outstanding > 0.004)
+		pair(t("Balance due"), money(m.outstanding), { bold: true })
 	ops.push({ type: "rule", style: "dashed" })
 	text(m.footer || t("Thank you"), { size: "sm" })
-	const kind = chooseBarcode(m.barcodeValue, options.barcode || "Code128", widthDots)
+	const kind = chooseBarcode(
+		m.barcodeValue,
+		options.barcode || "Code128",
+		widthDots,
+	)
 	if (kind === "code128") {
 		ops.push({ type: "space", height: 8 })
 		ops.push({
@@ -399,7 +494,10 @@ export function layoutReceipt(m, options = {}) {
 		ops.push({
 			type: "qr",
 			modules: qr.modules,
-			moduleSize: Math.max(3, Math.min(6, Math.floor((widthDots * 0.45) / qr.size))),
+			moduleSize: Math.max(
+				3,
+				Math.min(6, Math.floor((widthDots * 0.45) / qr.size)),
+			),
 			label: m.barcodeValue,
 		})
 	}
@@ -433,11 +531,17 @@ export function layoutReceipt(m, options = {}) {
  */
 export function planPrint(printer, { qzConnected }) {
 	if (!printer) return { mode: "pos_next", fallback: false, reason: null }
-	const mode = PRINT_MODES.includes(printer.print_mode) ? printer.print_mode : "raster"
+	const mode = PRINT_MODES.includes(printer.print_mode)
+		? printer.print_mode
+		: "raster"
 	if (QZ_MODES.includes(mode) && !qzConnected) {
 		return { mode: "browser", fallback: true, reason: "qz_not_connected" }
 	}
-	if (mode !== "browser" && printer.connection === "Network" && !str(printer.network_host)) {
+	if (
+		mode !== "browser" &&
+		printer.connection === "Network" &&
+		!str(printer.network_host)
+	) {
 		return { mode: "browser", fallback: true, reason: "no_network_host" }
 	}
 	return { mode, fallback: false, reason: null }
@@ -451,6 +555,7 @@ export function planPrint(printer, { qzConnected }) {
  * @param {{ reason: "sale"|"reprint"|"test" }} job
  */
 export function shouldKickDrawer(printer, model, { reason }) {
-	if (!printer || !Number(printer.drawer_kick) || reason !== "sale") return false
+	if (!printer || !Number(printer.drawer_kick) || reason !== "sale")
+		return false
 	return model.payments.some((p) => p.isCash && p.amount !== 0)
 }

@@ -25,7 +25,9 @@ describe("escpos text helpers", () => {
 		expect(center("ABC", 9)).toBe("   ABC")
 		expect(center("ABCDEFGHIJ", 4)).toBe("ABCD")
 		expect(leftRight("Total", "25.00", 16)).toBe("Total      25.00")
-		expect(leftRight("A very long item name", "9.99", 16)).toBe("A very long 9.99")
+		expect(leftRight("A very long item name", "9.99", 16)).toBe(
+			"A very long 9.99",
+		)
 		expect(leftRight("Only", "", 10)).toBe("Only")
 		expect(wrap("one two three four", 9)).toEqual(["one two", "three", "four"])
 		expect(wrap("ABCDEFGHIJKL", 5)).toEqual(["ABCDE", "FGHIJ", "KL"])
@@ -54,23 +56,33 @@ describe("EscPosBuilder bytes", () => {
 			.size()
 			.feed(3)
 			.bytes()
-		expect(toHex(bytes)).toBe("1b 40 1b 61 01 1b 45 01 1d 21 11 48 69 0a 1b 45 00 1d 21 00 1b 64 03")
+		expect(toHex(bytes)).toBe(
+			"1b 40 1b 61 01 1b 45 01 1d 21 11 48 69 0a 1b 45 00 1d 21 00 1b 64 03",
+		)
 	})
 
 	it("drawer kick is ESC p 0 25 250", () => {
 		expect(Array.from(DRAWER_KICK)).toEqual([0x1b, 0x70, 0x00, 25, 250])
-		expect(toHex(new EscPosBuilder().drawerKick().bytes())).toBe("1b 70 00 19 fa")
+		expect(toHex(new EscPosBuilder().drawerKick().bytes())).toBe(
+			"1b 70 00 19 fa",
+		)
 	})
 
 	it("cut feeds then sends GS V", () => {
 		expect(toHex(new EscPosBuilder().cut().bytes())).toBe("1b 64 04 1d 56 00")
-		expect(toHex(new EscPosBuilder().cut({ partial: true, feedLines: 0 }).bytes())).toBe("1d 56 01")
+		expect(
+			toHex(new EscPosBuilder().cut({ partial: true, feedLines: 0 }).bytes()),
+		).toBe("1d 56 01")
 	})
 
 	it("native Code128 uses code set B", () => {
-		expect(toHex(new EscPosBuilder().code128("A1", { height: 50, moduleWidth: 2 }).bytes())).toBe(
-			"1d 68 32 1d 77 02 1d 48 02 1d 6b 49 04 7b 42 41 31 0a",
-		)
+		expect(
+			toHex(
+				new EscPosBuilder()
+					.code128("A1", { height: 50, moduleWidth: 2 })
+					.bytes(),
+			),
+		).toBe("1d 68 32 1d 77 02 1d 48 02 1d 6b 49 04 7b 42 41 31 0a")
 	})
 
 	it("native QR stores and prints the symbol", () => {
@@ -86,10 +98,14 @@ describe("EscPosBuilder bytes", () => {
 	})
 
 	it("GS v 0 raster is split into bands", () => {
-		const image = { bytesPerRow: 2, height: 3, bits: Uint8Array.from([1, 2, 3, 4, 5, 6]) }
-		expect(toHex(new EscPosBuilder().raster(image, { bandHeight: 2 }).bytes())).toBe(
-			"1d 76 30 00 02 00 02 00 01 02 03 04 1d 76 30 00 02 00 01 00 05 06",
-		)
+		const image = {
+			bytesPerRow: 2,
+			height: 3,
+			bits: Uint8Array.from([1, 2, 3, 4, 5, 6]),
+		}
+		expect(
+			toHex(new EscPosBuilder().raster(image, { bandHeight: 2 }).bytes()),
+		).toBe("1d 76 30 00 02 00 02 00 01 02 03 04 1d 76 30 00 02 00 01 00 05 06")
 	})
 
 	it("repeats copies (1-3) and encodes base64", () => {

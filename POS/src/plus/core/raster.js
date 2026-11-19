@@ -23,8 +23,14 @@ import { EscPosBuilder, clampCopies, concatBytes } from "./escpos.js"
  * @param {{ threshold?: number, dither?: boolean }} [options]
  * @returns {MonoImage}
  */
-export function toMonochrome(rgba, width, height, { threshold = 128, dither = false } = {}) {
-	if (rgba.length < width * height * 4) throw new Error("Pixel buffer is too small")
+export function toMonochrome(
+	rgba,
+	width,
+	height,
+	{ threshold = 128, dither = false } = {},
+) {
+	if (rgba.length < width * height * 4)
+		throw new Error("Pixel buffer is too small")
 	const bytesPerRow = Math.ceil(width / 8)
 	const bits = new Uint8Array(bytesPerRow * height)
 	const lum = new Float32Array(width * height)
@@ -82,7 +88,10 @@ export function trimBottom(image, keep = 8) {
  * @param {{ cut?: boolean, drawer?: boolean, copies?: number, bandHeight?: number }} [options]
  * @returns {Uint8Array}
  */
-export function rasterJob(image, { cut = true, drawer = false, copies = 1, bandHeight = 255 } = {}) {
+export function rasterJob(
+	image,
+	{ cut = true, drawer = false, copies = 1, bandHeight = 255 } = {},
+) {
 	const jobs = []
 	const n = clampCopies(copies)
 	for (let i = 0; i < n; i++) {

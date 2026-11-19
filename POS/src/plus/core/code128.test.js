@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { PATTERNS, code128ModuleCount, code128Widths, encodeCode128 } from "./code128.js"
+import {
+	PATTERNS,
+	code128ModuleCount,
+	code128Widths,
+	encodeCode128,
+} from "./code128.js"
 
 /** Decode symbol values back to text (independent of the encoder's set logic). */
 function decode(values) {
@@ -28,13 +33,21 @@ describe("code128", () => {
 		const v = encodeCode128("PJJ123C")
 		expect(v[0]).toBe(104)
 		expect(v.at(-2)).toBe(
-			(104 + [48, 42, 42, 17, 18, 19, 35].reduce((s, x, i) => s + x * (i + 1), 0)) % 103,
+			(104 +
+				[48, 42, 42, 17, 18, 19, 35].reduce((s, x, i) => s + x * (i + 1), 0)) %
+				103,
 		)
 		expect(v.at(-1)).toBe(106)
 	})
 
 	it("round-trips invoice names and uses code set C for digit runs", () => {
-		for (const text of ["ACC-SINV-2026-00012", "123456", "A123456B", "1234567", "x"]) {
+		for (const text of [
+			"ACC-SINV-2026-00012",
+			"123456",
+			"A123456B",
+			"1234567",
+			"x",
+		]) {
 			const values = encodeCode128(text)
 			expect(decode(values)).toBe(text)
 			let sum = values[0]

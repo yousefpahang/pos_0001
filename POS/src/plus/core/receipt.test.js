@@ -22,8 +22,23 @@ const SERVER_DOC = {
 	customer_name: "Walk-in Customer",
 	currency: "AED",
 	items: [
-		{ item_code: "ITM-00001", item_name: "Milk 1L", item_name_ar: "حليب", qty: 2, uom: "Nos", rate: 5.5, amount: 11 },
-		{ item_code: "PLU-12345", item_name: "Tomatoes", qty: 1.25, uom: "Kg", rate: 8, amount: 10 },
+		{
+			item_code: "ITM-00001",
+			item_name: "Milk 1L",
+			item_name_ar: "حليب",
+			qty: 2,
+			uom: "Nos",
+			rate: 5.5,
+			amount: 11,
+		},
+		{
+			item_code: "PLU-12345",
+			item_name: "Tomatoes",
+			qty: 1.25,
+			uom: "Kg",
+			rate: 8,
+			amount: 10,
+		},
 	],
 	net_total: 21,
 	taxes: [{ description: "VAT 5%", tax_amount: 1.05 }],
@@ -42,7 +57,11 @@ const SERVER_DOC = {
 }
 
 const CTX = {
-	company: { name: "Demo Trading LLC", address: "Dubai, UAE", tax_id: "100000000000003" },
+	company: {
+		name: "Demo Trading LLC",
+		address: "Dubai, UAE",
+		tax_id: "100000000000003",
+	},
 	cashModes: ["Cash"],
 	footer: "Thank you for shopping",
 	cashier: "Cashier One",
@@ -53,7 +72,9 @@ const OFFLINE_DOC = {
 	is_offline: true,
 	pos_profile: "Main Till",
 	posting_date: "2026-11-19",
-	items: [{ item_code: "ITM-00001", item_name: "Milk 1L", quantity: 1, rate: 5.5 }],
+	items: [
+		{ item_code: "ITM-00001", item_name: "Milk 1L", quantity: 1, rate: 5.5 },
+	],
 	grand_total: 5.78,
 	total_taxes_and_charges: 0.28,
 	payments: [{ mode_of_payment: "Card", amount: 5.78 }],
@@ -78,7 +99,12 @@ describe("receipt model", () => {
 		expect(m.taxId).toBe("100000000000003")
 		expect(m.time).toBe("14:05")
 		expect(m.lines).toHaveLength(2)
-		expect(m.lines[0]).toMatchObject({ name: "Milk 1L", nameAr: "حليب", qty: 2, amount: 11 })
+		expect(m.lines[0]).toMatchObject({
+			name: "Milk 1L",
+			nameAr: "حليب",
+			qty: 2,
+			amount: 11,
+		})
 		expect(m.total).toBe(22)
 		expect(m.roundingAdjustment).toBe(-0.05)
 		expect(m.payments).toEqual([{ mode: "Cash", amount: 30, isCash: true }])
@@ -101,17 +127,38 @@ describe("receipt model", () => {
 
 	it("returns are credit notes that reference the original", () => {
 		const m = buildReceiptModel(
-			{ ...SERVER_DOC, is_return: 1, return_against: "ACC-SINV-2026-00001", grand_total: -22.05, rounded_total: -22 },
+			{
+				...SERVER_DOC,
+				is_return: 1,
+				return_against: "ACC-SINV-2026-00001",
+				grand_total: -22.05,
+				rounded_total: -22,
+			},
 			CTX,
 		)
 		expect(m.title).toBe("Credit Note")
 		expect(m.total).toBe(-22)
-		expect(receiptTextLines(m, 48).body.join("\n")).toContain("ACC-SINV-2026-00001")
+		expect(receiptTextLines(m, 48).body.join("\n")).toContain(
+			"ACC-SINV-2026-00001",
+		)
 	})
 
 	it("uses the translator", () => {
 		const m = buildReceiptModel(SERVER_DOC, { ...CTX, t: (s) => `<${s}>` })
 		expect(m.title).toBe("<Tax Invoice>")
+	})
+
+	it("formats the time and falls back to the till currency", () => {
+		expect(
+			buildReceiptModel({ ...SERVER_DOC, posting_time: "9:05:33.1" }).time,
+		).toBe("09:05")
+		expect(buildReceiptModel({ ...SERVER_DOC, posting_time: "" }).time).toBe("")
+		expect(buildReceiptModel(OFFLINE_DOC, { currency: "AED" }).currency).toBe(
+			"AED",
+		)
+		expect(buildReceiptModel(SERVER_DOC, { currency: "USD" }).currency).toBe(
+			"AED",
+		)
 	})
 
 	it("formats money and quantities", () => {
@@ -137,7 +184,13 @@ describe("receipt barcode", () => {
 describe("escpos_text receipt", () => {
 	it("byte snapshot of a fixed receipt (80 mm, cash, cut, drawer)", () => {
 		const m = buildReceiptModel(SERVER_DOC, CTX)
-		const bytes = textReceipt(m, { paperWidthMm: 80, drawer: true, cut: true, copies: 1, barcode: "Code128" })
+		const bytes = textReceipt(m, {
+			paperWidthMm: 80,
+			drawer: true,
+			cut: true,
+			copies: 1,
+			barcode: "Code128",
+		})
 		expect(toHex(bytes)).toMatchSnapshot()
 		const hex = toHex(bytes)
 		expect(hex.startsWith("1b 40 1b 70 00 19 fa")).toBe(true)
@@ -147,7 +200,11 @@ describe("escpos_text receipt", () => {
 
 	it("byte snapshot of a 58 mm offline receipt with QR and no cut", () => {
 		const m = buildReceiptModel(OFFLINE_DOC, { cashModes: ["Cash"] })
-		const bytes = textReceipt(m, { paperWidthMm: 58, cut: false, barcode: "Code128" })
+		const bytes = textReceipt(m, {
+			paperWidthMm: 58,
+			cut: false,
+			barcode: "Code128",
+		})
 		expect(toHex(bytes)).toMatchSnapshot()
 		const hex = toHex(bytes)
 		expect(hex).toContain("1d 28 6b") // QR
@@ -158,7 +215,8 @@ describe("escpos_text receipt", () => {
 	it("lines fit the paper and copies repeat the job", () => {
 		const m = buildReceiptModel(SERVER_DOC, CTX)
 		const { head, body } = receiptTextLines(m, 32)
-		for (const row of [...head, ...body]) expect(row.length).toBeLessThanOrEqual(32)
+		for (const row of [...head, ...body])
+			expect(row.length).toBeLessThanOrEqual(32)
 		const one = textReceipt(m, { paperWidthMm: 58, drawer: true })
 		const three = textReceipt(m, { paperWidthMm: 58, drawer: true, copies: 3 })
 		expect(toHex(three).split("1b 70 00 19 fa").length - 1).toBe(1)
@@ -169,13 +227,23 @@ describe("escpos_text receipt", () => {
 
 describe("raster layout", () => {
 	it("keeps Arabic names as text for the canvas and adds the barcode", () => {
-		const m = buildReceiptModel(SERVER_DOC, { ...CTX, logo: "data:image/png;base64,AA==" })
+		const m = buildReceiptModel(SERVER_DOC, {
+			...CTX,
+			logo: "data:image/png;base64,AA==",
+		})
 		const ops = layoutReceipt(m, { widthDots: 576, barcode: "Code128" })
 		expect(ops[0]).toEqual({ type: "logo" })
-		expect(ops).toContainEqual({ type: "text", text: "حليب", align: "right", size: "md" })
+		expect(ops).toContainEqual({
+			type: "text",
+			text: "حليب",
+			align: "right",
+			size: "md",
+		})
 		const code = ops.find((o) => o.type === "code128")
 		expect(code.label).toBe("ACC-SINV-2026-00012")
-		expect(code.widths.reduce((a, b) => a + b, 0) * code.moduleWidth).toBeLessThanOrEqual(576)
+		expect(
+			code.widths.reduce((a, b) => a + b, 0) * code.moduleWidth,
+		).toBeLessThanOrEqual(576)
 		const total = ops.find((o) => o.type === "pair" && o.left === "TOTAL")
 		expect(total.right).toBe("AED 22.00")
 	})
@@ -184,7 +252,11 @@ describe("raster layout", () => {
 		const m = buildReceiptModel(OFFLINE_DOC, {})
 		const qr = layoutReceipt(m, { widthDots: 384 }).find((o) => o.type === "qr")
 		expect(qr.modules.length * qr.moduleSize).toBeLessThanOrEqual(384)
-		expect(layoutReceipt(m, { widthDots: 384, barcode: "None" }).some((o) => o.type === "qr")).toBe(false)
+		expect(
+			layoutReceipt(m, { widthDots: 384, barcode: "None" }).some(
+				(o) => o.type === "qr",
+			),
+		).toBe(false)
 	})
 })
 
@@ -195,7 +267,9 @@ describe("print plan and drawer", () => {
 
 	it("runs the profile's mode when QZ is connected", () => {
 		for (const mode of ["raster", "escpos_text", "qz_html", "browser"]) {
-			expect(planPrint({ ...PRINTER, print_mode: mode }, { qzConnected: true })).toEqual({
+			expect(
+				planPrint({ ...PRINTER, print_mode: mode }, { qzConnected: true }),
+			).toEqual({
 				mode,
 				fallback: false,
 				reason: null,
@@ -209,9 +283,15 @@ describe("print plan and drawer", () => {
 			fallback: true,
 			reason: "qz_not_connected",
 		})
-		expect(planPrint({ ...PRINTER, print_mode: "browser" }, { qzConnected: false }).fallback).toBe(false)
 		expect(
-			planPrint({ ...PRINTER, connection: "Network", network_host: "" }, { qzConnected: true }).reason,
+			planPrint({ ...PRINTER, print_mode: "browser" }, { qzConnected: false })
+				.fallback,
+		).toBe(false)
+		expect(
+			planPrint(
+				{ ...PRINTER, connection: "Network", network_host: "" },
+				{ qzConnected: true },
+			).reason,
 		).toBe("no_network_host")
 	})
 
@@ -221,7 +301,11 @@ describe("print plan and drawer", () => {
 		expect(shouldKickDrawer(PRINTER, cash, { reason: "sale" })).toBe(true)
 		expect(shouldKickDrawer(PRINTER, card, { reason: "sale" })).toBe(false)
 		expect(shouldKickDrawer(PRINTER, cash, { reason: "reprint" })).toBe(false)
-		expect(shouldKickDrawer({ ...PRINTER, drawer_kick: 0 }, cash, { reason: "sale" })).toBe(false)
+		expect(
+			shouldKickDrawer({ ...PRINTER, drawer_kick: 0 }, cash, {
+				reason: "sale",
+			}),
+		).toBe(false)
 		expect(shouldKickDrawer(null, cash, { reason: "sale" })).toBe(false)
 	})
 })

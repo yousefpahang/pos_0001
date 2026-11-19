@@ -43,13 +43,21 @@ describe("raster conversion", () => {
 		const flat = toMonochrome(rgba, w, h, { threshold: 128 })
 		const dith = toMonochrome(rgba, w, h, { dither: true })
 		expect(toHex(flat.bits)).toBe("00 00")
-		const ones = [...dith.bits].reduce((n, b) => n + b.toString(2).split("1").length - 1, 0)
+		const ones = [...dith.bits].reduce(
+			(n, b) => n + b.toString(2).split("1").length - 1,
+			0,
+		)
 		expect(ones).toBeGreaterThan(4)
 		expect(ones).toBeLessThan(12)
 	})
 
 	it("trims blank rows under the content", () => {
-		const img = { width: 8, height: 20, bytesPerRow: 1, bits: new Uint8Array(20) }
+		const img = {
+			width: 8,
+			height: 20,
+			bytesPerRow: 1,
+			bits: new Uint8Array(20),
+		}
 		img.bits[3] = 0xff
 		expect(trimBottom(img, 2).height).toBe(6)
 		expect(trimBottom({ ...img, bits: new Uint8Array(20) }, 2).height).toBe(2)
@@ -61,7 +69,9 @@ describe("raster conversion", () => {
 		const job = rasterJob(img, { cut: true, drawer: true, copies: 2 })
 		expect(toHex(job)).toMatchSnapshot()
 		const hex = toHex(job)
-		expect(hex.startsWith("1b 40 1b 70 00 19 fa 1d 76 30 00 02 00 04 00")).toBe(true)
+		expect(hex.startsWith("1b 40 1b 70 00 19 fa 1d 76 30 00 02 00 04 00")).toBe(
+			true,
+		)
 		expect(hex.split("1b 70 00 19 fa").length - 1).toBe(1)
 		expect(hex.split("1d 56 00").length - 1).toBe(2)
 		const noCut = toHex(rasterJob(img, { cut: false }))

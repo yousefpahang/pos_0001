@@ -141,7 +141,8 @@ function codewords(bytes, version) {
 		for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j]
 		data.push(v)
 	}
-	for (let pad = 0xec; data.length < capacity; pad = pad === 0xec ? 0x11 : 0xec) data.push(pad)
+	for (let pad = 0xec; data.length < capacity; pad = pad === 0xec ? 0x11 : 0xec)
+		data.push(pad)
 
 	const [ecCount, ...groups] = M_BLOCKS[version]
 	/** @type {number[][]} */
@@ -237,7 +238,11 @@ function baseMatrix(version) {
 	for (let ai = 0; ai < align.length; ai++) {
 		for (let aj = 0; aj < align.length; aj++) {
 			// The three corners hold finder patterns.
-			if ((ai === 0 && aj === 0) || (ai === 0 && aj === last) || (ai === last && aj === 0))
+			if (
+				(ai === 0 && aj === 0) ||
+				(ai === 0 && aj === last) ||
+				(ai === last && aj === 0)
+			)
 				continue
 			const r = align[ai]
 			const c = align[aj]
@@ -342,7 +347,8 @@ export function penalty(m) {
 	for (let r = 0; r < size - 1; r++) {
 		for (let c = 0; c < size - 1; c++) {
 			const v = m[r][c]
-			if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1]) score += 3
+			if (v === m[r][c + 1] && v === m[r + 1][c] && v === m[r + 1][c + 1])
+				score += 3
 		}
 	}
 	// N3: finder-like 1011101 with 4 light modules on one side.
@@ -405,7 +411,8 @@ export function encodeQr(text, { mask } = {}) {
 	for (let k = 0; k < 8; k++) {
 		const candidate = tryMask(k)
 		const score = penalty(candidate)
-		if (!best || score < best.score) best = { score, mask: k, modules: candidate }
+		if (!best || score < best.score)
+			best = { score, mask: k, modules: candidate }
 	}
 	return { version, mask: best.mask, size, modules: best.modules }
 }

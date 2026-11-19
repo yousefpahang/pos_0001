@@ -106,7 +106,8 @@ export function wrap(text, width) {
 		}
 		if (!rest) continue
 		if (!current) current = rest
-		else if (`${current} ${rest}`.length <= width) current = `${current} ${rest}`
+		else if (`${current} ${rest}`.length <= width)
+			current = `${current} ${rest}`
 		else {
 			rows.push(current)
 			current = rest
@@ -216,7 +217,16 @@ export class EscPosBuilder {
 		const data = asciiText(value)
 		const len = data.length + 3
 		this.raw([GS, 0x28, 0x6b, 4, 0, 0x31, 0x41, 0x32, 0x00]) // model 2
-		this.raw([GS, 0x28, 0x6b, 3, 0, 0x31, 0x43, Math.min(Math.max(moduleSize, 1), 16)])
+		this.raw([
+			GS,
+			0x28,
+			0x6b,
+			3,
+			0,
+			0x31,
+			0x43,
+			Math.min(Math.max(moduleSize, 1), 16),
+		])
 		this.raw([GS, 0x28, 0x6b, 3, 0, 0x31, 0x45, 0x31]) // error level M
 		this.raw([GS, 0x28, 0x6b, len & 0xff, (len >> 8) & 0xff, 0x31, 0x50, 0x30])
 		this.text(data)
@@ -300,7 +310,11 @@ export function toBase64(bytes) {
 	let i = 0
 	for (; i + 2 < bytes.length; i += 3) {
 		const n = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-		out += abc[(n >> 18) & 63] + abc[(n >> 12) & 63] + abc[(n >> 6) & 63] + abc[n & 63]
+		out +=
+			abc[(n >> 18) & 63] +
+			abc[(n >> 12) & 63] +
+			abc[(n >> 6) & 63] +
+			abc[n & 63]
 	}
 	const rest = bytes.length - i
 	if (rest === 1) {

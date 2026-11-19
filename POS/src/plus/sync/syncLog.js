@@ -17,6 +17,7 @@ import {
 	retryFailed,
 } from "@/plus/sync/syncClient"
 import { startScanCacheRefresh } from "@/plus/scan/scanCache"
+import { usePlusPrintingStore } from "@/plus/printing/printingStore"
 import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore"
 import { usePOSShiftStore } from "@/stores/posShift"
 import { usePOSSyncStore } from "@/stores/posSync"
@@ -187,6 +188,8 @@ export const usePlusSyncLogStore = defineStore("plusSyncLog", () => {
 				// Sales person mode, list and default for offline picking (Phase 3)
 				if (posShift.profileName) {
 					usePlusSalesPersonStore().load(posShift.profileName)
+					// Receipt printer, header, cash modes, No Sale permission (Phase 4)
+					usePlusPrintingStore().load(posShift.profileName)
 				}
 			},
 			{ immediate: true },

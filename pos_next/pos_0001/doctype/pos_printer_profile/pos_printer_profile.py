@@ -24,6 +24,10 @@ class POSPrinterProfile(Document):
 		if copies < 1 or copies > 3:
 			frappe.throw(_("Copies must be between 1 and 3."))
 		self.copies = copies
+		if self.connection == "Network" and self.print_mode == "qz_html":
+			frappe.throw(
+				_("qz_html prints through a printer installed on the till. Use raster or escpos_text for a network printer.")
+			)
 		if self.connection == "Network":
 			host = (self.network_host or "").strip()
 			if not HOST_PATTERN.match(host):

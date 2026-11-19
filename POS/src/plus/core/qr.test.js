@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest"
-import { chooseVersion, encodeQr, formatBits, penalty, reedSolomon } from "./qr.js"
+import {
+	chooseVersion,
+	encodeQr,
+	formatBits,
+	penalty,
+	reedSolomon,
+} from "./qr.js"
 import reference from "./qr.reference.json"
 
 /** Mask number from the format bits in the top-left copy (rows 0-5 and 7-8 of column 8, ...). */
@@ -22,8 +28,12 @@ function maskOf(rows) {
 
 describe("qr", () => {
 	it("Reed-Solomon matches the HELLO WORLD 1-M example", () => {
-		const data = [32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17]
-		expect(reedSolomon(data, 10)).toEqual([196, 35, 39, 119, 235, 215, 231, 226, 93, 23])
+		const data = [
+			32, 91, 11, 120, 209, 114, 220, 77, 67, 64, 236, 17, 236, 17, 236, 17,
+		]
+		expect(reedSolomon(data, 10)).toEqual([
+			196, 35, 39, 119, 235, 215, 231, 226, 93, 23,
+		])
 	})
 
 	it("format bits for level M", () => {
@@ -58,7 +68,15 @@ describe("qr", () => {
 		expect(qr.modules[0].slice(0, 7).join("")).toBe("1111111")
 		expect(qr.modules[1].slice(0, 7).join("")).toBe("1000001")
 		expect(penalty(qr.modules)).toBeLessThanOrEqual(
-			Math.min(...[0, 1, 2, 3, 4, 5, 6, 7].map((k) => penalty(encodeQr("pos_offline_3f2b8c1e-9a4d-4c7e-b2a1-5d6e7f8091a2", { mask: k }).modules))),
+			Math.min(
+				...[0, 1, 2, 3, 4, 5, 6, 7].map((k) =>
+					penalty(
+						encodeQr("pos_offline_3f2b8c1e-9a4d-4c7e-b2a1-5d6e7f8091a2", {
+							mask: k,
+						}).modules,
+					),
+				),
+			),
 		)
 	})
 })
