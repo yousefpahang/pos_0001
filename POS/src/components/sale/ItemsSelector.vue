@@ -57,6 +57,19 @@
 					__("Syncing catalog in background... {0} items cached", [cacheStats.items])
 				}}</span>
 			</div>
+			<!-- pos_0001 (SPEC section 6): progress bar for the first full cache -->
+			<div
+				v-if="plusCacheProgress !== null"
+				class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-blue-100"
+				role="progressbar"
+				data-testid="cache-progress"
+				:aria-valuenow="plusCacheProgress"
+				aria-valuemin="0"
+				aria-valuemax="100"
+				:aria-label="__('Catalog cached')"
+			>
+				<div class="h-full bg-blue-600 transition-[width] duration-300" :style="{ width: `${plusCacheProgress}%` }"></div>
+			</div>
 		</div>
 
 		<!-- Search Bar with Barcode Scanner and View Controls -->
@@ -406,6 +419,9 @@
 			</div>
 		</div>
 
+		<!-- pos_0001: favourites quick grid (top sellers) while not searching -->
+		<FavouritesGrid v-if="!searchTerm" :currency="currency" @select="(item) => selectItem(item)" />
+
 		<!-- Grid View -->
 		<div
 			v-if="viewMode === 'grid'"
@@ -418,11 +434,15 @@
 				style="min-height: 0"
 			>
 				<div
+					ref="plusGridEl"
+					data-testid="item-grid"
 					class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5 sm:gap-2.5"
+					:style="{ paddingTop: `${plusGridPadTop}px`, paddingBottom: `${plusGridPadBottom}px` }"
 				>
 					<div
-						v-for="item in displayedItems"
+						v-for="item in plusGridItems"
 						:key="item.item_code"
+						data-testid="item-card"
 						@touchstart.passive="getOptimizedClickHandler(item).touchstart"
 						@touchmove.passive="getOptimizedClickHandler(item).touchmove"
 						@touchend.passive="getOptimizedClickHandler(item).touchend"
@@ -742,10 +762,12 @@
 							</th>
 						</tr>
 					</thead>
-					<tbody class="bg-white divide-y divide-gray-200">
+					<tbody ref="plusListEl" class="bg-white divide-y divide-gray-200">
+						<tr v-if="plusListPadTop" data-vgrid-spacer aria-hidden="true" :style="{ height: `${plusListPadTop}px` }"></tr>
 						<tr
-							v-for="item in displayedItems"
+							v-for="item in plusListItems"
 							:key="item.item_code"
+							data-testid="item-row"
 							@touchstart.passive="getOptimizedClickHandler(item).touchstart"
 							@touchmove.passive="getOptimizedClickHandler(item).touchmove"
 							@touchend.passive="getOptimizedClickHandler(item).touchend"
@@ -863,6 +885,7 @@
 								</div>
 							</td>
 						</tr>
+						<tr v-if="plusListPadBottom" data-vgrid-spacer aria-hidden="true" :style="{ height: `${plusListPadBottom}px` }"></tr>
 						<!-- Loading More Indicator Row -->
 						<tr v-if="loadingMore">
 							<td colspan="6" class="px-2 sm:px-3 py-4 text-center bg-white">
@@ -1013,6 +1036,8 @@ import { usePOSSettingsStore } from "@/stores/posSettings";
 import { useStock } from "@/composables/useStock";
 import { useDialogState } from "@/composables/useDialogState";
 import { useSearchInput } from "@/composables/useSearchInput";
+import { useVirtualGrid } from "@/plus/perf/useVirtualGrid"; // pos_0001
+import FavouritesGrid from "@/plus/components/FavouritesGrid.vue"; // pos_0001
 import { DEFAULT_CURRENCY, formatCurrency as formatCurrencyUtil } from "@/utils/currency";
 import { useToast } from "@/composables/useToast";
 import { storeToRefs } from "pinia";
@@ -1115,6 +1140,31 @@ const displayedItems = computed(() => {
 	if (!filteredItems.value) return [];
 	return filteredItems.value;
 });
+
+// pos_0001 (SPEC section 6): cache progress in percent, null when the total is unknown
+const plusCacheProgress = computed(() => {
+	const total = cacheStats.value?.totalServerItems || totalServerItems.value || 0;
+	if (!total) return null;
+	return Math.min(100, Math.round(((cacheStats.value?.items || 0) / total) * 100));
+});
+
+// pos_0001 (SPEC section 6): virtual scrolling, only the rows in view are rendered
+const plusGridEl = ref(null);
+const plusListEl = ref(null);
+const {
+	visibleItems: plusGridItems,
+	padTop: plusGridPadTop,
+	padBottom: plusGridPadBottom,
+} = useVirtualGrid(displayedItems, { scroller: gridScrollContainer, content: plusGridEl });
+const {
+	visibleItems: plusListItems,
+	padTop: plusListPadTop,
+	padBottom: plusListPadBottom,
+} = useVirtualGrid(
+	displayedItems,
+	{ scroller: listScrollContainer, content: plusListEl },
+	{ mode: "list" }
+);
 
 // Total item count for pagination display
 const paginationTotal = computed(() => {
