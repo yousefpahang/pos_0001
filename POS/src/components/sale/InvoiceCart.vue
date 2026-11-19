@@ -909,14 +909,16 @@
 				</div>
 			</div>
 
-			<div v-else class="flex flex-col gap-0.5 sm:gap-1">
+			<div v-else class="flex flex-col gap-0.5 sm:gap-1" data-testid="invoice-cart-lines">
 				<div
 					v-for="(item, index) in sortedItems"
+					data-testid="cart-line"
 					:key="
 						item.item_code +
 						'-' +
 						(item.uom || '') +
-						(item.is_free_item ? '-free' : '')
+						(item.is_free_item ? '-free' : '') +
+						(item.pos0001_line_id ? '-' + item.pos0001_line_id : '')
 					"
 					@click="item.is_free_item ? null : openEditDialog(item)"
 					:class="[
@@ -1020,7 +1022,7 @@
 								<button
 									v-if="!item.is_free_item"
 									type="button"
-									@click.stop="$emit('remove-item', item.item_code, item.uom)"
+									@click.stop="$emit('remove-item', item.item_code, item.uom, item.pos0001_line_id)"
 									class="text-gray-400 hover:text-red-600 active:text-red-700 transition-colors flex-shrink-0 p-0.5 -m-0.5 touch-manipulation active:scale-90"
 									:aria-label="__('Remove {0}', [item.item_name])"
 									:title="__('Remove item')"

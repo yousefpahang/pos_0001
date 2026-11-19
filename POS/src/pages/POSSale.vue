@@ -370,7 +370,7 @@
 								:warehouses="profileWarehouses"
 								@update-quantity="cartStore.updateItemQuantity"
 								@remove-item="
-									(itemCode, uom) => cartStore.removeItem(itemCode, uom)
+									(itemCode, uom, lineId) => cartStore.removeItem(itemCode, uom, lineId)
 								"
 								@select-customer="handleCustomerSelected"
 								@create-customer="handleCreateCustomer"
@@ -1839,14 +1839,15 @@ async function handleShiftClosed() {
 }
 
 function handleItemSelected(item, autoAdd = false) {
-	// Auto-add mode
-	if (autoAdd) {
+	// Auto-add mode (pos_0001: scale labels always add with no keystroke)
+	if (autoAdd || item.pos0001_scale_barcode) {
 		try {
 			// Check if item has resolved barcode data (weighted/priced)
 			if (item.resolved_qty && item.resolved_barcode_type) {
 				// Get the unit price for the resolved UOM from uom_prices, or fall back to item rate
 				const resolvedUom = item.resolved_uom || item.uom;
-				const unitRate = item.uom_prices?.[resolvedUom] || item.rate;
+				const unitRate =
+					item.pos0001_scale_rate ?? (item.uom_prices?.[resolvedUom] || item.rate);
 
 				const resolvedItem = {
 					...item,

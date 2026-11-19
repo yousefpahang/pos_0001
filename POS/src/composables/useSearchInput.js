@@ -155,6 +155,12 @@ export function useSearchInput({ itemStore, onItemFound, showWarning, isAnyDialo
 					return;
 				}
 			} catch (error) {
+				// pos_0001: a label that was read but cannot be sold says why
+				if (error?.userMessage) {
+					showWarning(error.userMessage);
+					focusSearchInput();
+					return;
+				}
 				console.error("Barcode API error:", error);
 			}
 

@@ -217,9 +217,15 @@ export function useInvoice() {
 	// Actions
 	function addItem(item, quantity = 1) {
 		const itemUom = item.uom || item.stock_uom;
-		const existingItem = invoiceItems.value.find(
-			(i) => i.item_code === item.item_code && i.uom === itemUom
-		);
+		// pos_0001: a scale label is its own line; the same label scanned twice never merges
+		const existingItem = item.pos0001_scale_barcode
+			? null
+			: invoiceItems.value.find(
+					(i) =>
+						i.item_code === item.item_code &&
+						i.uom === itemUom &&
+						!i.pos0001_scale_barcode
+				);
 
 		if (existingItem) {
 			// Store old values before update for incremental cache adjustment
@@ -283,6 +289,9 @@ export function useInvoice() {
 				brand: item.brand,
 				// Resolved barcode flag - prevents editing qty/uom/rate for weighted/priced barcodes
 				is_resolved_barcode: item.is_resolved_barcode || false,
+				// pos_0001: scale label (re-validated on the server) and line identity
+				pos0001_scale_barcode: item.pos0001_scale_barcode || null,
+				pos0001_line_id: item.pos0001_line_id || null,
 				// Stock validation fields — needed for qty increase checks in cart
 				actual_qty: item.actual_qty ?? 0,
 				is_stock_item: item.is_stock_item ?? 1,
@@ -311,9 +320,12 @@ export function useInvoice() {
 	 *                            If provided, only removes the item with matching item_code AND uom.
 	 *                            If null, removes the first item matching item_code.
 	 */
-	function removeItem(itemCode, uom = null) {
+	function removeItem(itemCode, uom = null, lineId = null) {
 		let itemToRemove;
-		if (uom) {
+		// pos_0001: scale lines share item and UOM; remove only the line that was clicked
+		if (lineId) {
+			itemToRemove = invoiceItems.value.find((i) => i.pos0001_line_id === lineId);
+		} else if (uom) {
 			itemToRemove = invoiceItems.value.find(
 				(i) => i.item_code === itemCode && i.uom === uom
 			);
@@ -340,7 +352,11 @@ export function useInvoice() {
 			}
 		}
 
-		if (uom) {
+		if (lineId) {
+			if (itemToRemove) {
+				invoiceItems.value = invoiceItems.value.filter((i) => i !== itemToRemove);
+			}
+		} else if (uom) {
 			invoiceItems.value = invoiceItems.value.filter(
 				(i) => !(i.item_code === itemCode && i.uom === uom)
 			);
@@ -752,6 +768,10 @@ export function useInvoice() {
 			is_rate_manually_edited: item.is_rate_manually_edited || 0,
 			original_rate: item.original_rate || null,
 			is_free_item: item.is_free_item || 0,
+			// pos_0001: the server re-validates lines scanned from scale labels
+			...(item.pos0001_scale_barcode
+				? { pos0001_scale_barcode: item.pos0001_scale_barcode }
+				: {}),
 		});
 
 		const out = [];

@@ -1,4 +1,5 @@
 import { call } from "@/utils/apiWrapper";
+import { resolveScannedBarcode } from "@/plus/scan/scanner";
 import { isOffline } from "@/utils/offline";
 import { offlineWorker } from "@/utils/offline/workerClient";
 import { updateItemBatchSerialData } from "@/utils/offline/items";
@@ -1763,17 +1764,18 @@ export const useItemSearchStore = defineStore("itemSearch", () => {
 				throw new Error("POS Profile not set");
 			}
 
-			log.debug("Calling searchByBarcode API", { posProfile: posProfile.value });
-
-			const result = await searchByBarcodeResource.submit({
-				barcode: barcode,
-				pos_profile: posProfile.value,
+			// pos_0001: browser cache first, then scale rules, then the server only if online
+			return await resolveScannedBarcode(barcode, posProfile.value, {
+				serverSearch: async (code) => {
+					const result = await searchByBarcodeResource.submit({
+						barcode: code,
+						pos_profile: posProfile.value,
+					});
+					return result?.message || result;
+				},
 			});
-
-			const item = result?.message || result;
-			return item;
 		} catch (error) {
-			log.error("Store searchByBarcode error", error);
+			if (!error?.userMessage) log.error("Store searchByBarcode error", error);
 			throw error;
 		}
 	}
