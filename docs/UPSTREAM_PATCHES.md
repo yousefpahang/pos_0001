@@ -14,3 +14,4 @@ New files under `pos_next/pos_0001/` and `POS/src/plus/` are ours and are not li
 | 7 | 1 | `POS/src/utils/offline/sync.js` | F1: rejected invoices must be stored on the server, never dropped | `syncInvoiceToServer()` calls `pos_0001.api.sync.submit_offline_invoice` (via `plus/sync/syncClient.js`) instead of `submit_invoice`, and uses `plus/core/syncOutcome.js` to mark the queue row: Synced, or Failed-and-stored (`synced: true`, `server_status: "Failed"`). Anything else stays queued. The sync loop counts stored failures as failed |
 | 8 | 1 | `POS/src/components/pos/POSHeader.vue` | F12 sync badge | One import and `<SyncBadge />` after the Wi-Fi button |
 | 9 | 1 | `POS/package.json` | Playwright e2e | Added the `e2e` script (`playwright test`) |
+| 10 | 1 | `README.md` | DECISIONS.md item 11 | Prerequisites list Node.js 22 |

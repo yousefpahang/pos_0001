@@ -165,6 +165,7 @@ POS Next is a **complete rewrite** of the ERPNext POS system, built from the gro
 
 - **Frappe Framework** version 15 or higher
 - **ERPNext** version 15 or higher
+- **Node.js 22** on the server that builds assets (the committed `yarn.lock` files need it; Node 20 fails on `nopt@10`)
 - Modern browser (Chrome, Firefox, Safari, Edge)
 
 ## 🚀 Installation
