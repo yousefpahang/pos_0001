@@ -58,7 +58,7 @@
 
 					<!-- Sales Person Selection (Compact) -->
 					<div
-						v-if="settingsStore.enableSalesPersons"
+						v-if="plusSalesPersonEnabled"
 						:class="[
 							'rounded-lg p-2',
 							!isSalesPersonValid
@@ -67,7 +67,7 @@
 						]"
 					>
 						<!-- Single Mode: Show selected person or dropdown -->
-						<template v-if="settingsStore.isSingleSalesPerson">
+						<template v-if="!plusSalesPersonMultiple">
 							<!-- Show selected person as a nice display -->
 							<div
 								v-if="selectedSalesPersons.length > 0"
@@ -133,7 +133,7 @@
 										/>
 									</svg>
 									{{ __("Sales Person") }}
-									<span class="text-red-500">*</span>
+									<span v-if="plusSalesPersonRequired" class="text-red-500">*</span>
 									<!-- Refresh: re-fetch sales persons from server -->
 									<button
 										@click.prevent="refreshSalesPersons"
@@ -168,6 +168,7 @@
 										"
 										@focus="onSalesPersonFocus"
 										@blur="handleSalesPersonBlur"
+										@keydown.enter.prevent="addSalesPersonFromInput"
 										class="w-full px-3 py-2 ps-3 pe-8 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
 										:class="
 											!isSalesPersonValid
@@ -240,7 +241,7 @@
 											clip-rule="evenodd"
 										/>
 									</svg>
-									{{ __("Sales person is required") }}
+									{{ salesPersonMessage }}
 								</div>
 							</div>
 						</template>
@@ -266,7 +267,7 @@
 										/>
 									</svg>
 									{{ __("Sales Persons") }}
-									<span class="text-red-500">*</span>
+									<span v-if="plusSalesPersonRequired" class="text-red-500">*</span>
 									<!-- Refresh: re-fetch sales persons from server -->
 									<button
 										@click.prevent="refreshSalesPersons"
@@ -312,6 +313,7 @@
 									"
 									@focus="onSalesPersonFocus"
 									@blur="handleSalesPersonBlur"
+									@keydown.enter.prevent="addSalesPersonFromInput"
 									class="w-full px-3 py-2 ps-3 pe-8 text-xs border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
 									:class="
 										!isSalesPersonValid
@@ -390,7 +392,7 @@
 										clip-rule="evenodd"
 									/>
 								</svg>
-								{{ __("Sales person is required") }}
+								{{ salesPersonMessage }}
 							</div>
 
 							<!-- Selected Sales Persons (chips) -->
@@ -2016,6 +2018,15 @@ import { useLongPress } from "@/composables/useLongPress";
 import { usePaymentNumpad } from "@/composables/usePaymentNumpad";
 import { useResponsivePayment } from "@/composables/useResponsivePayment";
 import { useQuickAmounts } from "@/composables/useQuickAmounts";
+// pos_0001 (F6): Off/Optional/Mandatory, default per cashier, badge scan, shared with the cart header
+import {
+	findByBarcode as findSalesPersonByBarcode,
+	matchesSalesPerson,
+	splitEvenly as splitSalesShares,
+	toSalesTeam,
+	validateSelection as validateSalesPersons,
+} from "@/plus/core/salesPerson";
+import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore";
 
 const log = logger.create("PaymentDialog");
 const settingsStore = usePOSSettingsStore();
@@ -2419,6 +2430,17 @@ const filteredPaymentMethods = computed(() => {
 });
 
 // Sales Persons state
+const plusSalesPerson = usePlusSalesPersonStore();
+// Until the pos_0001 cache has loaded, keep POS Next's own settings.
+const plusSalesPersonEnabled = computed(() =>
+	plusSalesPerson.loaded ? plusSalesPerson.mode.enabled : settingsStore.enableSalesPersons
+);
+const plusSalesPersonMultiple = computed(() =>
+	plusSalesPerson.loaded ? plusSalesPerson.mode.multiple : settingsStore.isMultipleSalesPersons
+);
+const plusSalesPersonRequired = computed(() =>
+	plusSalesPerson.loaded ? plusSalesPerson.mode.required : settingsStore.enableSalesPersons
+);
 const salesPersons = ref([]);
 const selectedSalesPersons = ref([]);
 const salesPersonSearch = ref("");
@@ -2458,20 +2480,18 @@ const salesPersonsResource = createResource({
 // Computed: Available sales persons (exclude already selected, filter by search)
 const availableSalesPersons = computed(() => {
 	const selectedIds = selectedSalesPersons.value.map((p) => p.sales_person);
-	const searchLower = (salesPersonSearch.value || "").toLowerCase();
+	// pos_0001: the cached list carries badge barcodes; search matches name or badge
+	const source = plusSalesPerson.salesPersons.length
+		? plusSalesPerson.salesPersons
+		: salesPersons.value;
 
-	return salesPersons.value
+	return source
 		.filter((person) => {
 			// Exclude already selected
 			if (selectedIds.includes(person.name)) {
 				return false;
 			}
-			// Filter by search term if provided
-			if (searchLower) {
-				const name = (person.sales_person_name || person.name || "").toLowerCase();
-				return name.includes(searchLower);
-			}
-			return true;
+			return matchesSalesPerson(person, salesPersonSearch.value);
 		})
 		.slice(0, 10); // Limit to 10 results for performance
 });
@@ -2482,10 +2502,27 @@ const totalSalesAllocation = computed(() => {
 });
 
 // Computed: Validation - sales person is required when enabled and online
+const salesPersonValidity = computed(() =>
+	validateSalesPersons({
+		mode: plusSalesPerson.mode,
+		selection: selectedSalesPersons.value,
+		available: plusSalesPerson.salesPersons.length,
+	})
+);
+const salesPersonMessage = computed(() =>
+	plusSalesPerson.loaded && salesPersonValidity.value.reason === "total"
+		? __("The split between sales persons must total 100%.")
+		: __("Sales person is required")
+);
+
 const isSalesPersonValid = computed(() => {
 	// If sales persons feature is disabled, always valid
-	if (!settingsStore.enableSalesPersons) {
+	if (!plusSalesPersonEnabled.value) {
 		return true;
+	}
+	// pos_0001: mode from the offline cache, so Mandatory also holds offline
+	if (plusSalesPerson.loaded) {
+		return salesPersonValidity.value.valid;
 	}
 	// Skip validation when offline — sales persons can't be fetched,
 	// don't block the sale. Team data is omitted from offline invoices.
@@ -2499,7 +2536,7 @@ const isSalesPersonValid = computed(() => {
 // Helper functions for sales persons
 function addSalesPerson(person) {
 	// For Single mode, replace the existing selection with 100%
-	if (settingsStore.isSingleSalesPerson) {
+	if (!plusSalesPersonMultiple.value) {
 		selectedSalesPersons.value = [
 			{
 				sales_person: person.name,
@@ -2574,11 +2611,30 @@ function redistributeCommission() {
 	const count = selectedSalesPersons.value.length;
 	if (count === 0) return;
 
-	const evenShare = 100 / count;
-	selectedSalesPersons.value.forEach((person) => {
-		person.allocated_percentage = evenShare;
+	// pos_0001: shares with 2 decimals that total exactly 100 (100 / 3 was rejected by ERPNext)
+	const shares = splitSalesShares(count);
+	selectedSalesPersons.value.forEach((person, index) => {
+		person.allocated_percentage = shares[index];
 	});
 }
+
+// pos_0001: Enter in the search box selects a scanned badge, else the first match
+function addSalesPersonFromInput() {
+	const code = (salesPersonSearch.value || "").trim();
+	if (!code) return;
+	const badge = findSalesPersonByBarcode(plusSalesPerson.salesPersons, code);
+	const person = badge || availableSalesPersons.value[0];
+	if (person) addSalesPerson(person);
+}
+
+// pos_0001: keep the cart header picker in step with the dialog
+watch(
+	selectedSalesPersons,
+	(members) => {
+		if (show.value) plusSalesPerson.setSelection(members);
+	},
+	{ deep: true }
+);
 
 // Handle blur event for dropdown
 function handleSalesPersonBlur() {
@@ -2917,7 +2973,7 @@ function isQuickAmountDisabled(amount) {
 // dependencies, the fetch triggers as soon as both conditions are met,
 // regardless of which resolves first.
 watch(
-	() => [props.posProfile, settingsStore.enableSalesPersons],
+	() => [props.posProfile, plusSalesPersonEnabled.value],
 	([newProfile, salesPersonsEnabled]) => {
 		if (!newProfile) return;
 
@@ -2968,7 +3024,8 @@ watch(show, (newVal) => {
 			customerBalanceResource.fetch();
 			customerCreditResource.fetch();
 		}
-		selectedSalesPersons.value = [];
+		// pos_0001: start from the cart header selection (the cashier's default sales person)
+		selectedSalesPersons.value = plusSalesPerson.selection.map((m) => ({ ...m }));
 		salesPersonSearch.value = "";
 		applyWriteOff.value = false; // Reset write-off state
 		// Set default delivery date to today for Sales Orders
@@ -3349,8 +3406,16 @@ function addCreditAccountPayment() {
 
 	// Close dialog and complete as credit sale (0 payment)
 	// The backend will create an invoice with outstanding amount
+	// pos_0001: a credit sale needs the sales person too (it was dropped before)
+	if (!isSalesPersonValid.value) {
+		log.warn("[PaymentDialog] Credit sale blocked - sales person missing");
+		return;
+	}
+
 	const paymentData = {
 		payments: [], // No payments - full amount on credit
+		sales_team:
+			selectedSalesPersons.value.length > 0 ? toSalesTeam(selectedSalesPersons.value) : null,
 		change_amount: 0,
 		is_partial_payment: false,
 		is_credit_sale: true, // Mark as credit sale
@@ -3404,7 +3469,8 @@ function completePayment() {
 		is_partial_payment: isPartial,
 		paid_amount: totalPaid.value,
 		outstanding_amount: outstanding,
-		sales_team: selectedSalesPersons.value.length > 0 ? selectedSalesPersons.value : null,
+		sales_team:
+			selectedSalesPersons.value.length > 0 ? toSalesTeam(selectedSalesPersons.value) : null,
 		delivery_date: isSalesOrder.value ? deliveryDate.value : null,
 		// Write-off data
 		write_off_amount: writeOffAmount.value,
