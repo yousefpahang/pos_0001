@@ -28,7 +28,8 @@ export function entryUnitFor(stockUom) {
  *   pos0001_scale_barcode?: string|null}} line
  */
 export function canEnterSmallUnit(line) {
-	if (!line || line.is_resolved_barcode || line.pos0001_scale_barcode) return false
+	if (!line || line.is_resolved_barcode || line.pos0001_scale_barcode)
+		return false
 	const stock = line.stock_uom || line.uom
 	if (!entryUnitFor(stock)) return false
 	return (line.uom || stock) === stock
@@ -43,7 +44,8 @@ export function canEnterSmallUnit(line) {
 export function entryToStockQty(value, stockUom) {
 	const entry = entryUnitFor(stockUom)
 	if (!entry) return null
-	const cleaned = typeof value === "string" ? value.replace(",", ".").trim() : value
+	const cleaned =
+		typeof value === "string" ? value.replace(",", ".").trim() : value
 	if (cleaned === "" || cleaned === null || cleaned === undefined) return null
 	const n = Number(cleaned)
 	if (!Number.isFinite(n) || n <= 0) return null

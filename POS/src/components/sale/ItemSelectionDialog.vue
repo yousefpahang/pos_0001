@@ -646,6 +646,8 @@ function buildUomOptions() {
 	// Additional UOMs
 	if (props.item.item_uoms && props.item.item_uoms.length > 0) {
 		props.item.item_uoms.forEach((uomData) => {
+			// pos_0001: server lookups list the stock UOM in item_uoms too; show it once
+			if (uomData.uom === props.item.stock_uom) return;
 			uomOptions.push({
 				type: "uom",
 				uom: uomData.uom,

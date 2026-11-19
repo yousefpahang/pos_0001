@@ -1187,6 +1187,12 @@
 										</button>
 									</div>
 
+									<!-- pos_0001: gram entry on Kg lines (SPEC F13) -->
+									<GramEntryButton
+										:line="item"
+										@apply="(qty) => emit('update-quantity', item.item_code, qty, item.uom)"
+									/>
+
 									<!-- UOM Selector Dropdown -->
 									<div class="relative group/uom" @click.stop>
 										<button
@@ -1264,7 +1270,7 @@
 												{{ item.stock_uom || __("Nos", null, "UOM") }}
 											</button>
 											<button
-												v-for="uomData in item.item_uoms"
+												v-for="uomData in item.item_uoms.filter((u) => u.uom !== item.stock_uom)"
 												:key="uomData.uom"
 												type="button"
 												@click="selectUom(item, uomData.uom)"
@@ -1477,6 +1483,7 @@ import { createResource } from "frappe-ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from "vue";
 import EditItemDialog from "./EditItemDialog.vue";
 import SalesPersonPicker from "@/plus/components/SalesPersonPicker.vue";
+import GramEntryButton from "@/plus/components/GramEntryButton.vue"; // pos_0001
 import { itemDisplayName, pageLang } from "@/plus/core/itemName"; // pos_0001
 const uiLang = pageLang(); // pos_0001: Arabic item names on an Arabic till
 

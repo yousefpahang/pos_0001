@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest"
-import { canEnterSmallUnit, entryToStockQty, entryUnitFor, stockQtyToEntry } from "./units.js"
+import {
+	canEnterSmallUnit,
+	entryToStockQty,
+	entryUnitFor,
+	stockQtyToEntry,
+} from "./units.js"
 
 describe("entry units in the cart", () => {
 	it("knows gram for Kg and millilitre for Litre only", () => {
-		expect(entryUnitFor("Kg")).toEqual({ uom: "Gram", factor: 0.001, symbol: "g" })
+		expect(entryUnitFor("Kg")).toEqual({
+			uom: "Gram",
+			factor: 0.001,
+			symbol: "g",
+		})
 		expect(entryUnitFor("Litre")?.uom).toBe("Millilitre")
 		expect(entryUnitFor("Nos")).toBeNull()
 		expect(entryUnitFor(undefined)).toBeNull()
@@ -28,8 +37,18 @@ describe("entry units in the cart", () => {
 		expect(canEnterSmallUnit({ uom: "Pack", stock_uom: "Kg" })).toBe(false)
 		expect(canEnterSmallUnit({ uom: "Nos", stock_uom: "Nos" })).toBe(false)
 		expect(
-			canEnterSmallUnit({ uom: "Kg", stock_uom: "Kg", pos0001_scale_barcode: "2012345012509" }),
+			canEnterSmallUnit({
+				uom: "Kg",
+				stock_uom: "Kg",
+				pos0001_scale_barcode: "2012345012509",
+			}),
 		).toBe(false)
-		expect(canEnterSmallUnit({ uom: "Kg", stock_uom: "Kg", is_resolved_barcode: true })).toBe(false)
+		expect(
+			canEnterSmallUnit({
+				uom: "Kg",
+				stock_uom: "Kg",
+				is_resolved_barcode: true,
+			}),
+		).toBe(false)
 	})
 })
