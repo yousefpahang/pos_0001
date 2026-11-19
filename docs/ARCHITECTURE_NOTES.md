@@ -386,6 +386,40 @@ Taxes), POS Coupon (+ Detail), POS Offer (+ Detail), POS Opening Shift (+ Detail
   which answers with `pos0001_receipt` (`pos_0001.api.printing.receipt_for`); `get_receipt_data` is the
   fallback and is still used for reprints by name. Queue payloads carry `discount_amount` and `coupon_code`.
 
+### 2.13 Item UOMs, UOM prices and the cart line unit (checked in Phase 8)
+
+- **Units:** ERPNext's Item `uoms` table (UOM Conversion Detail; ERPNext always adds the stock unit with 1).
+  `api.items.get_items` / `get_items_bulk` send `item_uoms` without the stock unit; `get_item_detail` (server barcode
+  lookup, `search_by_barcode`) sends it **with** the stock unit, so a unit showed twice (fixed in the UI, UPSTREAM_PATCHES
+  59-60).
+- **Prices per unit:** `uom_prices` = `{uom: price_list_rate}` from every Item Price of the profile's selling price list
+  (no `valid_from` / `valid_upto`, customer or batch filter). The grid shows the stock-unit price, else the first unit's
+  price divided by its factor. Prices are stored in the basis of the profile's tax template (Main Till: VAT 5% added on
+  top, so the till shows net prices).
+- **Cart line:** `uom`, `conversion_factor`, `item_uoms`. Clicking or scanning an item with other units (not auto-add)
+  opens `ItemSelectionDialog` in `uom` mode, which lists each unit with its `uom_prices` price. The line's unit dropdown
+  (`InvoiceCart.vue`) calls `posCart.changeItemUOM()` -> `useInvoice.resolveUomPricing()`: online
+  `api.items.get_item_details(uom)` (ERPNext's price for that unit, or stock price x factor), offline `uom_prices[uom]`
+  else the line rate scaled by the factor. Same item + same unit merges; another unit is a new line.
+- **Scans:** the barcode's unit is known in the browser only from `pos_0001.api.barcode.get_scan_cache` `uom_barcodes`
+  (refreshed with the cache). A barcode of an item created after the last refresh adds the item in its stock unit (or
+  asks for the unit).
+- **Submit:** `formatItemsForSubmission()` sends `rate = round(amount / qty)` for VAT-exclusive profiles, so a
+  fractional line can carry a 0.01 per-unit discount (0.25 Kg x 4.29 = 1.07 -> rate 4.28, discount 0.01). Not changed.
+
+**After Phase 8** (SPEC F13): the Item Wizard (`plus/pages/ItemWizardPage.vue` at `/pos/items/new` and
+`/pos/items/edit?item=`, state in `plus/itemWizard/useItemWizard.js`, logic in `plus/core/itemWizard.js`, mirrored by
+`pos_0001/item_wizard.py` and checked against `pos_0001/tests/item_wizard_vectors.json`). Endpoints `pos_0001.api.items`
+(role "POS Item Wizard" + POS Profile access). Create writes UOMs, Item (conversions, barcodes per unit, tax,
+defaults, supplier, `scale_plu`), Item Prices per priced unit in the profile's basis (incl.-VAT input is divided by
+1 + VAT for a VAT-exclusive profile) plus the buying price, and a Material Receipt for opening stock, inside one
+savepoint. **Gram and Millilitre are entry units only**: no conversion row, no Item Price; the cart's
+`plus/components/GramEntryButton.vue` (`plus/core/units.js`) turns 250 g into 0.25 Kg on Kg lines (ml on Litre lines).
+Presets: doctype **POS Item Wizard Preset** (four shipped, `pos_0001/default_item_wizard_presets.json`). Edit mode
+never deletes: a removed unit keeps its conversion row, its Item Price gets `valid_upto` = yesterday and its barcodes
+`pos0001_disabled` = 1 (Item Barcode custom field). CSV import (`items.import_wizard_csv`) runs each row through the
+same `create()`.
+
 ## 3. POS Awesome (reference only)
 
 Frontend is Vue 3 + Vuetify + TypeScript in `~/reference/posawesome/frontend/src/posapp/`; backend
