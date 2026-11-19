@@ -24,11 +24,13 @@ from frappe import _
 from frappe.utils import cint, flt, get_datetime, now_datetime
 
 from pos_next.pos_0001.permissions import check_pos_profile_access, is_pos_manager, require_pos_user
+from pos_next.pos_0001.uae import TITLE_MODES, line_vat_rates, settings_symbol_mode
 
 PRINTER = "POS Printer Profile"
 DRAWER_EVENT = "POS Drawer Event"
 DEVICE = "POS Device"
-DEFAULT_PRINT_FORMAT = "POS Next Receipt"
+DEFAULT_PRINT_FORMAT = "UAE Tax Invoice 80mm"  # pos_0001 print format (SPEC section 7)
+POS_NEXT_PRINT_FORMAT = "POS Next Receipt"
 MAX_EVENTS = 200
 PRINTER_FIELDS = (
 	"name",
@@ -79,6 +81,13 @@ def printer_dict(name: str | None) -> dict | None:
 		"receipt_barcode": row.receipt_barcode or "Code128",
 		"print_mode": row.print_mode or "raster",
 	}
+
+
+def default_print_format() -> str:
+	"""The UAE tax invoice when it is installed, else POS Next's receipt."""
+	if frappe.db.exists("Print Format", DEFAULT_PRINT_FORMAT):
+		return DEFAULT_PRINT_FORMAT
+	return POS_NEXT_PRINT_FORMAT
 
 
 def resolve_printers(pos_profile: str | None, device_id: str | None) -> dict[str, dict | None]:
@@ -144,7 +153,14 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 	profile = frappe.db.get_value(
 		"POS Profile",
 		pos_profile,
-		["company", "print_format", "pos0001_receipt_template", "pos0001_receipt_footer", "pos0001_receipt_logo"],
+		[
+			"company",
+			"print_format",
+			"pos0001_receipt_template",
+			"pos0001_receipt_footer",
+			"pos0001_receipt_logo",
+			"pos0001_invoice_title",
+		],
 		as_dict=True,
 	)
 	printers = resolve_printers(pos_profile, device_id)
@@ -155,7 +171,9 @@ def get_printing_cache(pos_profile: str, device_id: str | None = None) -> dict:
 		"company": company_details(profile.company),
 		"footer": profile.pos0001_receipt_footer or "",
 		"logo_url": profile.pos0001_receipt_logo or None,
-		"print_format": profile.pos0001_receipt_template or profile.print_format or DEFAULT_PRINT_FORMAT,
+		"print_format": profile.pos0001_receipt_template or profile.print_format or default_print_format(),
+		"invoice_title": profile.pos0001_invoice_title if profile.pos0001_invoice_title in TITLE_MODES else "Tax Invoice",
+		"currency_symbol": settings_symbol_mode(),
 		"cash_modes": cash_modes(pos_profile),
 		"can_no_sale": can_open_drawer(pos_profile),
 		"cashier": frappe.utils.get_fullname(frappe.session.user),
@@ -207,6 +225,7 @@ def receipt_for(doc: Any) -> dict:
 			frappe.get_all("Mode of Payment", filters={"name": ["in", modes]}, fields=["name", "type"], as_list=True)
 		)
 	offline_id = frappe.db.get_value("Offline Invoice Sync", {"sales_invoice": doc.name}, "offline_id")
+	vat_rates = line_vat_rates(doc)
 	return {
 		"name": doc.name,
 		"doctype": "Sales Invoice",
@@ -233,15 +252,17 @@ def receipt_for(doc: Any) -> dict:
 				"rate": flt(row.rate),
 				"amount": flt(row.amount),
 				"discount_amount": flt(row.discount_amount),
+				"vat_rate": rate,
 			}
-			for row in doc.items
+			for row, rate in zip(doc.items, vat_rates, strict=False)
 		],
 		"net_total": flt(doc.net_total),
 		"discount_amount": flt(doc.discount_amount),
 		"taxes": [
 			{
 				"description": row.description,
-				"rate": flt(row.rate),
+				# A rate only for "On Net Total" rows: the receipt prints them as "VAT 5%".
+				"rate": flt(row.rate) if row.charge_type == "On Net Total" else None,
 				"tax_amount": flt(row.tax_amount_after_discount_amount or row.tax_amount),
 			}
 			for row in doc.taxes

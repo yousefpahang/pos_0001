@@ -69,6 +69,7 @@ def run(item_count: int = 20000) -> None:
 	ensure_sales_person_setup()
 	ensure_printing_setup()
 	ensure_label_setup()
+	ensure_uae_receipt_setup()
 	ensure_item_images()
 	frappe.db.commit()
 	print("Seed done:", summary())
@@ -335,6 +336,27 @@ def leaf(doctype: str, preferred: str) -> str:
 	if frappe.db.get_value(doctype, preferred, "is_group") == 0:
 		return preferred
 	return frappe.db.get_value(doctype, {"is_group": 0}, "name")
+
+
+# Phase 7 (SPEC section 7): UAE tax invoice on both demo profiles, demo TRNs.
+DEMO_COMPANY_TRN = "100000000000003"
+DEMO_CUSTOMER_TRNS = {"Gulf Office Supplies": "100222333400003"}
+DEMO_INVOICE_TITLES = {"Main Till": "Tax Invoice", "Express Till": "Auto"}
+
+
+def ensure_uae_receipt_setup() -> None:
+	if frappe.db.exists("Company", COMPANY) and not frappe.db.get_value("Company", COMPANY, "tax_id"):
+		frappe.db.set_value("Company", COMPANY, "tax_id", DEMO_COMPANY_TRN)
+	for customer, trn in DEMO_CUSTOMER_TRNS.items():
+		if frappe.db.exists("Customer", customer) and not frappe.db.get_value("Customer", customer, "tax_id"):
+			frappe.db.set_value("Customer", customer, "tax_id", trn)
+	has_format = frappe.db.exists("Print Format", "UAE Tax Invoice 80mm")
+	for profile, title in DEMO_INVOICE_TITLES.items():
+		if not frappe.db.exists("POS Profile", profile):
+			continue
+		frappe.db.set_value("POS Profile", profile, "pos0001_invoice_title", title)
+		if has_format and not frappe.db.get_value("POS Profile", profile, "pos0001_receipt_template"):
+			frappe.db.set_value("POS Profile", profile, "pos0001_receipt_template", "UAE Tax Invoice 80mm")
 
 
 def ensure_customers() -> None:

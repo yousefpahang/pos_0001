@@ -87,6 +87,7 @@ doctype_js = {
 jinja = {
 	"methods": [
 		"pos_next.pos_next.utils.pos_closing_print.get_items_sold",
+		"pos_next.pos_0001.uae.uae_receipt",  # pos_0001: UAE Tax Invoice 80mm
 	]
 }
 

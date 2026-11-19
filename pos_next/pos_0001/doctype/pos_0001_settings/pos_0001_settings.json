@@ -11,6 +11,8 @@
   "held_cart_retention_days",
   "payments_section",
   "default_cash_rounding",
+  "column_break_payments",
+  "currency_symbol",
   "about_section",
   "about_source_url"
  ],
@@ -65,6 +67,18 @@
    "options": "None\n0.05\n0.25\n0.50\n1.00"
   },
   {
+   "fieldname": "column_break_payments",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "By language",
+   "description": "How AED amounts are written on receipts, labels and the till. By language: \"AED\" in English, \"د.إ\" in Arabic. Amounts always have 2 decimals and Western digits.",
+   "fieldname": "currency_symbol",
+   "fieldtype": "Select",
+   "label": "AED Symbol",
+   "options": "By language\nAED\nد.إ"
+  },
+  {
    "fieldname": "about_section",
    "fieldtype": "Section Break",
    "label": "About"
@@ -81,7 +95,7 @@
  "index_web_pages_for_search": 0,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-19 12:00:00.000000",
+ "modified": "2026-11-21 09:00:00.000000",
  "modified_by": "Administrator",
  "module": "POS 0001",
  "name": "POS 0001 Settings",
