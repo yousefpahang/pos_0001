@@ -22,6 +22,8 @@ variables, or put them in `<tmp>/pos0001-perf-options.json`:
 | `PERF_SYNC_COUNT` | `500` | Invoices for the sync test (0 = skip; each run creates real invoices) |
 | `PERF_ASSERT` | `0` | `1` = fail the run when a target is missed |
 | `PERF_ITEM_COUNT` | `20000` | Items expected in the cache |
+| `PERF_API_URL` | (none) | Send the till's `/api` calls to this server, e.g. `http://127.0.0.1:8002` (gunicorn) |
+| `PERF_API_SITE` | `pos.test` | `X-Frappe-Site-Name` header sent with them |
 
 The script times inside the page with `performance.now()` where possible, so Playwright's own round
 trips are not counted. Each result is the median of 3 to 10 runs. Before you run it, rebuild the demo
@@ -38,7 +40,7 @@ What each step measures:
 | `scan_to_cart_ms` | barcode + Enter in the search box | one more cart line |
 | `scale_scan_to_cart_ms` | the same, for the scale label `2012345012509` (1.250 kg) | one more cart line |
 | `global_scan_to_cart_ms` | Enter of a scanner burst with no field focused | one more cart line |
-| `pay_to_print_ms` | click on Complete Payment (online cash sale) | the raw job reaches QZ Tray (a fake QZ Tray in the test) |
+| `pay_to_print_ms` | click on Complete Payment (online cash sale) | the raw job reaches QZ Tray (a fake QZ Tray in the test); then the queue must empty |
 | `submit_offline_ms` | click on Complete Payment while offline | the invoice is in the browser queue |
 | `sync_500_ms` | going back online with 500 queued invoices | the queue is empty; then the script checks for one invoice per `offline_id` |
 
@@ -64,7 +66,46 @@ Raw files: `POS/test-results/perf-before.json` and `perf-after.json` from the ru
 because Playwright empties that folder at the start of each run. Single runs vary by about ±30 % on this
 laptop: Python tests, a build or a second browser running at the same time all slow the page.
 
-### Targets not met on the dev bench
+### Third run: all targets met (DECISIONS items 13 and 14)
+
+Measured on 2026-11-19 with the till page from the dev bench (`http://localhost:8001`) and its `/api`
+calls sent to the multi-worker gunicorn server at `http://127.0.0.1:8002` (4 workers, header
+`X-Frappe-Site-Name: pos.test`), as DECISIONS item 14 asks. The benchmark option `PERF_API_URL` does
+this routing. Both servers use the same database and Redis, so the cashier session works on both.
+
+| Action | Target | Second run (dev bench) | Third run | Met |
+| --- | --- | --- | --- | --- |
+| Item search, first results | < 100 ms | 33 ms | 34 ms | yes |
+| Barcode scan to line in cart | < 150 ms | 22 ms | 22 ms | yes |
+| Scale barcode scan to line | < 150 ms | 24 ms | 23 ms | yes |
+| Scan with no field focused | < 150 ms | 13 ms | 11 ms | yes |
+| Pay -> receipt starts printing | < 1 s | 1,296 ms | **203 ms** (runs 296, 203, 194) | **yes** |
+| Submit invoice offline | < 50 ms | 18 ms | 15 ms | yes |
+| Reopen POS, cached | < 3 s | 2,477 ms | 2,424 ms | yes |
+| Initial full cache of 20,000 items | < 60 s, with progress bar | 16.0 s | 11.7 s, bar shown | yes |
+| Sync 500 queued invoices, one till | < 5 min, no duplicates | 6 min 44 s | **4 min 48 s**; 500 Synced, 500 different invoices | **yes** |
+| Sync 500 queued invoices, 5 tills together | < 5 min, no duplicates | not measured | **3 min 42 s**; 500 Synced, 500 different invoices | **yes** |
+
+- **Pay -> print** (DECISIONS item 13): a plain, fully paid online sale is saved in POS Next's offline
+  queue, printed from the local invoice at once and submitted by the queue in the background
+  (`plus/core/backgroundSubmit.js`, UPSTREAM_PATCHES 44). The time no longer depends on the server.
+  The benchmark also checks that the queue empties afterwards, so the sales reached the server.
+  Sales Orders, credit, partly paid and receivable-account sales, and customer-credit or wallet
+  payments still wait for `submit_invoice` (about 1.3 s on the dev bench).
+- **5 tills** (`POS/perf/sync-load.spec.js`, `yarn perf perf/sync-load.spec.js`): 5 sessions, 100 queued
+  invoices each, each sending batches of 10, two at a time, to `submit_offline_invoices` like the browser.
+  About 135 invoices a minute; the median batch took 42.6 s (max 59.5 s) with 10 batches in flight on 4
+  workers, so a batch request is about 4 s of server time per invoice under that load, or about 1 s per
+  invoice with 4 batches in flight. One invoice hit a MariaDB deadlock (`1213 Deadlock found when
+  trying to get lock`), answered `Error` (not stored) and synced on the next try, as designed.
+  Options: `PERF_API_URL`, `PERF_SYNC_COUNT`, `PERF_DEVICES` in the environment or in
+  `<tmp>/pos0001-sync-load-options.json`.
+- Before running the benchmarks again, run
+  `bench --site pos.test execute pos_next.pos_0001.demo.seed.restock` (the runs sell the same demo items
+  until their stock is 0; queued invoices then fail with "insufficient stock") and `ensure_item_prices`
+  if Python tests ran.
+
+### Targets not met on the dev bench (second run)
 
 Second run (same day). Two changes, then measured again:
 

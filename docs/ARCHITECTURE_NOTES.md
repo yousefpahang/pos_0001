@@ -355,8 +355,14 @@ Taxes), POS Coupon (+ Detail), POS Offer (+ Detail), POS Opening Shift (+ Detail
   (one commit per invoice), two at a time (`plus/core/syncOutcome.js` `chunkQueue`, `runInLanes`). An invoice the
   batch did not settle goes through `syncOneQueued()` (POS Next's per-invoice path with the pre-check). A run
   starts no new batch after 40 s and then starts a follow-up run.
-- Online sale printing: `submit_invoice` answers with `pos0001_receipt` (`pos_0001.api.printing.receipt_for`), and
-  `POSSale.vue` prints from it; `get_receipt_data` is the fallback and is still used for reprints by name.
+- Online sale printing (DECISIONS item 13): a plain, fully paid online Sales Invoice
+  (`plus/core/backgroundSubmit.js` `canSubmitInBackground`) takes POS Next's offline branch in
+  `handlePaymentCompleted()`: it is saved in `invoice_queue`, printed from the local invoice, and
+  `sendQueuedSaleNow()` runs `posSync.syncPending()` at once (batch endpoint above). The receipt carries the
+  local `pos_offline_<uuid>` id and is not marked offline (`pos0001_background_submit`). Other online sales
+  (Sales Order, credit, partial, receivable account, customer credit, wallet) still wait for `submit_invoice`,
+  which answers with `pos0001_receipt` (`pos_0001.api.printing.receipt_for`); `get_receipt_data` is the
+  fallback and is still used for reprints by name. Queue payloads carry `discount_amount` and `coupon_code`.
 
 ## 3. POS Awesome (reference only)
 
