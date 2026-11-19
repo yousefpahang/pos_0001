@@ -1,3 +1,130 @@
+# POS 0001
+
+Branded point of sale for ERPNext, built for UAE retail. POS 0001 (repository `pos_0001`) is a fork of
+[POS Next](https://github.com/BrainWise-DEV/POSNext) by BrainWise with printing features ported from
+[POS Awesome](https://github.com/defendicon/POS-Awesome-V15). License: AGPL-3.0 (see [NOTICE.md](NOTICE.md)).
+
+Release **1.0.0** (pos_0001), based on POS Next 1.17.0. Changes: [CHANGELOG.md](CHANGELOG.md).
+
+The app keeps POS Next's names (app and Python package `pos_next`, URL `/pos`) so upstream merges stay cheap.
+Everything this fork adds lives in `pos_next/pos_0001/` (server) and `POS/src/plus/` (browser).
+
+## What it adds to POS Next
+
+| | Feature |
+| --- | --- |
+| F1 / F12 | Offline selling hardened: a rejected offline invoice is stored on the server (Offline Invoice Sync, status Failed, payload and error) with Retry in the till and in desk; sync badge and sync log panel; batch sync |
+| F2 / F3 | Barcode scans resolve in the browser first, so scanning works offline; 20,000-item search index in a Web Worker; virtual grid; favourites; scans caught with no field focused |
+| F4 | Label printing: ZPL, EPL, TSPL raw through QZ Tray, or an A4 PDF grid; Arabic as bitmap; from the till, the desk page `pos-labels`, Purchase Receipt and Stock Entry |
+| F5 | Scale barcodes (weight or price in the barcode), doctype **POS Scale Barcode Rule**, parsed offline and checked again on the server |
+| F6 | Sales person Off / Optional / Mandatory per POS Profile, default per cashier, badge scan, several sales persons per sale, report **Sales Person Commission** |
+| F7 | Held carts saved on the server, resumable on any till of the same POS Profile; kept on the till while offline |
+| F9 | Receipts through QZ Tray: raster (Arabic and logos on any ESC/POS printer), ESC/POS text, QZ HTML or browser; cut, copies, cash drawer, No Sale, F9 reprint, receipt barcode |
+| F10 / F11 | Bilingual UAE tax invoice (print format **UAE Tax Invoice 80mm**, credit note variant), AED formatting, Arabic item names, RTL checked on every till screen |
+| F13 | **Item Wizard** at `/pos/items/new`: buy in bags, sell by kg, gram, packs or the whole bag, in one step; CSV import; gram entry on Kg cart lines |
+
+Full requirements: [docs/SPEC.md](docs/SPEC.md) and [docs/DECISIONS.md](docs/DECISIONS.md). Status per phase:
+[docs/PROGRESS.md](docs/PROGRESS.md).
+
+## Requirements
+
+- Frappe and ERPNext **v15** (branch `version-15`). Version 16 is a target but has not been tested yet (see
+  docs/PROGRESS.md, Phase 9).
+- Python 3.10 or newer, MariaDB 10.6 or newer, Redis.
+- **Node.js 22** on the server that builds the assets. The committed `yarn.lock` files need it; Node 20 fails on
+  `nopt@10`.
+- For A4 PDF labels: the system libraries of WeasyPrint (Pango; WeasyPrint itself comes with Frappe). For Arabic
+  text on thermal labels printed from desk: libraqm, used by Pillow (also part of Frappe).
+- On each till: Chrome or Edge, and [QZ Tray](https://qz.io/download/) when it prints to receipt or label printers.
+
+## Install
+
+```bash
+cd ~/frappe-bench
+bench get-app https://github.com/yousefpahang/pos_0001 --branch version-15
+bench --site your-site install-app pos_next
+bench --site your-site migrate
+bench build --app pos_next
+bench restart            # production only
+```
+
+Install ERPNext and run its setup wizard (company, currency AED, UAE VAT template) first. `install-app` and every
+`migrate` create the default label templates, the four Item Wizard presets, the role "POS Item Wizard" and the
+"POS 0001" workspace. Existing records are never overwritten.
+
+Demo data for a test site only (one company, VAT 5%, two POS Profiles, 20,000 items, 50 weighed items, sales
+persons, a cashier `cashier@pos.test` / `cashier`):
+
+```bash
+bench --site your-test-site execute pos_next.pos_0001.demo.seed.run
+```
+
+## Configure
+
+1. **POS Profile** (desk): company, warehouse, price list, VAT template, payment modes, and the users of the till
+   in the POS Profile User table. Only listed users (and POS managers) can sell on, sync to or read a profile.
+2. **POS Settings** (POS Next, one per POS Profile): sales person mode, credit and partial sales, silent print,
+   allowed languages (add Arabic for an Arabic till).
+3. **POS Profile, POS 0001 fields**: Sales person mode (Off / Optional / Mandatory), receipt printer, label
+   printer and label role, receipt title (Tax Invoice / Simplified / Auto), receipt footer and logo.
+4. **POS 0001 Settings** (desk, single): offline negative stock rule, cache refresh minutes, held cart retention
+   days, AED symbol, internal barcode prefix, next scale PLU, and **Source Code URL**: the link the till's
+   "About / Source code" menu entry opens. Set it to the repository of the exact version you run (AGPL-3.0).
+5. **Company**: TRN (Tax ID) and address, printed on the tax invoice.
+6. **Users**: default sales person per cashier (User field "Default POS Sales Person"); role "POS Item Wizard" for managers who
+   create items.
+7. **Scale barcodes**: one **POS Scale Barcode Rule** per label format of the shop's scales (prefix, positions,
+   weight or price, check digit). Items sold on the scale need `scale_plu` (the wizard assigns it).
+
+Open the till at `https://your-site/pos`.
+
+## Hardware
+
+Receipt printers, label printers, the cash drawer, scales and scanners: see [docs/HARDWARE.md](docs/HARDWARE.md).
+In short:
+
+1. Install QZ Tray on each till.
+2. As System Manager, create the QZ certificate once (POS Next's `setup_qz_certificate`; the key stays in the
+   site's `private/qz/` folder) and install it on every till, so prints need no confirmation.
+3. Create a **POS Printer Profile** per printer (receipt or label, local or network, print mode, paper width,
+   cut, copies, drawer kick) and link it from the **POS Device** record of the till or from the POS Profile.
+4. Scanners: any USB or Bluetooth keyboard-wedge scanner; no setup.
+
+## Tests
+
+```bash
+cd ~/frappe-bench
+bench --site your-test-site run-tests --app pos_next --skip-test-records
+bench --site your-test-site run-tests --module pos_next.test_promotions
+bench --site your-test-site run-tests --module pos_next.test_packed_items_regression
+cd apps/pos_next/POS
+yarn test:run      # Vitest
+yarn e2e           # Playwright, needs the site running at http://localhost:8001
+```
+
+Run the tests on a test site only: ERPNext's `before_tests` hook deletes every Item Price on the site.
+`--skip-test-records` is needed on v15 because ERPNext's standard test records need a "_Test Company"; the
+pos_0001 tests create their own data. Frappe v15's runner skips test files at the package root, hence the two
+`--module` lines.
+
+## Updating
+
+```bash
+cd ~/frappe-bench/apps/pos_next
+git pull origin version-15
+cd ../..
+bench --site your-site migrate
+bench build --app pos_next
+bench restart            # production only
+```
+
+Merging a new POS Next release into this fork: [docs/UPGRADING_UPSTREAM.md](docs/UPGRADING_UPSTREAM.md).
+
+---
+
+The rest of this file is POS Next's own README, kept unchanged so upstream merges stay easy. Where it differs
+from the sections above (install URL, shortcuts), the sections above apply to POS 0001.
+
 # POS Next
 
 <div align="center">

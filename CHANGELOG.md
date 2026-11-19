@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [pos_0001 1.0.0] - 2026-11-19
+
+First release of the pos_0001 fork (POS 0001), based on POS Next 1.17.0. Entries headed "pos_0001" are this
+fork's releases (git tags `vX.Y.Z`); the other entries below are POS Next's own. Every edit to a POS Next file is
+listed in `docs/UPSTREAM_PATCHES.md`.
+
+### Added
+- **Failed offline invoices are stored, never dropped** (F1): a rejected invoice is kept on Offline Invoice Sync
+  (status Failed, payload, error, device, retry count) and leaves the till's queue only after the server confirms
+  Synced or Failed-and-stored. Retry from the till and from desk. Batch sync (10 per request, 2 at a time).
+- **Sync badge and sync log panel** (F12): Online / Offline / n pending / n failed; queued and failed invoices with
+  the error in plain words and Retry.
+- **POS Device** registration per browser; POS 0001 Settings.
+- **Scale barcodes** (F5): doctype POS Scale Barcode Rule (weight or price, check digit, priority, per company and
+  POS Profile), parsed in the browser and checked again on the server. Scans resolve from the till's cache first,
+  so scanning works offline.
+- **Sales person** (F6): Off / Optional / Mandatory per POS Profile, default per cashier, picker in the cart header,
+  badge scan, several sales persons with commission rates; Script Report Sales Person Commission.
+- **Receipt printing** (F9): POS Printer Profile with raster (1-bit `GS v 0`, Arabic and logos), ESC/POS text,
+  QZ HTML and browser modes; auto-cut, copies, cash drawer after cash sales, No Sale (permission, logged as POS
+  Drawer Event), F9 reprint, Code128 / QR receipt barcode, red printer badge and browser fallback when QZ Tray is
+  down. Receipts print from the local invoice; plain paid sales submit in the background.
+- **Label printing** (F4): POS Label Template (ZPL, EPL, TSPL, PDF; three default templates), Arabic text as
+  bitmap, A4 grid PDF, scale-barcode labels; from the till, desk page `pos-labels`, Purchase Receipt and Stock
+  Entry.
+- **Held carts on the server** (F7): resumable on any till of the same POS Profile, local copy while offline,
+  daily cleanup after the retention days.
+- **Speed** (SPEC section 6): search index in a Web Worker, virtual grid, favourites, global scanner capture,
+  keyboard shortcuts and the `?` overlay. Numbers in `docs/PERFORMANCE.md`.
+- **UAE** (SPEC section 7): print format UAE Tax Invoice 80mm (bilingual, TRN, VAT, credit note), Receipt Title
+  per POS Profile, AED symbol setting, Arabic item names (`item_name_ar`) in search, cart and receipts, RTL fixes
+  on every till screen, e-invoicing hook `pos0001_after_invoice_submit`.
+- **Item Wizard** (F13) at `/pos/items/new`: 8 steps, four presets (doctype POS Item Wizard Preset), edit
+  packaging, CSV import, role "POS Item Wizard"; gram entry on Kg cart lines.
+- **About / Source code** entry in the till menu with the version and the source link from POS 0001 Settings
+  (AGPL-3.0).
+- Workspace "POS 0001"; product name "POS 0001" in the till.
+- Tests: Python (`pos_next/pos_0001/tests/`), Vitest (`POS/src/plus/core/*.test.js`), Playwright (`POS/e2e/`),
+  benchmarks (`POS/perf/`).
+- Docs: README (install, configure, hardware), `docs/HARDWARE.md`, `docs/UPGRADING_UPSTREAM.md`, NOTICE.md.
+
+### Changed
+- Node.js 22 is required to build; both `yarn.lock` files are committed.
+- `submit_invoice` checks that the user may use the invoice's POS Profile.
+- Queued invoices keep the invoice discount and coupon code.
+
+### Fixed
+- `get_receivable_accounts` failed with a missing `cint` import.
+- An even sales person split of 3 (99.999 %) was rejected.
+- `posSync.syncPending` was not exported, so "Sync now" did nothing.
+- Units listed twice in the cart's unit picker and the unit dialog.
+- `bench run-tests --app pos_next` now starts and passes on Frappe v15 (test-only fixes).
+
 ## [1.16.0] - 2026-04-01
 
 ### Added
