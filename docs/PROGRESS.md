@@ -1537,4 +1537,53 @@ real receipt and label printers, drawer, 10-inch tablet, manager creates the ric
 6. **Whole-app tests use `--skip-test-records`** (README and UPGRADING_UPSTREAM say so). Building ERPNext's
    standard test records on the demo site would add "_Test Company" and other test masters to it.
 
-PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (no MariaDB root password, no write access outside this bench); all automated tests pass, docs written, tagged v1.0.0-rc.1 instead of v1.0.0
+### Second run (2026-11-19, unattended)
+
+The first run ended BLOCKED. This run checked what was missing (git log since `before-phase-9`: the five
+Phase 9 commits above) and reran every automated test.
+
+- **Fixed: flaky RTL touch-target checks in e2e.** A full `yarn e2e` run failed 1 of 20:
+  `receipt-printing.spec.js` "printer panel fits in RTL with 44 px targets" read a button height of 43.96 px.
+  The buttons have `min-h-[44px]`; frappe-ui's Dialog opens with a scale transition, and `boundingBox()`
+  measured the button mid-animation. The test (and the same pattern in `label-printing.spec.js` and
+  `sales-person.spec.js`) now checks the layout height (`offsetHeight`), which the transform does not change.
+  Commit `ec60747`. No UI change.
+- **Tried again: clean install on a fresh v15 site.** The site's MariaDB user has grants only on its own
+  database (`SHOW GRANTS`: `ALL PRIVILEGES ON _9c2f79f9a2a47ee2.*`, `USAGE ON *.*`), so `bench new-site`
+  cannot create a database with it. Starting a private MariaDB instance as this user (datadir inside the
+  bench, `mariadb-install-db` + `mariadbd` on another port) would give a fresh site without the system root
+  password, but this run was not allowed to run `mariadb-install-db` (permission denied, no one to approve).
+  Docker is installed but was not tried for the same reason. Still a manual check.
+- **v16 bench: not tried** (needs a second bench with Python 3.14 / Node 24 and a database; same limits).
+
+Test results (second run):
+
+- Vitest `yarn test:run`: **247 tests, 27 files, all pass**.
+- Playwright `yarn e2e`: first full run 19 passed, 1 failed (above). After the fix the three changed spec
+  files: **8 passed**. The next full run was slow (15.2 min) and failed 2 (cache-sync timeouts in
+  `receipt-printing` and `uae-rtl`): the bench's `bench start` stack (web :8001, Socket.IO :9001, Redis queue
+  :11001, worker) had stopped during the run, outside this run's control. A second cause: demo item ITM-00001
+  was sold out (0 in stock) by the repeated e2e runs, so the UAE totals test could not add it;
+  `seed.restock` topped it up (Phase 6 decision 7). This run restarted `bench start` itself (it stops when
+  this session ends). Full suite again on the restarted stack: **20 passed (6.2 min)**.
+  README now says e2e needs the whole `bench start` stack and to run `ensure_item_prices` and `restock`
+  before a run.
+- Python `bench --site pos.test run-tests --app pos_next --skip-test-records`: **169 tests, OK**;
+  `--module pos_next.test_promotions` **18 OK**; `--module pos_next.test_packed_items_regression` **3 OK**.
+  The test run deleted the demo Item Prices again (ERPNext `before_tests`);
+  `seed.ensure_item_prices` rebuilt them (20,050).
+
+Manual checks and decisions to review: unchanged from the first run above. The tag stays `v1.0.0-rc.1`
+(decision 1); tag `v1.0.0` on the same commit line once the fresh-v15 and v16 install checks pass.
+Extra decision to review:
+
+7. **Private MariaDB for install tests.** A future run (or a person) can test a clean v15 install without the
+   system root password: `mariadb-install-db --no-defaults --datadir=<bench>/tmp-db --auth-root-authentication-method=normal`,
+   start `mariadbd --no-defaults --datadir=<bench>/tmp-db --port=3307 --socket=<bench>/tmp-db/sock`, then
+   `bench new-site fresh.test --db-host 127.0.0.1 --db-port 3307 --db-root-password '' --install-app erpnext`.
+   Not done here because it needs approval to start a database server.
+8. **This run started `bench start` on this bench** after the running stack had stopped, so the e2e suite could
+   finish. It runs as a background job of this session and stops with it; start the bench again by hand if
+   http://localhost:8001 is down afterwards.
+
+PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB was not permitted); all automated tests pass after fixing one flaky e2e check, docs written, tagged v1.0.0-rc.1 instead of v1.0.0
