@@ -217,6 +217,12 @@ class TestScaleBarcodeServer(FrappeTestCase):
 		)
 		self.assertRaises(frappe.ValidationError, doc.insert)
 
+	def test_rule_form_shows_an_example(self) -> None:
+		doc = frappe.get_doc("POS Scale Barcode Rule", "Scale Price 22")
+		self.assertEqual(doc.example, "2211111009990 (price 9.99)")
+		self.assertTrue(sb.has_valid_check_digit(doc.example.split()[0]))
+		self.assertEqual(doc.as_dict().get("example"), doc.example)
+
 	def test_scan_cache(self) -> None:
 		frappe.set_user(CASHIER)
 		cache = barcode.get_scan_cache(PROFILE)
