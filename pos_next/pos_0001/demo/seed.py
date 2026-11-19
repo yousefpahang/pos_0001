@@ -66,8 +66,50 @@ def run(item_count: int = 20000) -> None:
 	ensure_scale_barcodes()
 	ensure_sales_person_setup()
 	ensure_printing_setup()
+	ensure_label_setup()
 	frappe.db.commit()
 	print("Seed done:", summary())
+
+
+# Phase 5 (F4): a ZPL label printer for Main Till, a Print Labels role for the cashier and
+# Arabic names on a few demo items.
+LABEL_PRINTER = "Label Printer ZPL"
+LABEL_ROLE = "POS Label Printer"
+DEMO_ARABIC_NAMES = {"ITM-00001": "مناديل فاخرة", "ITM-00002": "سكر ملكي", "PLU-12345": "طماطم"}
+
+
+def ensure_label_setup() -> None:
+	from pos_next.pos_0001.install import ensure_default_label_templates
+
+	ensure_default_label_templates()
+	if not frappe.db.exists("POS Printer Profile", LABEL_PRINTER):
+		frappe.get_doc(
+			{
+				"doctype": "POS Printer Profile",
+				"printer_name": LABEL_PRINTER,
+				"purpose": "Label",
+				"connection": "QZ Local Printer",
+				"print_mode": "raster",
+				"label_language": "ZPL",
+				"dpi": "203",
+			}
+		).insert(ignore_permissions=True)
+	if not frappe.db.exists("Role", LABEL_ROLE):
+		frappe.get_doc({"doctype": "Role", "role_name": LABEL_ROLE, "desk_access": 1}).insert(
+			ignore_permissions=True
+		)
+	user = frappe.get_doc("User", "cashier@pos.test")
+	if LABEL_ROLE not in {r.role for r in user.roles}:
+		user.append("roles", {"role": LABEL_ROLE})
+		user.save(ignore_permissions=True)
+	for profile in ("Main Till", "Express Till"):
+		if frappe.db.exists("POS Profile", profile):
+			frappe.db.set_value("POS Profile", profile, "pos0001_label_role", LABEL_ROLE)
+	if frappe.db.exists("POS Profile", "Main Till"):
+		frappe.db.set_value("POS Profile", "Main Till", "pos0001_label_printer", LABEL_PRINTER)
+	for code, name in DEMO_ARABIC_NAMES.items():
+		if frappe.db.exists("Item", code) and not frappe.db.get_value("Item", code, "item_name_ar"):
+			frappe.db.set_value("Item", code, "item_name_ar", name)
 
 
 # Phase 4 (F9): two receipt printer profiles (not assigned to a profile, so the demo till
