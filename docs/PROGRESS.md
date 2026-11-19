@@ -738,7 +738,7 @@ Awesome was read as a reference only (`useZplGenerator.ts`, `useBarcodePrintOutp
 
 PHASE 5: DONE
 
-## Phase 6
+## Phase 6 (first run)
 
 Run date: 2026-11-19 (unattended). Scope: SPEC section 11, Phase 6 prompt (SPEC section 6, F7), with DECISIONS.md
 item 6 applied. The 20,000-item demo catalogue from `pos_next/pos_0001/demo/seed.py` was already on `pos.test`
@@ -899,4 +899,98 @@ item 6 applied. The 20,000-item demo catalogue from `pos_next/pos_0001/demo/seed
 16. Demo data note: ITM-00002 shows two "Nos" UOM rows in the UOM dialog (left over from earlier test data). It does
     not affect this phase but is worth cleaning up in the seed.
 
-PHASE 6: BLOCKED - two SPEC section 6 targets are not met on the dev bench: pay -> receipt printing (1.7 s, target 1 s) and syncing 500 queued invoices (9.6 min, target 5 min); both depend on server speed and POS Next's one-at-a-time sync (Decisions to review 1-2)
+## Phase 6
+
+Second run, 2026-11-19 (unattended). The first run (section above) built everything in SPEC section 11, Phase 6,
+but two section 6 targets were not met. This run worked on those two targets and checked everything again.
+
+### What was built
+
+- **Batch offline sync** (SPEC section 6, "sync 500 queued invoices < 5 min"):
+  - Server: `pos_0001.api.sync.submit_offline_invoices`. It takes up to 25 invoices and processes each one the same
+    way as `submit_offline_invoice`. Each invoice is committed on its own, so a Synced or Failed-and-stored answer
+    is durable even if a later invoice of the batch breaks. An invoice that cannot be processed (lock timeout,
+    access error, no offline id) answers `Error` with `stored: false`, and the browser keeps it.
+  - Browser (POS Next `utils/offline/sync.js`, UPSTREAM_PATCHES 37): the queue goes in batches of 10, two
+    requests at a time. An invoice the batch settled skips the pre-check and the single submit. Any other answer,
+    or a failed batch request, goes through POS Next's one-by-one path as before. The DECISIONS item 2 rule is
+    kept: a row leaves the queue only on Synced or Failed-and-stored. A run starts no new batch after 40 s and
+    then starts a follow-up run, so it never outlives the 60 s sync mutex timeout.
+  - Pure helpers in `plus/core/syncOutcome.js`: `chunkQueue`, `matchBatchResponses`, `runInLanes`.
+- **Receipt data in the submit answer** (SPEC section 6, "pay -> receipt starts printing < 1 s"). POS Next's
+  `submit_invoice` adds `pos0001_receipt` for online Sales Invoices (UPSTREAM_PATCHES 38). This is the same data
+  as `get_receipt_data`, read inside the submit transaction, so it still has ERPNext's final VAT and rounding.
+  `POSSale.vue` prints from it, so no second request is needed (UPSTREAM_PATCHES 39). The stock refresh after a
+  sale now runs while the receipt prints. A plain copy is printed, because IndexedDB cannot store the reactive
+  answer and F9 reprint needs the stored copy (the e2e test found this).
+- E2E fix in `till-speed.spec.js`: the test pressed `+` twice less than 30 ms apart, so the scanner rule took
+  the presses as a burst. It now waits 150 ms between presses. The shortcut-row height is now measured after the
+  overlay's open transition (it read 43.96 px during the scale-in).
+- Docs: PERFORMANCE.md (second-run numbers and analysis), ARCHITECTURE_NOTES "After Phase 6", UPSTREAM_PATCHES
+  37-39.
+
+### Test results
+
+- **Python** (`bench --site pos.test run-tests --module ...`):
+  - `test_sync`: **17 OK**. New `TestBatchSync` (4 tests): one answer per invoice, in order. The same offline
+    id twice in one batch gives one invoice. A rejected invoice is stored as Failed with its payload. An
+    invoice without an offline id answers Error, not stored, and the rest of the batch still syncs. A user who
+    is not on the POS Profile gets Error and nothing is created. Bad input and Guest are refused.
+  - `test_printing`: **17 OK**, with 3 new tests. The online `submit_invoice` answer carries the receipt, equal
+    to `get_receipt_data`. An offline sync answer has none. A receipt failure returns None.
+  - Regression: `test_held_carts` 11, `test_favourites` 3, `test_barcode` 19, `test_sales_person` 20,
+    `test_labels` 21, `pos_next.test_promotions` 18, `pos_next.api.test_credit_sales` 4,
+    `pos_next.test_packed_items_regression` 3. All OK.
+  - The whole-app `run-tests` still does not start on v15 (Phase 1 decision 8). Demo prices were rebuilt after
+    the runs (`seed.ensure_item_prices`).
+- **Vitest** `yarn test:run`: **190 tests, 17 files, all pass** (4 new tests for the batch helpers).
+- **Playwright** `yarn e2e`: **15 passed** (4.5 min) on the final run. Earlier runs in this session found the F9
+  regression (fixed). They also failed on the two timing problems in `till-speed.spec.js` (fixed in the test) and
+  once on the "online receipt < 5 s" check of `receipt-printing.spec.js`: 6.5 s on a cold first sale while
+  the shared machine was busy. That check passed on the 3 runs after.
+- **Benchmark** `yarn perf` (dev bench, 20,000 items). First run -> this run:
+
+  | Target | First run | This run | Met |
+  | --- | --- | --- | --- |
+  | Search first results < 100 ms | 32 ms | 33 ms | yes |
+  | Scan to cart < 150 ms | 24 ms | 22 ms | yes |
+  | Scale scan to cart < 150 ms | 27 ms | 24 ms | yes |
+  | Scan with no field focused | 13 ms | 13 ms | yes |
+  | Pay -> receipt < 1 s | 1,735 ms | **1,296 ms** | **no** |
+  | Submit offline < 50 ms | 26 ms | 18 ms | yes |
+  | Reopen cached < 3 s | 2,483 ms | 2,477 ms | yes |
+  | Initial cache 20,000 < 60 s, progress bar | 17.8 s | 16.0 s | yes |
+  | Sync 500 queued < 5 min, no duplicates | 9 min 34 s | **6 min 44 s**, 500 Synced, 500 different invoices | **no** |
+
+- `bench build --app pos_next`: OK. `biome check` is clean on the changed files. `e2e/till-speed.spec.js` and
+  `perf/benchmark.spec.js` still have small formatting differences from before this run.
+
+### Manual checks (need real hardware, a person or a production server)
+
+The manual checks of the first run still apply. Also:
+
+- [ ] Run `yarn perf` against a **production** setup (gunicorn with several workers, no developer mode, nginx).
+      Check sync 500 < 5 min and pay -> print < 1 s there. `bench serve` is one Python process, so the two sync
+      requests cannot run in parallel on the dev bench. Starting a gunicorn server was not allowed in this
+      unattended run.
+- [ ] 5 tills syncing together (SPEC section 10 load test, Phase 8). This now means 10 batch requests at once.
+      Watch for lock waits or deadlocks on Bin and GL. Such an invoice answers Error and is retried one by one.
+- [ ] Online sale on a real receipt printer: the receipt prints at once, and F9 reprints the same receipt.
+
+### Decisions to review
+
+1. **Batch sync changes POS Next's sync behaviour** (ask-first area). Safest variant chosen: the new path is
+   used only for invoices the server settles in the batch. Everything else uses POS Next's old path. The
+   offline-id duplicate protection is not changed. Batch size 10, two lanes. These are constants in
+   `plus/core/syncOutcome.js` (`SYNC_BATCH_SIZE`, `SYNC_BATCH_LANES`).
+2. **Invoices from one till may reach the server slightly out of order**, because two batches run at a time. Each
+   invoice keeps its own posting date and time from the till. Set `SYNC_BATCH_LANES = 1` if strict order matters.
+3. **Pay -> print stays 1.3 s on the dev bench.** The till still waits for the server, because the receipt must
+   show ERPNext's final VAT and rounding (Phase 4 decision 8, UAE tax invoice). To go below 1 s on slow servers,
+   it would have to print the browser's figures first, or merge POS Next's `update_invoice` and `submit_invoice`
+   calls into one. Both change POS Next or the tax display, so neither was done.
+4. **The two remaining targets depend on the server.** SPEC section 6 gives the till hardware but not the
+   server. This run reports them as not met on the dev bench and does not claim production numbers it could not
+   measure.
+
+PHASE 6: BLOCKED - pay -> receipt (1.3 s, target 1 s) and sync of 500 queued invoices (6 min 44 s, target 5 min) are still not met on the dev bench; both are now bound by server time in POS Next's submit_invoice and need a measurement on a production (multi-worker) server, which this unattended run was not allowed to start
