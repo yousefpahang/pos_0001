@@ -2317,8 +2317,9 @@ async function handlePaymentCompleted(paymentData) {
  * @param {string[]} itemCodes
  */
 function sendQueuedSaleNow(itemCodes) {
-	offlineStore
-		.syncPending()
+	// Never throws: the sale is already queued, printed and cleared from the cart.
+	Promise.resolve()
+		.then(() => offlineStore.syncPending())
 		.then(() => {
 			stockStore.refresh(itemCodes, shiftStore.profileWarehouse);
 			loadInvoiceHistoryData().catch((err) =>

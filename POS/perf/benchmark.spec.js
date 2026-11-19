@@ -646,6 +646,12 @@ test.describe
 					median(prints),
 					`runs ${prints.join(", ")} (printed from the local invoice; submit runs in the background)`,
 				)
+				// The background submits must still reach the server (queue empties).
+				await expect
+					.poll(() => pendingQueue(page, "pos_offline_"), {
+						timeout: 60_000,
+					})
+					.toBe(0)
 			} catch (error) {
 				record(
 					"pay_to_print_ms",

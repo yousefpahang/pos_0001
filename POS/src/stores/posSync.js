@@ -427,6 +427,7 @@ export const usePOSSyncStore = defineStore("posSync", () => {
 		updatePendingCount,
 		deleteOfflineInvoice,
 		syncAllPending,
+		syncPending, // pos_0001: sync without toasts (sync panel, background submit)
 		preloadDataForOffline,
 		checkOfflineCacheAvailability,
 		checkCacheReady,
