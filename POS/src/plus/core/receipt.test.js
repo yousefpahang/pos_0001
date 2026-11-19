@@ -125,6 +125,15 @@ describe("receipt model", () => {
 		expect(m.outstanding).toBe(0)
 	})
 
+	it("an online sale printed before its background submit is not marked offline", () => {
+		const m = buildReceiptModel(
+			{ ...OFFLINE_DOC, is_offline: false, pos0001_background_submit: true },
+			{ cashModes: ["Cash"] },
+		)
+		expect(m.offline).toBe(false)
+		expect(m.total).toBe(5.78)
+	})
+
 	it("returns are credit notes that reference the original", () => {
 		const m = buildReceiptModel(
 			{

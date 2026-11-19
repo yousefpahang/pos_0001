@@ -238,7 +238,10 @@ export function buildReceiptModel(doc, ctx = {}) {
 		currency: str(doc.currency || ctx.currency),
 		isReturn,
 		returnAgainst: str(doc.return_against),
-		offline: Boolean(doc.is_offline) || isLocalInvoiceName(name),
+		// An online sale printed before its background submit (DECISIONS item 13) is not offline.
+		offline:
+			!doc.pos0001_background_submit &&
+			(Boolean(doc.is_offline) || isLocalInvoiceName(name)),
 		reprint: Boolean(ctx.reprint),
 		footer: str(ctx.footer),
 		logo: ctx.logo || null,
