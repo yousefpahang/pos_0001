@@ -1,0 +1,196 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2026-11-21 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "language",
+  "enabled",
+  "is_default",
+  "company",
+  "column_break_main",
+  "width_mm",
+  "height_mm",
+  "dpi",
+  "gap_mm",
+  "barcode_type",
+  "section_a4",
+  "a4_columns",
+  "a4_rows",
+  "margins_mm",
+  "section_body",
+  "body",
+  "body_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "ZPL",
+   "description": "ZPL (Zebra), EPL (older Zebra / Eltron), TSPL (TSC, Xprinter label printers) are sent raw to a label printer through QZ Tray. PDF prints a grid of labels on A4 sheets.",
+   "fieldname": "language",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Language",
+   "options": "ZPL\nEPL\nTSPL\nPDF",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled"
+  },
+  {
+   "default": "0",
+   "description": "Offered first for its language when the POS Profile has no default label template. One default per language.",
+   "fieldname": "is_default",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Default for this Language"
+  },
+  {
+   "description": "Leave empty to use this template with any company.",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "For PDF: the width of one label on the sheet.",
+   "fieldname": "width_mm",
+   "fieldtype": "Float",
+   "label": "Width (mm)",
+   "reqd": 1
+  },
+  {
+   "description": "For PDF: the height of one label on the sheet.",
+   "fieldname": "height_mm",
+   "fieldtype": "Float",
+   "label": "Height (mm)",
+   "reqd": 1
+  },
+  {
+   "default": "203",
+   "depends_on": "eval:doc.language!='PDF'",
+   "fieldname": "dpi",
+   "fieldtype": "Select",
+   "label": "DPI",
+   "options": "203\n300"
+  },
+  {
+   "default": "2",
+   "depends_on": "eval:doc.language!='PDF'",
+   "description": "Gap between labels on the roll.",
+   "fieldname": "gap_mm",
+   "fieldtype": "Float",
+   "label": "Gap (mm)"
+  },
+  {
+   "default": "EAN13",
+   "description": "EAN13 is used when the item's barcode is a valid EAN-13; other barcodes print as Code128.",
+   "fieldname": "barcode_type",
+   "fieldtype": "Select",
+   "label": "Barcode Type",
+   "options": "Code128\nEAN13"
+  },
+  {
+   "depends_on": "eval:doc.language=='PDF'",
+   "fieldname": "section_a4",
+   "fieldtype": "Section Break",
+   "label": "A4 Sheet"
+  },
+  {
+   "default": "3",
+   "fieldname": "a4_columns",
+   "fieldtype": "Int",
+   "label": "A4 Columns"
+  },
+  {
+   "default": "8",
+   "fieldname": "a4_rows",
+   "fieldtype": "Int",
+   "label": "A4 Rows"
+  },
+  {
+   "default": "3",
+   "description": "Space kept free inside each label. The grid of labels is centred on the sheet.",
+   "fieldname": "margins_mm",
+   "fieldtype": "Float",
+   "label": "Label Margin (mm)"
+  },
+  {
+   "fieldname": "section_body",
+   "fieldtype": "Section Break",
+   "label": "Template"
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Code",
+   "label": "Body (Jinja)",
+   "options": "Jinja",
+   "reqd": 1
+  },
+  {
+   "fieldname": "body_help",
+   "fieldtype": "HTML",
+   "label": "Help",
+   "options": "<div class=\"small text-muted\"><p><b>Values</b> (escaped for the language): <code>{{ item_name }}</code>, <code>{{ item_name_ar }}</code>, <code>{{ item_code }}</code>, <code>{{ barcode }}</code>, <code>{{ barcode_type }}</code>, <code>{{ uom }}</code>, <code>{{ price }}</code> (incl. VAT), <code>{{ price_label }}</code> (AED 12.50), <code>{{ currency }}</code>, <code>{{ company }}</code>, <code>{{ date }}</code>, <code>{{ weight }}</code> (scale labels), <code>{{ qty }}</code> (labels to print), <code>{{ width_mm }}</code>, <code>{{ height_mm }}</code>, <code>{{ width_dots }}</code>, <code>{{ height_dots }}</code>, <code>{{ gap_mm }}</code>, <code>{{ gap_dots }}</code>, <code>{{ dpi }}</code>.</p><p><b>Helpers</b>: <code>{{ draw_barcode(x, y, height, module) }}</code> in dots (PDF: <code>draw_barcode(height_mm)</code>); <code>{{ draw_arabic(item_name_ar, x, y, height, max_width) }}</code> draws Arabic as a bitmap, because label printer fonts cannot shape Arabic (PDF: <code>draw_arabic(item_name_ar)</code>); <code>{{ fit(item_name, 30) }}</code> cuts text to 30 characters.</p><p><b>Tags</b>: <code>{% if name %}</code>, <code>{% if not name %}</code>, <code>{% elif name %}</code>, <code>{% else %}</code>, <code>{% endif %}</code>. Nothing else from Jinja, so the POS can print the same label offline. If the body does not use <code>qty</code>, the label is repeated.</p></div>"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-21 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Label Template",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nexus POS Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "POSNext Cashier"
+  },
+  {
+   "read": 1,
+   "role": "Stock User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

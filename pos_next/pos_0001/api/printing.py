@@ -86,8 +86,12 @@ def resolve_printers(pos_profile: str | None, device_id: str | None) -> dict[str
 	receipt = label = None
 	if device_id and frappe.db.exists(DEVICE, device_id):
 		receipt, label = frappe.db.get_value(DEVICE, device_id, ["receipt_printer", "label_printer"])
-	if not receipt and pos_profile:
-		receipt = frappe.db.get_value("POS Profile", pos_profile, "pos0001_receipt_printer")
+	if pos_profile and (not receipt or not label):
+		profile_receipt, profile_label = frappe.db.get_value(
+			"POS Profile", pos_profile, ["pos0001_receipt_printer", "pos0001_label_printer"]
+		) or (None, None)
+		receipt = receipt or profile_receipt
+		label = label or profile_label
 	return {"receipt": printer_dict(receipt), "label": printer_dict(label)}
 
 
