@@ -60,17 +60,17 @@
 						<!-- Shift Duration -->
 						<StatusBadge
 							v-if="hasOpenShift && shiftDuration"
-							class="hidden 2xl:flex whitespace-nowrap"
+							class="whitespace-nowrap rtl:hidden 2xl:rtl:flex"
 							variant="green"
 							size="xs"
 							:icon="shiftIcon"
 							:label="__('Shift Open:')"
 							:value="shiftDuration"
 						/>
-						<!-- pos_0001: without the label on narrower screens (no wrapping, RTL) -->
+						<!-- pos_0001: Arabic below 1536 px: without the label (it wrapped under the clock) -->
 						<StatusBadge
 							v-if="hasOpenShift && shiftDuration"
-							class="2xl:hidden whitespace-nowrap"
+							class="hidden whitespace-nowrap rtl:flex 2xl:rtl:hidden"
 							variant="green"
 							size="xs"
 							:icon="shiftIcon"
