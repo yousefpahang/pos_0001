@@ -463,6 +463,8 @@
 					</button>
 				</div>
 			</div>
+			<!-- pos_0001 (F6): sales person picker in the cart header -->
+			<SalesPersonPicker />
 		</div>
 
 		<!-- Action Buttons Section -->
@@ -1471,6 +1473,7 @@ const log = logger.create("InvoiceCart");
 import { createResource } from "frappe-ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from "vue";
 import EditItemDialog from "./EditItemDialog.vue";
+import SalesPersonPicker from "@/plus/components/SalesPersonPicker.vue";
 
 /**
  * ============================================================================
