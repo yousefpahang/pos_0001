@@ -9,7 +9,7 @@
 # Usage (from the app repo):
 #   cd ~/projects/pos/frappe-bench/apps/pos_next
 #   tmux new -s pos
-#   ./run_phases.sh            # continue from the next unfinished phase up to 8
+#   ./run_phases.sh            # continue from the next unfinished phase up to 9
 #   ./run_phases.sh 3          # force start at phase 3
 #   ./run_phases.sh 3 5        # run phases 3..5 only
 # Optional env:
@@ -26,7 +26,7 @@ SITE="pos.test"
 SITE_URL="http://localhost:8001"
 PROGRESS="docs/PROGRESS.md"
 LOG_DIR="$REPO_DIR/logs"
-LAST_PHASE=8
+LAST_PHASE=9
 MAX_ATTEMPTS=${MAX_ATTEMPTS:-2}
 
 # Commands Claude may run without asking. Add to this list if a phase stops on a denied command.

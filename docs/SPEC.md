@@ -26,6 +26,7 @@ This document is written to be handed to Claude Code. Each section is a requirem
 | F10 | Modern, touch-friendly UI in English and Arabic | POS Next | Exists, add RTL checks |
 | F11 | UAE VAT tax invoice receipt | New | Build |
 | F12 | Cashier-visible sync log | LumenPOS idea | Build |
+| F13 | Item Wizard: buy in bags, sell by kg / gram / packs | New | Build |
 
 ### Non-goals (first release)
 
@@ -268,6 +269,51 @@ Staff print shelf and product labels from the POS or the desk, on a thermal labe
 - **Scale-barcode generation:** for goods weighed and packed in store, generate an EAN-13 from a barcode rule + PLU + weight or price, with a valid check digit, and print it on a label.
 - Ship three default templates: 38×25 mm shelf label, 50×30 mm product label, A4 3×8 grid.
 
+## 5a. Feature spec: item setup wizard
+
+### F13 Item Wizard (buy in bags, sell by kg, gram or other units)
+
+A shop manager creates a correctly configured item in under 2 minutes, without knowing ERPNext's UOM conversion, Item Price or barcode tables. The wizard asks plain questions and writes every ERPNext record in one transaction.
+
+**Where it lives:** a route `/pos/items/new` inside the POS app (same Vue + Tailwind UI), opened from a "New item" button in the POS item menu and from a "Create with Wizard" button on the desk Item list. Requires a new role permission `POS Item Wizard` (managers only). Needs to be online.
+
+**Core rule for weighed goods:** the stock UOM is the weighing unit (Kg, or Litre for liquids), and prices are set per Kg/Litre. Gram and ml are entry units only: when a cashier enters 250 g, the cart line becomes 0.250 Kg at the per-Kg price. Do not create Item Prices per Gram: at 2-decimal currency precision a per-gram price like AED 0.0045 rounds to 0.00.
+
+### Steps
+
+1. **Start:** pick a preset or start blank. Presets: "Bulk by weight (sack/bag → kg)", "Liquid (drum/can → litre)", "Pieces in a carton", "Pre-packed portions from bulk", plus "Copy from existing item" and any presets the shop saved.
+2. **Basics:** name in English and Arabic (`item_name_ar`), item group, brand, image. Item code auto-generated from the item group's naming series; editable.
+3. **How you buy it:** buying unit (Bag, Sack, Carton, Drum — missing UOMs are created) and how much is in one, e.g. 1 Bag = 25 Kg. Optional second level, e.g. 1 Carton = 12 Packs, 1 Pack = 500 g. Supplier and buying price per buying unit (optional).
+4. **How you sell it:** tick the selling units and set each one's size — Kg (by weight), Gram entry, a pre-packed 500 g pack, the whole Bag, etc. Toggle "Sold on the scale" to assign the next free `scale_plu` and link the shop's POS Scale Barcode Rule.
+5. **Prices:** enter the price per Kg (or a margin % over cost). The wizard shows the calculated price for every selling unit, cost per Kg, and margin per unit, and lets you override any unit's price (e.g. a cheaper whole-bag price). Asks once whether prices include VAT, and picks the VAT template (5% / zero-rated / exempt). Warns in red when any unit sells below cost.
+6. **Barcodes:** scan or type a barcode per selling unit, or press Generate (internal EAN-13 with prefix from settings and a valid check digit). Duplicates are blocked with the name of the item that already uses it.
+7. **Opening stock (optional):** quantity in buying units (e.g. 4 Bags), warehouse, cost; shown as the converted stock (100 Kg).
+8. **Review and create:** one summary screen, then Create. Afterwards offer: print labels (F4), create another like this, save as preset, open the item.
+
+### Worked example — rice bought in 25 kg bags
+
+| Selling unit | Conversion to stock UOM (Kg) | Price (AED, incl. VAT) | How it's set |
+| --- | --- | --- | --- |
+| Kg (weighed on scale) | 1 | 4.50 | Entered (cost 3.00/kg from AED 75 per bag, 50% margin) |
+| Gram (entry unit) | 0.001 | — | No price; converted to Kg in the cart |
+| Pack 500 g (pre-packed) | 0.5 | 2.50 | Calculated 2.25, rounded up by user |
+| Bag 25 kg | 25 | 99.00 | Override (cheaper than 25 × 4.50 = 112.50) |
+
+### What Create writes (one DB transaction, rolled back on any error)
+
+- **Item:** stock UOM, `purchase_uom`, `sales_uom`, the UOM conversion table, `item_name_ar`, `scale_plu`, item tax template, default warehouse, and `is_stock_item`.
+- **UOMs:** any missing ones are created. Kg, Gram and Litre have "must be whole number" off; Bag, Carton and Pack have it on.
+- **Item Barcode** rows, one per selling unit with its UOM.
+- **Item Price** rows per UOM in the POS Profile's selling price list, plus the buying price in the buying price list.
+- **Item Supplier**, if a supplier was given.
+- **Opening stock:** a Material Receipt Stock Entry, if opening stock was entered.
+
+### Also
+
+- **Edit packaging:** open an existing item in the wizard at steps 3–6 to add a unit, change prices or add barcodes. Nothing is deleted. Removing a unit only disables its barcode and price.
+- **Bulk:** a CSV template with the same columns as the wizard (one row per item, units as columns) for importing many items at once. It goes through the same validation and creation code as the wizard.
+- **POS support:** cashier can type a weight in grams for Kg items (the 250 → 0.250 Kg conversion); a unit picker on the cart line switches between the item's selling units and applies that unit's price.
+
 ## 6. Performance and UI
 
 Measured on a mid-range till (Intel i3/8 GB or a 2022 Android tablet, Chrome) with 20,000 items cached.
@@ -315,17 +361,18 @@ Other:
 
 ## 8. Data model
 
-Five new doctypes and a set of custom fields (shipped as fixtures). POS Next's own doctypes are reused and extended only through Custom Fields, never by editing their JSON.
+Six new doctypes and a set of custom fields (shipped as fixtures). POS Next's own doctypes are reused and extended only through Custom Fields, never by editing their JSON.
 
 ### New doctypes
 
 | Doctype | Type | Key fields |
 | --- | --- | --- |
-| POS 0001 Settings | Single | `offline_negative_stock` (Allow/Warn/Block), `cache_refresh_minutes` (5), `held_cart_retention_days` (3), `default_cash_rounding`, `about_source_url` |
+| POS 0001 Settings | Single | `offline_negative_stock` (Allow/Warn/Block), `cache_refresh_minutes` (5), `held_cart_retention_days` (3), `default_cash_rounding`, `about_source_url`, `internal_barcode_prefix` (e.g. `29`), `next_scale_plu` |
 | POS Scale Barcode Rule | Master | `company`, `pos_profiles` (table, optional), `prefix`, `total_length`, `item_code_start`, `item_code_length`, `item_match` (Item Barcode / scale\_plu), `value_type` (Weight/Price), `value_start`, `value_length`, `decimals`, `uom`, `check_digit_mode` (Validate/Ignore), `priority`, `enabled` |
 | POS Printer Profile | Master | `printer_name`, `purpose` (Receipt/Label), `connection` (QZ local name / Network IP:port), `print_mode` (raster/escpos\_text/qz\_html/browser), `paper_width_mm` (80/58), `dpi`, `auto_cut`, `copies`, `drawer_kick`, `label_language` (ZPL/EPL/TSPL) |
 | POS Label Template | Master | `width_mm`, `height_mm`, `dpi`, `language` (ZPL/EPL/TSPL/PDF), `barcode_type` (Code128/EAN13), `body` (Code, Jinja), `a4_columns`, `a4_rows`, `margins_mm`, `is_default` |
 | POS Device | Master | `device_id` (UUID from the browser), `device_name`, `pos_profile`, `receipt_printer`, `label_printer`, `last_seen`, `app_version` |
+| POS Item Wizard Preset | Master | `preset_name`, `item_group`, `stock_uom`, `buying_units` (table: uom, size, parent uom), `selling_units` (table: uom, size, priced, default margin %), `sold_on_scale`, `item_tax_template`, `prices_include_vat` |
 
 ### Custom fields
 
@@ -360,6 +407,13 @@ All new endpoints are `@frappe.whitelist()` methods under `<package>.pos_0001.ap
 | `labels.items_from_document` | `doctype`, `name` | rows\[\] | Purchase Receipt, Stock Entry |
 | `labels.render` | `template`, `rows[]` | raw string (ZPL/EPL/TSPL) or PDF file URL | Desk page; the POS renders locally |
 | `reports.sales_person_commission` | `from_date`, `to_date`, `pos_profile?` | rows | Also a Script Report |
+| `items.wizard_defaults` | `pos_profile`, `preset?`, `copy_from?` | defaults for every step | Price lists, warehouse, VAT templates, UOM list, next PLU |
+| `items.wizard_preview` | wizard payload | per-unit prices, cost, margin, warnings | No writes; called as the user types (debounced) |
+| `items.wizard_validate` | wizard payload | errors\[\] per step | Duplicate barcodes, codes, PLUs; conversions > 0; below-cost warnings |
+| `items.wizard_create` | wizard payload | `{item_code, created: [...]}` | One transaction; rolls back on any error |
+| `items.wizard_update_packaging` | `item_code`, payload | changes made | Edit mode; never deletes, only disables |
+| `items.generate_internal_barcode` | `uom?` | EAN-13 | Uses `internal_barcode_prefix`, unique |
+| `items.import_wizard_csv` | file | per-row result | Same validation and create code |
 
 Invoice submit stays in POS Next's `submit_invoice`; per decision 10 we add a POS Profile access check there as a minimal, separate patch. QZ signing uses POS Next's existing endpoint.
 
@@ -371,7 +425,7 @@ A phase is done only when its automated tests pass and its acceptance checks bel
 
 ### Automated tests
 
-- **Python** (`bench --site pos.test run-tests --app pos_next`, our tests under `pos_0001/tests/`): scale barcode vectors (F5 table), same `offline_id` sent twice → one invoice, rejected invoice → Offline Invoice Sync status Failed with payload and error, Retry succeeds after fixing the cause, POS Profile access check on `submit_invoice`, sales-person allocation totals 100%, label rendering snapshots, commission report totals.
+- **Python** (`bench --site pos.test run-tests --app pos_next`, our tests under `pos_0001/tests/`): scale barcode vectors (F5 table), same `offline_id` sent twice → one invoice, rejected invoice → Offline Invoice Sync status Failed with payload and error, Retry succeeds after fixing the cause, POS Profile access check on `submit_invoice`, sales-person allocation totals 100%, label rendering snapshots, commission report totals, Item Wizard create for each preset (records match the F13 list, rollback on error, duplicate barcode blocked).
 - **Frontend unit** (Vitest, added as a dev dependency in Phase 1): `scaleBarcode.js`, `ean.js` check digits, totals/VAT/rounding, ESC/POS and ZPL/TSPL builders (byte snapshots), raster conversion of a fixed receipt.
 - **End-to-end** (Playwright, Chromium): login → cache → go offline (`context.setOffline(true)`) → sell 10 invoices incl. scanned and scale items, split payment, held cart → go online → assert 10 invoices in ERPNext, no duplicates, GL and stock entries correct; hold on one browser context and resume on another.
 - **Load:** script 500 queued invoices from 5 devices syncing together; assert no duplicates and < 5 min.
@@ -387,6 +441,7 @@ A phase is done only when its automated tests pass and its acceptance checks bel
 - [ ] Print 20 labels from a Purchase Receipt on the label printer and an A4 grid; barcodes scan back.
 - [ ] 20,000-item search and scan meet section 6 targets.
 - [ ] RTL layout has no overlapping or clipped text.
+- [ ] A manager with no ERPNext training creates the rice example from F13 in under 2 minutes; the POS then sells 250 g, a 500 g pack and a whole bag at the right prices, and stock drops by 0.25, 0.5 and 25 Kg.
 
 ### Hardware test matrix (fill in with clients' models)
 
@@ -400,7 +455,7 @@ A phase is done only when its automated tests pass and its acceptance checks bel
 
 ## 11. Build phases and Claude Code prompts
 
-Phase 0 is done. Phases 1–8 run unattended with `run_phases.sh`, one fresh Claude Code run per phase; each reads `CLAUDE.md`, `docs/SPEC.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE_NOTES.md` and `docs/PROGRESS.md`, and ends by writing `PHASE N: DONE` or `PHASE N: BLOCKED - reason` in `docs/PROGRESS.md`. Review `PROGRESS.md` (manual checks, decisions to review) after the run.
+Phase 0 is done. Phases 1–9 run unattended with `run_phases.sh`, one fresh Claude Code run per phase; each reads `CLAUDE.md`, `docs/SPEC.md`, `docs/DECISIONS.md`, `docs/ARCHITECTURE_NOTES.md` and `docs/PROGRESS.md`, and ends by writing `PHASE N: DONE` or `PHASE N: BLOCKED - reason` in `docs/PROGRESS.md`. Review `PROGRESS.md` (manual checks, decisions to review) after the run.
 
 | Phase | Delivers | Depends on | Rough size |
 | --- | --- | --- | --- |
@@ -412,7 +467,8 @@ Phase 0 is done. Phases 1–8 run unattended with `run_phases.sh`, one fresh Cla
 | 5 | Label printing | 4 | 4 days |
 | 6 | Performance, server-side held carts, shortcuts | 2 | 3 days |
 | 7 | UAE receipt, Arabic/RTL | 4 | 2–3 days |
-| 8 | Hardening, e2e, docs, release | all | 3 days |
+| 8 | Item Wizard (F13), gram entry and unit picker in the cart | 2, 5, 7 | 4–5 days |
+| 9 | Hardening, e2e, docs, release | all | 3 days |
 
 **Phase 0**
 
@@ -463,6 +519,12 @@ Read docs/SPEC.md section 7 and docs/DECISIONS.md item 8. Create the UAE Tax Inv
 ```
 
 **Phase 8**
+
+```text
+Read docs/SPEC.md section 5a (F13) and the item, UOM and pricing notes in ARCHITECTURE_NOTES.md. First check how POS Next handles item UOMs, UOM-specific Item Prices and the cart line UOM, and write findings in PROGRESS.md. Build the Item Wizard as route /pos/items/new in the POS app (Vue + Tailwind, 8 steps, with back/next, step validation and a progress bar), the desk Item list button, the POS Item Wizard role permission, the POS Item Wizard Preset doctype with the four default presets, and the items.* endpoints from section 9. wizard_create must write every record listed in F13 in one transaction and roll back on any error. Follow the core rule: price per Kg/Litre only, gram/ml as entry units. Add edit-packaging mode and the CSV import using the same create code. In the POS cart, add gram entry for Kg items and a unit picker that applies each unit's price. Arabic strings in the CSV translations. Python tests per preset (records created match F13, rollback, duplicate barcode), and a Playwright test for the rice example from section 5a through to selling 250 g, a 500 g pack and a bag.
+```
+
+**Phase 9**
 
 ```text
 Run every test in docs/SPEC.md section 10 and fix failures. Test a clean install on a fresh v15 site and on a v16 bench. Write README (install, configure, hardware), CHANGELOG, NOTICE.md, and an upgrade note for merging upstream POS Next. Tag v1.0.0.

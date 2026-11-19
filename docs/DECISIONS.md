@@ -27,3 +27,11 @@
 11. Node: switch this bench to Node 22 (nvm, this bench only) and commit the generated yarn.lock
     so every install gets the same packages. Clients' servers need Node 22 too: add that to README.
 12. Credit: keep using the POS Settings flag as the seed does.
+13. Pay -> receipt: print immediately from the local invoice data and submit to the server in
+    the background through the existing queue (the same path as offline sales). The receipt must
+    never wait for submit_invoice. Measure the target in the browser.
+14. Sync benchmark: measure the 500-invoice / 5-device target against the multi-worker gunicorn
+    server already running at http://127.0.0.1:8002 (send header "X-Frappe-Site-Name: pos.test").
+    Do not start or stop servers yourself. If it still misses 5 min, record the per-invoice
+    server time and the top 3 slow spots of submit_invoice in PROGRESS.md, add "re-measure on
+    a production server" under Manual checks, and mark the phase DONE.
