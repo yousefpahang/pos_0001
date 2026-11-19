@@ -459,9 +459,16 @@ test.describe
 			await sellForCash(page)
 			const printWindow = await popup
 			// Online cash sales print from the local invoice (DECISIONS item 13), so the
-			// browser fallback is POS Next's local receipt window, not /printview.
-			await expect(printWindow.getByText("Invoice #:").first()).toBeVisible({
-				timeout: 15_000,
+			// browser fallback is the bilingual receipt page (Phase 7), not /printview.
+			const title = printWindow.getByTestId("receipt-title")
+			await expect(title).toContainText("Tax Invoice", { timeout: 15_000 })
+			await expect(title).toContainText("فاتورة ضريبية")
+			await expect(printWindow.getByText("Invoice No.").first()).toBeVisible()
+			await expect(printWindow.getByText("Total incl. VAT")).toBeVisible()
+			await expect(printWindow.getByText("VAT 5%")).toBeVisible()
+			await printWindow.screenshot({
+				path: "test-results/receipt-browser-fallback.png",
+				fullPage: true,
 			})
 			await printWindow.close()
 			const bad = unexpected(errors)

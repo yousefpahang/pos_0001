@@ -171,7 +171,9 @@ test("scan without focus, shortcuts, ? overlay, instant search, virtual list", a
 	await expect(page.getByTestId("hold-cart-dialog")).toBeHidden()
 	await expect(page.getByRole("dialog")).toHaveCount(0)
 	await page.keyboard.press("F4")
-	const payment = page.getByRole("dialog").filter({ hasText: "Complete Payment" })
+	const payment = page
+		.getByRole("dialog")
+		.filter({ hasText: "Complete Payment" })
 	await expect(payment).toBeVisible()
 	await page.keyboard.press("Escape")
 	await expect(payment).toBeHidden()
