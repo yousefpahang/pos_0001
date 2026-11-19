@@ -39,7 +39,7 @@
 				:data-item-code="item.item_code"
 				@click="$emit('select', item)"
 			>
-				<span class="w-full truncate text-[11px] font-semibold text-gray-900 sm:text-xs" :title="item.item_name">{{ itemDisplayName(item, uiLang) }}</span>
+				<span class="w-full truncate text-[11px] font-semibold text-gray-900 sm:text-xs rtl:text-right" :title="item.item_name" dir="auto">{{ itemDisplayName(item, uiLang) }}</span>
 				<span class="text-[10px] font-semibold text-blue-600" dir="ltr">
 					{{ formatCurrency(item.rate || item.price_list_rate || 0) }}
 				</span>

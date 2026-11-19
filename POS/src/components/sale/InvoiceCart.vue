@@ -967,8 +967,9 @@
 							<div class="flex items-start justify-between gap-0.5 mb-0.5">
 								<div class="flex items-center gap-1.5 flex-1 min-w-0">
 									<h4
-										class="text-xs sm:text-sm font-extrabold text-gray-900 truncate leading-tight"
+										class="text-xs sm:text-sm font-extrabold text-gray-900 truncate leading-tight rtl:text-right"
 										:title="item.item_name"
+										dir="auto"
 									>
 										{{ itemDisplayName(item, uiLang) }}
 									</h4>
@@ -1048,7 +1049,8 @@
 
 							<!-- Single Row: Quantity Counter, UOM, Price & Total -->
 							<div class="flex items-center justify-between gap-1.5">
-								<div class="flex items-center gap-1.5">
+								<!-- pos_0001: wraps on narrow carts (1024 px) so the line total stays in view -->
+								<div class="flex flex-wrap items-center gap-1.5 min-w-0">
 									<!-- Quantity Counter -->
 									<!-- For free items, show static quantity badge -->
 									<div
@@ -1279,7 +1281,7 @@
 									</div>
 
 									<!-- Price -->
-									<span class="text-[10px] sm:text-xs font-bold text-gray-700">
+									<span class="text-[10px] sm:text-xs font-bold text-gray-700 whitespace-nowrap">
 										{{ formatCurrency(item.rate) }}
 									</span>
 								</div>
@@ -1287,7 +1289,7 @@
 								<!-- Item Total -->
 								<div class="text-end flex-shrink-0">
 									<div
-										class="text-xs sm:text-sm font-bold text-blue-600 leading-none"
+										class="text-xs sm:text-sm font-bold text-blue-600 leading-none whitespace-nowrap"
 									>
 										{{
 											formatCurrency(

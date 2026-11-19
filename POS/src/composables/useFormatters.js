@@ -2,6 +2,7 @@
  * useFormatters composable
  * Provides common formatting functions for use across all components
  */
+import { keepLtr } from "@/plus/core/bidi"; // pos_0001
 
 /**
  * Format currency values to 2 decimal places
@@ -113,9 +114,10 @@ export function useFormatters() {
 	return {
 		formatCurrency,
 		formatQuantity,
-		formatDateTime,
-		formatTime,
-		formatDate,
+		// pos_0001: dates and times stay left to right on an Arabic page
+		formatDateTime: keepLtr(formatDateTime),
+		formatTime: keepLtr(formatTime),
+		formatDate: keepLtr(formatDate),
 		formatPercentage,
 	};
 }

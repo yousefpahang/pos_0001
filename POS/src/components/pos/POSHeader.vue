@@ -22,10 +22,11 @@
 			>
 				<!-- Left Side: Brand Info -->
 				<div class="flex items-center gap-1 sm:gap-4 min-w-0 flex-1 overflow-hidden">
-					<div class="min-w-0 flex-shrink overflow-hidden">
+					<div class="min-w-0 flex-shrink-0 overflow-hidden">
 						<div class="flex items-center gap-1 sm:gap-2">
 							<h1
 								class="text-xs sm:text-base font-bold text-gray-900 truncate flex-shrink"
+								dir="auto"
 							>
 								{{ APP_NAME }}
 							</h1>
@@ -47,7 +48,7 @@
 					</div>
 
 					<!-- Time and Shift Duration - Compact on mobile -->
-					<div class="hidden lg:flex items-center gap-4 ms-6 flex-shrink-0">
+					<div class="hidden xl:flex items-center gap-4 ms-6 min-w-0 overflow-hidden">
 						<!-- Current Time -->
 						<StatusBadge
 							variant="blue"
@@ -59,17 +60,28 @@
 						<!-- Shift Duration -->
 						<StatusBadge
 							v-if="hasOpenShift && shiftDuration"
+							class="hidden 2xl:flex whitespace-nowrap"
 							variant="green"
 							size="xs"
 							:icon="shiftIcon"
 							:label="__('Shift Open:')"
 							:value="shiftDuration"
 						/>
+						<!-- pos_0001: without the label on narrower screens (no wrapping, RTL) -->
+						<StatusBadge
+							v-if="hasOpenShift && shiftDuration"
+							class="2xl:hidden whitespace-nowrap"
+							variant="green"
+							size="xs"
+							:icon="shiftIcon"
+							:text="shiftDuration"
+							:title="__('Shift Open:')"
+						/>
 					</div>
 
 					<!-- Mobile Time Display - Very compact -->
 					<div
-						class="flex lg:hidden items-center text-[10px] text-gray-600 font-medium flex-shrink-0 ms-1"
+						class="flex xl:hidden items-center text-[10px] text-gray-600 font-medium flex-shrink-0 ms-1"
 					>
 						<span class="hidden xs:inline whitespace-nowrap">{{ currentTime }}</span>
 					</div>

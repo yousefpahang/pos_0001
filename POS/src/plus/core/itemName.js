@@ -11,7 +11,13 @@
 export function itemDisplayName(item, lang) {
 	if (!item) return ""
 	const arabic = String(item.item_name_ar || "").trim()
-	if (arabic && String(lang || "").toLowerCase().startsWith("ar")) return arabic
+	if (
+		arabic &&
+		String(lang || "")
+			.toLowerCase()
+			.startsWith("ar")
+	)
+		return arabic
 	return item.item_name || item.item_code || ""
 }
 

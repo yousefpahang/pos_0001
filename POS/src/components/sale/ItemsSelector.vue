@@ -560,8 +560,9 @@
 						<!-- Item Details -->
 						<div class="min-w-0">
 							<h3
-								class="text-[10px] sm:text-xs font-semibold text-gray-900 truncate mb-0.5 leading-tight"
+								class="text-[10px] sm:text-xs font-semibold text-gray-900 truncate mb-0.5 leading-tight rtl:text-right"
 								:title="item.item_name"
+								dir="auto"
 							>
 								{{ itemDisplayName(item, uiLang) }}
 							</h3>
@@ -823,8 +824,9 @@
 								class="px-2 sm:px-3 py-2 max-w-[120px] sm:max-w-[180px] md:max-w-[200px]"
 							>
 								<div
-									class="text-xs sm:text-sm font-medium text-gray-900 truncate"
+									class="text-xs sm:text-sm font-medium text-gray-900 truncate rtl:text-right"
 									:title="item.item_name"
+									dir="auto"
 								>
 									{{ itemDisplayName(item, uiLang) }}
 								</div>

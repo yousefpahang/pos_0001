@@ -1973,3 +1973,7 @@ Points applied: {0}. Please pay remaining {1} with {2},تم خصم النقاط:
 "Total excl. VAT","الإجمالي غير شامل الضريبة",""
 "VAT {0}%","ضريبة القيمة المضافة {0}%",""
 "Total incl. VAT","الإجمالي شامل الضريبة",""
+"Search by item code, name, item group or scan barcode","البحث برمز المنتج أو الاسم أو مجموعة المنتجات أو مسح الباركود",""
+"Refresh items and customers","تحديث المنتجات والعملاء",""
+"Receipt Title","عنوان الإيصال",""
+"AED Symbol","رمز الدرهم",""

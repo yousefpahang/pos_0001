@@ -265,6 +265,7 @@ export function useInvoice() {
 			const newItem = {
 				item_code: item.item_code,
 				item_name: item.item_name,
+				item_name_ar: item.item_name_ar || null, // pos_0001: Arabic name (SPEC section 7)
 				rate: item.rate || item.price_list_rate || 0,
 				price_list_rate: item.price_list_rate || item.rate || 0,
 				quantity: quantity,
