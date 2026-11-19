@@ -61,8 +61,15 @@ class TestFavourites(FrappeTestCase):
 		frappe.set_user("Administrator")
 
 	def test_top_sellers_by_quantity(self) -> None:
-		_sell(ITEM_A, 9)
-		_sell(ITEM_B, 4)
+		# Other tests and benchmark runs sell on the same profile: sell enough to reach the top 30
+		# whatever the site's history is, with A ahead of B.
+		top = favourites.top_sellers(PROFILE, favourites.DEFAULT_LIMIT)
+		sold = {row.item_code: flt(row.qty) for row in top}
+		floor = flt(top[-1].qty) if len(top) >= favourites.DEFAULT_LIMIT else 0
+		qty_b = max(5, int(floor - sold.get(ITEM_B, 0)) + 2)
+		qty_a = max(9, int(sold.get(ITEM_B, 0) + qty_b - sold.get(ITEM_A, 0)) + 4)
+		_sell(ITEM_A, qty_a)
+		_sell(ITEM_B, qty_b - 1)
 		_sell(ITEM_B, 1)
 		frappe.set_user(CASHIER)
 		result = favourites.get_favourites(PROFILE)
