@@ -39,7 +39,7 @@
 				:data-item-code="item.item_code"
 				@click="$emit('select', item)"
 			>
-				<span class="w-full truncate text-[11px] font-semibold text-gray-900 sm:text-xs">{{ item.item_name }}</span>
+				<span class="w-full truncate text-[11px] font-semibold text-gray-900 sm:text-xs" :title="item.item_name">{{ itemDisplayName(item, uiLang) }}</span>
 				<span class="text-[10px] font-semibold text-blue-600" dir="ltr">
 					{{ formatCurrency(item.rate || item.price_list_rate || 0) }}
 				</span>
@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import { itemDisplayName, pageLang } from "@/plus/core/itemName"
 import { usePlusFavouritesStore } from "@/plus/favourites/favouritesStore"
 import { useItemSearchStore } from "@/stores/itemSearch"
 import {
@@ -66,6 +67,7 @@ const COLLAPSE_KEY = "pos0001_favourites_collapsed"
 const store = usePlusFavouritesStore()
 const itemStore = useItemSearchStore()
 const collapsed = ref(false)
+const uiLang = pageLang()
 
 onMounted(() => {
 	try {

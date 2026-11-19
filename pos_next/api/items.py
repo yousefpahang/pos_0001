@@ -26,6 +26,7 @@ ITEM_RESULT_FIELDS = [
 	"has_variants",
 	"variant_of",
 	"disabled",
+	"item_name_ar",  # pos_0001: Arabic name (custom field) for offline search and receipts
 ]
 
 ITEM_RESULT_COLUMNS = ",\n\t".join(ITEM_RESULT_FIELDS)

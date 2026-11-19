@@ -561,8 +561,9 @@
 						<div class="min-w-0">
 							<h3
 								class="text-[10px] sm:text-xs font-semibold text-gray-900 truncate mb-0.5 leading-tight"
+								:title="item.item_name"
 							>
-								{{ item.item_name }}
+								{{ itemDisplayName(item, uiLang) }}
 							</h3>
 							<p
 								v-if="item.attributes"
@@ -825,7 +826,7 @@
 									class="text-xs sm:text-sm font-medium text-gray-900 truncate"
 									:title="item.item_name"
 								>
-									{{ item.item_name }}
+									{{ itemDisplayName(item, uiLang) }}
 								</div>
 								<div
 									v-if="item.attributes"
@@ -1038,6 +1039,8 @@ import { useDialogState } from "@/composables/useDialogState";
 import { useSearchInput } from "@/composables/useSearchInput";
 import { useVirtualGrid } from "@/plus/perf/useVirtualGrid"; // pos_0001
 import FavouritesGrid from "@/plus/components/FavouritesGrid.vue"; // pos_0001
+import { itemDisplayName, pageLang } from "@/plus/core/itemName"; // pos_0001
+const uiLang = pageLang(); // pos_0001: Arabic item names on an Arabic till
 import { DEFAULT_CURRENCY, formatCurrency as formatCurrencyUtil } from "@/utils/currency";
 import { useToast } from "@/composables/useToast";
 import { storeToRefs } from "pinia";

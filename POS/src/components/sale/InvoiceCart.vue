@@ -968,8 +968,9 @@
 								<div class="flex items-center gap-1.5 flex-1 min-w-0">
 									<h4
 										class="text-xs sm:text-sm font-extrabold text-gray-900 truncate leading-tight"
+										:title="item.item_name"
 									>
-										{{ item.item_name }}
+										{{ itemDisplayName(item, uiLang) }}
 									</h4>
 									<!-- Free Item Badge -->
 									<span
@@ -1474,6 +1475,8 @@ import { createResource } from "frappe-ui";
 import { computed, onBeforeUnmount, onMounted, ref, watch, nextTick } from "vue";
 import EditItemDialog from "./EditItemDialog.vue";
 import SalesPersonPicker from "@/plus/components/SalesPersonPicker.vue";
+import { itemDisplayName, pageLang } from "@/plus/core/itemName"; // pos_0001
+const uiLang = pageLang(); // pos_0001: Arabic item names on an Arabic till
 
 /**
  * ============================================================================
