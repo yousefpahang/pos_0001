@@ -949,6 +949,12 @@ def update_invoice(data):
 		# ========================================================================
 		invoice_doc.set_missing_values(for_validate=True)
 
+		# pos_0001 (F6): split totals exactly 100 % and rows carry commission rates
+		# before calculate_taxes_and_totals() checks the Sales Team.
+		from pos_next.pos_0001.api.sales_person import prepare_sales_team
+
+		prepare_sales_team(invoice_doc)
+
 		# Calculate totals and apply discounts (with rounding disabled)
 		invoice_doc.calculate_taxes_and_totals()
 		if invoice_doc.grand_total is None:
