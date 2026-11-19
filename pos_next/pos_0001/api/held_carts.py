@@ -133,7 +133,43 @@ def _held_query(pos_profile: str | None = None, names: list[str] | None = None) 
 		query = query.where(si.pos_profile == pos_profile)
 	if names:
 		query = query.where(si.name.isin(names))
-	return query.run(as_dict=True)
+	rows = query.run(as_dict=True)
+	_attach_lines(rows)
+	return rows
+
+
+def _attach_lines(rows: list[dict]) -> None:
+	"""Short line list per held cart (name, qty, rate, amount) for the held list."""
+	if not rows:
+		return
+	item = frappe.qb.DocType("Sales Invoice Item")
+	lines = (
+		frappe.qb.from_(item)
+		.select(item.parent, item.item_code, item.item_name, item.qty, item.uom, item.rate, item.amount)
+		.where(item.parent.isin([r.name for r in rows]))
+		.orderby(item.idx)
+		.run(as_dict=True)
+	)
+	by_parent: dict[str, list[dict]] = {}
+	for line in lines:
+		parent = line.pop("parent")
+		by_parent.setdefault(parent, []).append(line)
+	for row in rows:
+		row["items"] = by_parent.get(row.name, [])
+		row["item_count"] = len(row["items"])
+		row["held_at_utc"] = _utc_iso(row.get("held_at"))
+
+
+def _utc_iso(value: Any) -> str | None:
+	"""Server time (system time zone, naive) as UTC ISO, so every till shows its own local time."""
+	if not value:
+		return None
+	from zoneinfo import ZoneInfo
+
+	from frappe.utils import get_system_timezone
+
+	when = get_datetime(value).replace(tzinfo=ZoneInfo(get_system_timezone()))
+	return when.astimezone(ZoneInfo("UTC")).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def build_draft_payload(invoice: dict | None, cart: dict, pos_profile: str) -> dict:

@@ -1,46 +1,44 @@
-import {
-	deleteDraft,
-	getDraftsCount,
-	saveDraft,
-	getAllDrafts,
-	updateDraft,
-} from "@/utils/draftManager";
+// pos_0001 (SPEC F7, DECISIONS.md item 6): held carts are server drafts when online and local
+// copies while offline. This store keeps POS Next's API and delegates to
+// plus/heldCarts/heldCartStore.js (see docs/UPSTREAM_PATCHES.md).
+import { asLegacyDraft } from "@/plus/core/heldCarts";
+import { usePlusHeldCartStore } from "@/plus/heldCarts/heldCartStore";
 import { useToast } from "@/composables/useToast";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { computed } from "vue";
 
 export const usePOSDraftsStore = defineStore("posDrafts", () => {
 	// Use custom toast
 	const { showSuccess, showError, showWarning } = useToast();
+	const held = usePlusHeldCartStore();
 
 	// State
-	const draftsCount = ref(0);
-	const drafts = ref([]);
+	const draftsCount = computed(() => held.count);
+	const drafts = computed(() => held.entries.map(asLegacyDraft));
 
 	// Actions
 	async function updateDraftsCount() {
-		try {
-			draftsCount.value = await getDraftsCount();
-		} catch (error) {
-			console.error("Error getting drafts count:", error);
-		}
+		held.start();
+		await held.refresh();
 	}
 
 	async function loadDrafts() {
-		try {
-			drafts.value = await getAllDrafts();
-			draftsCount.value = drafts.value.length;
-		} catch (error) {
-			console.error("Error loading drafts:", error);
-		}
+		held.start();
+		await held.refresh();
 	}
 
+	/**
+	 * Hold the cart. `options`: { note, salesTeam, invoice } (pos_0001).
+	 * The 5th argument (draft id) is kept for POS Next callers; a resumed cart is already
+	 * claimed, so every hold creates a new held cart.
+	 */
 	async function saveDraftInvoice(
 		invoiceItems,
 		customer,
 		posProfile,
 		appliedOffers = [],
-		draftId = null
+		_draftId = null,
+		options = {}
 	) {
 		if (invoiceItems.length === 0) {
 			showWarning(__("Cannot save an empty cart as draft"));
@@ -48,25 +46,24 @@ export const usePOSDraftsStore = defineStore("posDrafts", () => {
 		}
 
 		try {
-			const draftData = {
-				pos_profile: posProfile,
-				customer: customer,
+			const result = await held.hold({
 				items: invoiceItems,
-				applied_offers: appliedOffers, // Save applied offers
-			};
-
-			let savedDraft;
-			if (draftId) {
-				savedDraft = await updateDraft(draftId, draftData);
+				customer,
+				appliedOffers,
+				salesTeam: options.salesTeam || [],
+				invoice: options.invoice || { pos_profile: posProfile, items: [] },
+				note: options.note || null,
+			});
+			if (result.stored === "server") {
+				showSuccess(__("Cart held. Any till of this POS Profile can resume it."));
+			} else if (result.error) {
+				showWarning(
+					__("Cart held on this till only. The server refused it: {0}", [result.error])
+				);
 			} else {
-				savedDraft = await saveDraft(draftData);
+				showSuccess(__("Cart held on this till. It is uploaded when the network is back."));
 			}
-
-			await loadDrafts(); // Refresh drafts list and count
-
-			showSuccess(__("Invoice saved as draft successfully"));
-
-			return savedDraft;
+			return { draft_id: result.holdId, ...result };
 		} catch (error) {
 			console.error("Error saving draft:", error);
 			showError(__("Failed to save draft"));
@@ -76,28 +73,24 @@ export const usePOSDraftsStore = defineStore("posDrafts", () => {
 
 	async function loadDraft(draft) {
 		try {
-			showSuccess(__("Draft invoice loaded successfully"));
-
-			return {
-				items: draft.items || [],
-				customer: draft.customer,
-				applied_offers: draft.applied_offers || [], // Restore applied offers
-			};
+			const cart = await held.resume(draft);
+			showSuccess(__("Held cart resumed"));
+			return cart;
 		} catch (error) {
 			console.error("Error loading draft:", error);
-			showError(__("Failed to load draft"));
+			showError(error?.message || __("Failed to load draft"));
+			held.refresh();
 			throw error;
 		}
 	}
 
 	async function deleteDraftById(draftId) {
 		try {
-			await deleteDraft(draftId);
-			await loadDrafts(); // Refresh drafts list and count
-			showSuccess(__("Draft deleted successfully"));
+			const removed = await held.remove(draftId);
+			if (removed) showSuccess(__("Draft deleted successfully"));
 		} catch (error) {
 			console.error("Error deleting draft:", error);
-			showError(__("Failed to delete draft"));
+			showError(error?.message || __("Failed to delete draft"));
 		}
 	}
 

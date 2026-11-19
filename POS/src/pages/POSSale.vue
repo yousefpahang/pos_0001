@@ -526,14 +526,16 @@
 				@shift-closed="handleShiftClosed"
 			/>
 
-			<!-- Draft Invoices Dialog -->
-			<DraftInvoicesDialog
+			<!-- Draft Invoices Dialog (pos_0001: held carts, server + local) -->
+			<HeldCartsDialog
 				v-model="uiStore.showDraftDialog"
 				:currency="shiftStore.profileCurrency"
 				:allow-print-draft-invoices="posSettingsStore.allowPrintDraftInvoices"
 				@load-draft="handleLoadDraft"
 				@drafts-updated="draftsStore.updateDraftsCount"
 			/>
+			<!-- pos_0001: Hold (F8) with an optional note -->
+			<HoldCartDialog v-model="showHoldDialog" :busy="holdBusy" @confirm="confirmHold" />
 
 			<!-- Return Invoice Dialog -->
 			<ReturnInvoiceDialog
@@ -1009,7 +1011,8 @@ import BatchSerialDialog from "@/components/sale/BatchSerialDialog.vue";
 import CouponDialog from "@/components/sale/CouponDialog.vue";
 import CreateCustomerDialog from "@/components/sale/CreateCustomerDialog.vue";
 import CustomerDialog from "@/components/sale/CustomerDialog.vue";
-import DraftInvoicesDialog from "@/components/sale/DraftInvoicesDialog.vue";
+import HeldCartsDialog from "@/plus/components/HeldCartsDialog.vue"; // pos_0001
+import HoldCartDialog from "@/plus/components/HoldCartDialog.vue"; // pos_0001
 import InvoiceCart from "@/components/sale/InvoiceCart.vue";
 import InvoiceHistoryDialog from "@/components/sale/InvoiceHistoryDialog.vue";
 import ItemSelectionDialog from "@/components/sale/ItemSelectionDialog.vue";
@@ -1055,6 +1058,8 @@ import { usePOSCartStore } from "@/stores/posCart";
 import { usePOSDraftsStore } from "@/stores/posDrafts";
 import { usePOSSettingsStore } from "@/stores/posSettings";
 import { usePlusPrintingStore } from "@/plus/printing/printingStore";
+import { buildDraftInvoice } from "@/plus/core/heldCarts"; // pos_0001
+import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore"; // pos_0001
 import { usePOSShiftStore } from "@/stores/posShift";
 import { usePOSSyncStore } from "@/stores/posSync";
 import { usePOSUIStore } from "@/stores/posUI";
@@ -2419,18 +2424,54 @@ function logoutWithCloseShift() {
 	uiStore.showCloseShiftDialog = true;
 }
 
+// pos_0001 (SPEC F7): Hold opens a note dialog; the cart goes to the server when online.
+const showHoldDialog = ref(false);
+const holdBusy = ref(false);
+const plusSalesPerson = usePlusSalesPersonStore();
+
+function holdOptions(note = null) {
+	const customer = cartStore.customer?.name || cartStore.customer || shiftStore.profileCustomer;
+	return {
+		note,
+		salesTeam: plusSalesPerson.selection || [],
+		invoice: buildDraftInvoice({
+			posProfile: cartStore.posProfile,
+			customer,
+			items: cartStore.formatItemsForSubmission(cartStore.invoiceItems),
+			discountAmount: cartStore.additionalDiscount,
+		}),
+	};
+}
+
 async function handleSaveDraft() {
-	const savedDraft = await draftsStore.saveDraftInvoice(
-		cartStore.invoiceItems,
-		cartStore.customer,
-		cartStore.posProfile,
-		cartStore.appliedOffers,
-		cartStore.currentDraftId
-	);
-	if (savedDraft) {
-		cartStore.clearCart();
-		// Reset cart hash when cart is saved as draft and cleared
-		previousCartHash = "";
+	if (cartStore.isEmpty) {
+		showWarning(__("Cannot save an empty cart as draft"));
+		return;
+	}
+	showHoldDialog.value = true;
+}
+
+async function confirmHold(note) {
+	if (holdBusy.value) return;
+	holdBusy.value = true;
+	try {
+		const savedDraft = await draftsStore.saveDraftInvoice(
+			cartStore.invoiceItems,
+			cartStore.customer,
+			cartStore.posProfile,
+			cartStore.appliedOffers,
+			null,
+			holdOptions(note)
+		);
+		if (savedDraft) {
+			showHoldDialog.value = false;
+			cartStore.clearCart();
+			cartStore.currentDraftId = null;
+			// Reset cart hash when cart is saved as draft and cleared
+			previousCartHash = "";
+		}
+	} finally {
+		holdBusy.value = false;
 	}
 }
 
@@ -2443,7 +2484,8 @@ async function handleLoadDraft(draft) {
 				cartStore.customer,
 				cartStore.posProfile,
 				cartStore.appliedOffers,
-				cartStore.currentDraftId
+				null,
+				holdOptions()
 			);
 
 			if (!saved) {
@@ -2460,7 +2502,9 @@ async function handleLoadDraft(draft) {
 		const draftData = await draftsStore.loadDraft(draft);
 		cartStore.invoiceItems = draftData.items;
 		cartStore.setCustomer(draftData.customer);
-		cartStore.currentDraftId = draft.draft_id; // Set current draft ID
+		// pos_0001: resuming claims the held cart (deleted on the server), so there is no draft id
+		cartStore.currentDraftId = null;
+		if (draftData.sales_team?.length) plusSalesPerson.setSelection(draftData.sales_team);
 
 		// Rebuild incremental cache to recalculate totals
 		cartStore.rebuildIncrementalCache();
