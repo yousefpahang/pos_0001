@@ -17,6 +17,7 @@ import {
 	retryFailed,
 } from "@/plus/sync/syncClient"
 import { startScanCacheRefresh } from "@/plus/scan/scanCache"
+import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore"
 import { usePOSShiftStore } from "@/stores/posShift"
 import { usePOSSyncStore } from "@/stores/posSync"
 import { logger } from "@/utils/logger"
@@ -182,6 +183,10 @@ export const usePlusSyncLogStore = defineStore("plusSyncLog", () => {
 				// Scale rules and barcode index for offline scanning (Phase 2)
 				if (posShift.profileName && !posSync.isOffline) {
 					startScanCacheRefresh(posShift.profileName)
+				}
+				// Sales person mode, list and default for offline picking (Phase 3)
+				if (posShift.profileName) {
+					usePlusSalesPersonStore().load(posShift.profileName)
 				}
 			},
 			{ immediate: true },
