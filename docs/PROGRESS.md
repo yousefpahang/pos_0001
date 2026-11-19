@@ -152,3 +152,126 @@ Console messages still seen on the till, both from POS Next and not errors of th
     made by this phase and was left as is. Please confirm it is wanted.
 
 PHASE 1: DONE
+
+## Phase 2
+
+Run date: 2026-11-19 (unattended). Scope: SPEC section 11, Phase 2 prompt (scale barcodes, offline scanning),
+with DECISIONS.md items 3 and 4 applied. `barcode_resolver` was not installed and `POS Barcode Rules` was not
+changed.
+
+### What was built
+
+**Backend (`pos_next/pos_0001/`)**
+
+- Doctype **POS Scale Barcode Rule** (named by `rule_name`) with the SPEC F5 / section 8 fields: `company`,
+  `pos_profiles` (Table MultiSelect, child doctype **POS Scale Barcode Rule Profile**; empty = every profile of the
+  company), `prefix`, `total_length` (8-20), `item_code_start` / `item_code_length`, `item_match`
+  (Scale PLU / Item Barcode), `value_type` (Weight / Price), `value_start` / `value_length`, `decimals`, `uom`
+  (default Kg), `check_digit_mode` (Validate / Ignore), `priority`, `enabled`, and a read-only example barcode.
+  The controller rejects layouts where segments overlap or run into the check digit (last digit), with plain
+  messages. Cashiers can read rules; Nexus POS Manager and System Manager can edit.
+- `scale_barcode.py`: pure Python copy of the browser logic (GS1 check digit, parsing, price-line rounding,
+  barcode generation).
+- `api/barcode.py` (all endpoints check the POS role and POS Profile access):
+  - `get_scale_rules(pos_profile)`: rules for the profile (SPEC section 9).
+  - `get_scan_cache(pos_profile)`: rules + Scale PLU map + UOM barcode map + refresh minutes, for the browser.
+  - `resolve_scale_barcode(barcode, pos_profile)`: `{item_code, qty, amount, rate, uom, ...}`, same logic as the
+    browser; plain errors for no rule, wrong check digit, unknown PLU, item not sold in the rule's UOM, no price.
+  - `generate_scale_barcode(rule, item_code, value)`: barcode with a valid check digit (for Phase 5 labels).
+  - `validate_sales_invoice`: Sales Invoice `validate` hook. Every line with `pos0001_scale_barcode` is parsed
+    again with the company's rules; a line whose item, weight or amount does not match its label is rejected
+    (an offline invoice is then stored as Failed by the Phase 1 flow).
+- Custom field **Sales Invoice Item `pos0001_scale_barcode`** (read-only) carries the label to the server.
+- Demo seed: `scale_plu` 12345 .. 12394 on the weighed items, rules **Scale Weight 20** (rule A) and
+  **Scale Price 22** (rule B) for Demo Trading LLC (`ensure_scale_barcodes()`, also run on `pos.test`).
+
+**Frontend (`POS/src/plus/`)**
+
+- `core/ean.js`: GS1 mod-10 check digits (EAN-8, UPC-A, EAN-13, longer custom codes).
+- `core/scaleBarcode.js`: rule normalisation and layout checks, parsing (first rule by priority whose prefix and
+  length match), price-embedded lines (qty to 3 decimals, rate adjusted so qty x rate is exactly the printed
+  price, never the amount), label barcode generation, and the cart item for a scale line.
+- `core/scanResolve.js`: resolution order (1) exact barcode in the browser cache (UOM barcodes first, then POS
+  Next's `items.barcodes` index), (2) scale rules with the PLU from the cache, (3) the server only when online
+  and still not found.
+- `scan/scanCache.js`: rules, PLU map and UOM barcodes per profile in IndexedDB (`settings` store,
+  `pos0001_scan_cache::<profile>`), loaded when the till opens (started by the sync log store) and refreshed every
+  `cache_refresh_minutes` while online.
+- `scan/scanner.js`: wires the above to POS Next's Dexie cache and server lookups; cashier messages for errors.
+- POS Next patches (UPSTREAM_PATCHES.md entries 11-16): `searchByBarcode()` uses the scanner; scan errors show
+  their own message; scale labels always add with no keystroke at the label's rate; the same label scanned twice
+  gives two read-only lines; the remove button removes only the clicked scale line; the invoice sends
+  `pos0001_scale_barcode`.
+- Arabic for all new strings in `pos_next/translations/ar.csv` (69 rows).
+
+### Test results
+
+- **Python** `bench --site pos.test run-tests --module pos_next.pos_0001.tests.test_barcode`: **19 tests, OK**.
+  All five SPEC F5 vectors (pure logic and through `resolve_scale_barcode` as the cashier: 1.250 kg, 0.750 kg,
+  AED 25.00, AED 9.99, wrong check digit rejected), Ignore mode, price-line exactness over 56 price/rate pairs,
+  banker's/half-up tie avoided, barcode generation round trip, invalid layouts, rules limited to profiles, scan
+  cache contents (PLU map, box and multi-barcode UOMs), access checks (outsider, Guest), item not sold in Kg named
+  in the error, generate endpoint, rule form example. Sync: an offline invoice with the same weight label twice
+  plus a price label is Synced with two 1.25 kg lines and a 9.99 line; tampered weight, tampered price and wrong
+  item are stored as Failed with the reason.
+- `pos_next.pos_0001.tests.test_sync` (Phase 1): **13 tests, OK**. Upstream modules after the new validate hook:
+  `pos_next.test_promotions` 18 OK, `pos_next.api.test_credit_sales` 4 OK, `pos_next.test_packed_items_regression`
+  3 OK.
+- **Vitest** `cd POS && yarn test:run`: **60 tests, 5 files, all pass** (`ean`, `scaleBarcode` with the five F5
+  vectors, `scanResolve` incl. "no server call when offline", plus Phase 1 files).
+- **Playwright** `cd POS && yarn e2e`: **3 tests pass**. New `e2e/scale-scan.spec.js`: waits for the item and scan
+  caches, sets the browser offline, scans the weight label twice, the price label and a normal EAN-13 through the
+  search box: four cart lines (1.25, 1.25 read-only; price line amount AED 9.99; normal item qty 1), the bad check
+  digit shows "wrong check digit" and adds nothing, removing one of the two identical lines leaves the other, no
+  barcode request was sent, no console errors.
+- `bench --site pos.test migrate`, `bench build --app pos_next`: OK. `biome check` clean on `src/plus`.
+- Note: ERPNext's `before_tests` hook deletes every Item Price on the site when `run-tests` starts (this is why
+  demo prices kept disappearing, see Phase 1 decision 12). Tests now create the price they need; after the run the
+  demo prices were rebuilt with `seed.ensure_item_prices`.
+
+### Manual checks (need real hardware or a person)
+
+- [ ] Scan 5 real labels from the client's scale (weight and price types) with a real HID scanner; qty and amount
+      match the printed label. Set the rule layout (prefix, positions, decimals) to the scale's label format first.
+- [ ] Scale that prints wrong check digits: set the rule to Ignore and scan a label.
+- [ ] Full offline sale through the payment dialog with scale lines, then reconnect: the invoice syncs and keeps
+      the label amounts. Automated today: scanning offline (e2e) and the server side of the same payload (Python);
+      the full UI payment flow is planned for Phase 8 e2e.
+- [ ] Desk: create a rule in the form, check the Example field and the layout error messages, in English and
+      Arabic.
+- [ ] Arabic UI: the scan warning toasts read correctly in RTL (no new layout was added; only messages).
+- [ ] Scan-to-cart time under 150 ms on a real till with 20,000 items cached (not measured here; Phase 6).
+
+### Not done in this phase (later phases)
+
+- Printing scale-barcode labels (Phase 5 uses `generate_scale_barcode` / `generateScaleBarcode`).
+- Global scanner capture without focusing the search box (Phase 6).
+
+### Decisions to review
+
+1. **Server re-validation is a Sales Invoice `validate` hook** (`hooks.py`, UPSTREAM_PATCHES entry 11), so it covers
+   online and offline sales. It only looks at lines with `pos0001_scale_barcode`, skips returns, and accepts a line
+   whose barcode no longer matches any enabled rule (for example a rule disabled after an offline sale), so a rule
+   change never strands an offline invoice. A line that matches a rule but not its item, weight (±0.0005) or
+   amount (±0.005) is rejected. This can reject invoices, but touches no tax, GL or stock logic.
+2. **New custom field `Sales Invoice Item.pos0001_scale_barcode`**, not in the SPEC section 8 list. Needed to carry
+   the label to the server; read-only, hidden on prints.
+3. **Price labels adjust the rate, not the amount**: qty is rounded to 3 decimals and the rate (2 decimals) is
+   chosen as close to the list rate as possible so that qty x rate is exactly the printed price. Example on the
+   demo site: list AED 38.23/kg, label AED 9.99 gives 0.261 kg x AED 38.26. `price_list_rate` is set to the same
+   rate so no discount shows. When `offline_price_mismatch` is built, these lines should not count as mismatches.
+   Pairs that land exactly half-way (6.005) are skipped because ERPNext's banker's rounding and half-up disagree.
+4. **First matching rule decides**: rules are tried by priority, and the first whose prefix and length match decides;
+   a wrong check digit is an error and does not fall through to the next rule.
+5. **PLU lookup** tries the digits as printed, then without leading zeros (`00123` -> `123`).
+6. **UOM barcode map in the scan cache**: POS Next caches an item's barcodes as one comma-joined string without their
+   UOM, so a box barcode would be sold as one piece offline. `get_scan_cache` sends every barcode that has its own
+   UOM, and every barcode of items with more than one barcode, and the browser checks that map first. POS Next's
+   item cache was not changed.
+7. **Scale labels always auto-add** (no dialog), even when POS Next's auto-add toggle is off, to meet "no keystroke".
+8. **Scale lines are separate cart lines**: other cart code (offers, edit dialog) still finds lines by item + UOM;
+   scale lines are read-only (POS Next's `is_resolved_barcode`), so only removal needed a line id.
+9. The Scale PLU map is global (Item `scale_plu` is not per company); rules are per company.
+10. The scan cache is stored in POS Next's existing `settings` store (no Dexie schema change, no version bump).
+
+PHASE 2: DONE
