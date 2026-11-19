@@ -242,6 +242,22 @@ invoices are flagged by `pos_0001.api.sync` and never rejected for it). Script R
 - Print format: **`POS Next Receipt`** (Jinja, Sales Invoice, `pos_next/pos_next/print_format/pos_next_receipt/`),
   `DEFAULT_PRINT_FORMAT` in printInvoice.js. There is no ESC/POS raw printing, no drawer kick, no auto-cut.
 
+**After Phase 4** (SPEC F9, DECISIONS item 7): a till prints through pos_0001 when it has a **POS Printer Profile**
+(POS Device `receipt_printer`, else POS Profile `pos0001_receipt_printer`); otherwise POS Next's path above is
+unchanged. `POSSale.vue` `handlePrintInvoice(doc, { reason })` hands receipts to `plus/printing/printingStore.js`,
+which keeps `pos_0001.api.printing.get_printing_cache` (printer, company header, footer, logo as data URL, cash modes,
+No Sale permission) in the Dexie `settings` store (`pos0001_printing_cache::<profile>`), builds one receipt model
+(`plus/core/receipt.js`) from the offline doc, or from `pos_0001.api.printing.get_receipt_data` for server invoices,
+and prints in the profile's mode: `raster` (draw ops painted on an OffscreenCanvas in `plus/printing/raster.worker.js`,
+1-bit, `GS v 0` bands from `plus/core/raster.js`), `escpos_text` (`plus/core/escpos.js`), `qz_html` (POS Next's
+`silentPrint*` with the profile's printer) or `browser` (POS Next's browser print). Raw jobs go through
+`plus/printing/qz.js`, which reuses POS Next's QZ connection and signing (`utils/qzTray.js`, `api/qz.py`, key files in
+`private/qz/`) and adds `{host, port}` network printers. QZ modes fall back to the browser when QZ is down (red
+`PrinterBadge`). Drawer kick after cash sales (`shouldKickDrawer`), copies, cut, F9 reprint (last receipt stored
+in `pos0001_last_receipt::<profile>`), receipt barcode (Code128, or QR from `plus/core/qr.js` when too long). No Sale
+events (`POS Drawer Event`) queue in `pos0001_drawer_events` and upload through `printing.log_drawer_events`.
+Setup steps in `docs/HARDWARE.md`.
+
 ### 2.9 i18n and RTL
 
 - Strings: `__()` from `POS/src/utils/translation.ts` (Vue plugin). Messages loaded from
