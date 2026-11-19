@@ -993,4 +993,12 @@ The manual checks of the first run still apply. Also:
    server. This run reports them as not met on the dev bench and does not claim production numbers it could not
    measure.
 
+### After the second run (2026-11-19, with the user)
+
+- Demo photos: every demo item has a product photo (30 CC0 / public-domain photos in `pos_0001/demo/images`,
+  credits in `CREDITS.md` there; `seed.ensure_item_images`).
+- POSNext workspace lists every pos_0001 feature: new shortcuts, a "What this POS can do" overview and four new
+  cards (UPSTREAM_PATCHES 40). `test_workspace`: 5 OK. RTL checked; the overview paragraphs stay English because
+  Frappe does not translate workspace paragraph text.
+
 PHASE 6: BLOCKED - pay -> receipt (1.3 s, target 1 s) and sync of 500 queued invoices (6 min 44 s, target 5 min) are still not met on the dev bench; both are now bound by server time in POS Next's submit_invoice and need a measurement on a production (multi-worker) server, which this unattended run was not allowed to start
