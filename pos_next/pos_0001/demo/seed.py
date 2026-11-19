@@ -64,8 +64,31 @@ def run(item_count: int = 20000) -> None:
 	for name in ("Main Till", "Express Till"):
 		ensure_pos_profile(name, modes)
 	ensure_scale_barcodes()
+	ensure_sales_person_setup()
 	frappe.db.commit()
 	print("Seed done:", summary())
+
+
+# Phase 3 (F6): badge barcodes, a default for the demo cashier, one profile per mode.
+SALES_PERSON_MODES = {"Main Till": "Mandatory", "Express Till": "Optional"}
+DEFAULT_CASHIER_SALES_PERSON = "Ahmed Ali"
+
+
+def ensure_sales_person_setup() -> None:
+	for i, person in enumerate(SALES_PERSONS, start=1):
+		if frappe.db.exists("Sales Person", person) and not frappe.db.get_value(
+			"Sales Person", person, "sales_person_barcode"
+		):
+			frappe.db.set_value("Sales Person", person, "sales_person_barcode", f"SP{i:04d}")
+	for profile, mode in SALES_PERSON_MODES.items():
+		if frappe.db.exists("POS Profile", profile):
+			frappe.db.set_value("POS Profile", profile, "pos0001_sales_person_mode", mode)
+	if frappe.db.exists("User", "cashier@pos.test") and frappe.db.exists(
+		"Sales Person", DEFAULT_CASHIER_SALES_PERSON
+	):
+		frappe.db.set_value(
+			"User", "cashier@pos.test", "pos0001_default_sales_person", DEFAULT_CASHIER_SALES_PERSON
+		)
 
 
 SCALE_RULES = [
@@ -261,14 +284,16 @@ def create_items(item_count: int) -> None:
 
 
 def mark_demo_items_sellable() -> None:
-	"""Items inserted with frappe.flags.in_import skip doctype defaults, so is_sales_item ends up 0."""
+	"""Items inserted with frappe.flags.in_import skip doctype defaults, so is_sales_item and
+	grant_commission end up 0 (no commission for sales persons, Phase 3)."""
 	item = frappe.qb.DocType("Item")
 	(
 		frappe.qb.update(item)
 		.set(item.is_sales_item, 1)
 		.set(item.is_purchase_item, 1)
+		.set(item.grant_commission, 1)
 		.where(item.item_code.like("ITM-%") | item.item_code.like("PLU-%"))
-		.where((item.is_sales_item == 0) | (item.is_purchase_item == 0))
+		.where((item.is_sales_item == 0) | (item.is_purchase_item == 0) | (item.grant_commission == 0))
 	).run()
 
 
