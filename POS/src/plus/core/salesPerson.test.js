@@ -14,9 +14,24 @@ import {
 	validateSelection,
 } from "./salesPerson"
 
-const A = { name: "Ahmed Ali", sales_person_name: "Ahmed Ali", commission_rate: 1, barcode: "SP0001" }
-const B = { name: "Fatima Hassan", sales_person_name: "Fatima Hassan", commission_rate: 1.5, barcode: "SP0002" }
-const C = { name: "Omar Khalid", sales_person_name: "Omar Khalid", commission_rate: 2, barcode: null }
+const A = {
+	name: "Ahmed Ali",
+	sales_person_name: "Ahmed Ali",
+	commission_rate: 1,
+	barcode: "SP0001",
+}
+const B = {
+	name: "Fatima Hassan",
+	sales_person_name: "Fatima Hassan",
+	commission_rate: 1.5,
+	barcode: "SP0002",
+}
+const C = {
+	name: "Omar Khalid",
+	sales_person_name: "Omar Khalid",
+	commission_rate: 2,
+	barcode: null,
+}
 const sum = (xs) => Math.round(xs.reduce((a, b) => a + b, 0) * 100) / 100
 
 describe("resolveMode", () => {
@@ -46,7 +61,9 @@ describe("allocation", () => {
 	})
 
 	it("fixes drift but not real mistakes (same as the Python mirror)", () => {
-		expect(normalizeAllocation([33.333, 33.333, 33.333])).toEqual([33.33, 33.33, 33.34])
+		expect(normalizeAllocation([33.333, 33.333, 33.333])).toEqual([
+			33.33, 33.33, 33.34,
+		])
 		expect(sum(normalizeAllocation([100 / 3, 100 / 3, 100 / 3]))).toBe(100)
 		expect(sum(normalizeAllocation([50, 30]))).toBe(80)
 		expect(normalizeAllocation([])).toEqual([])
@@ -55,11 +72,18 @@ describe("allocation", () => {
 	it("adds, removes and re-splits in multiple mode", () => {
 		let sel = addSalesPerson([], A, true)
 		expect(sel).toEqual([
-			{ sales_person: A.name, sales_person_name: A.name, allocated_percentage: 100, commission_rate: 1 },
+			{
+				sales_person: A.name,
+				sales_person_name: A.name,
+				allocated_percentage: 100,
+				commission_rate: 1,
+			},
 		])
 		sel = addSalesPerson(sel, B, true)
 		sel = addSalesPerson(sel, C, true)
-		expect(sel.map((m) => m.allocated_percentage)).toEqual([33.34, 33.33, 33.33])
+		expect(sel.map((m) => m.allocated_percentage)).toEqual([
+			33.34, 33.33, 33.33,
+		])
 		expect(addSalesPerson(sel, A, true)).toBe(sel) // no duplicate
 		sel = removeSalesPerson(sel, B.name)
 		expect(sel.map((m) => [m.sales_person, m.allocated_percentage])).toEqual([
@@ -70,11 +94,17 @@ describe("allocation", () => {
 
 	it("single mode replaces the selection", () => {
 		const sel = addSalesPerson(addSalesPerson([], A, false), B, false)
-		expect(sel.map((m) => [m.sales_person, m.allocated_percentage])).toEqual([[B.name, 100]])
+		expect(sel.map((m) => [m.sales_person, m.allocated_percentage])).toEqual([
+			[B.name, 100],
+		])
 	})
 
 	it("setShare gives the rest to the other person when there are two", () => {
-		const sel = setShare(addSalesPerson(addSalesPerson([], A, true), B, true), A.name, 70)
+		const sel = setShare(
+			addSalesPerson(addSalesPerson([], A, true), B, true),
+			A.name,
+			70,
+		)
 		expect(sel.map((m) => m.allocated_percentage)).toEqual([70, 30])
 		expect(setShare(sel, A.name, 150)[0].allocated_percentage).toBe(100)
 		const three = setShare(addSalesPerson(sel, C, true), A.name, 50)
@@ -111,10 +141,19 @@ describe("search and barcode", () => {
 
 describe("defaultSelection", () => {
 	it("pre-selects the cashier's default when it is in the list", () => {
-		expect(defaultSelection({ default_sales_person: B.name, sales_persons: [A, B] })).toEqual([
-			{ sales_person: B.name, sales_person_name: B.name, allocated_percentage: 100, commission_rate: 1.5 },
+		expect(
+			defaultSelection({ default_sales_person: B.name, sales_persons: [A, B] }),
+		).toEqual([
+			{
+				sales_person: B.name,
+				sales_person_name: B.name,
+				allocated_percentage: 100,
+				commission_rate: 1.5,
+			},
 		])
-		expect(defaultSelection({ default_sales_person: "Gone", sales_persons: [A] })).toEqual([])
+		expect(
+			defaultSelection({ default_sales_person: "Gone", sales_persons: [A] }),
+		).toEqual([])
 		expect(defaultSelection({ sales_persons: [A] })).toEqual([])
 		expect(defaultSelection(null)).toEqual([])
 	})
@@ -127,20 +166,31 @@ describe("validateSelection", () => {
 	const one = [{ sales_person: A.name, allocated_percentage: 100 }]
 
 	it("Mandatory needs someone", () => {
-		expect(validateSelection({ mode: mandatory, selection: [], available: 3 })).toEqual({
+		expect(
+			validateSelection({ mode: mandatory, selection: [], available: 3 }),
+		).toEqual({
 			valid: false,
 			reason: "required",
 		})
-		expect(validateSelection({ mode: mandatory, selection: one, available: 3 }).valid).toBe(true)
+		expect(
+			validateSelection({ mode: mandatory, selection: one, available: 3 })
+				.valid,
+		).toBe(true)
 	})
 
 	it("Mandatory with nobody to pick does not block the till", () => {
-		expect(validateSelection({ mode: mandatory, selection: [], available: 0 }).valid).toBe(true)
+		expect(
+			validateSelection({ mode: mandatory, selection: [], available: 0 }).valid,
+		).toBe(true)
 	})
 
 	it("Optional and Off allow no one", () => {
-		expect(validateSelection({ mode: optional, selection: [], available: 3 }).valid).toBe(true)
-		expect(validateSelection({ mode: off, selection: [], available: 3 }).valid).toBe(true)
+		expect(
+			validateSelection({ mode: optional, selection: [], available: 3 }).valid,
+		).toBe(true)
+		expect(
+			validateSelection({ mode: off, selection: [], available: 3 }).valid,
+		).toBe(true)
 	})
 
 	it("a split must total 100", () => {
@@ -148,7 +198,9 @@ describe("validateSelection", () => {
 			{ sales_person: A.name, allocated_percentage: 50 },
 			{ sales_person: B.name, allocated_percentage: 30 },
 		]
-		expect(validateSelection({ mode: optional, selection: bad, available: 3 })).toEqual({
+		expect(
+			validateSelection({ mode: optional, selection: bad, available: 3 }),
+		).toEqual({
 			valid: false,
 			reason: "total",
 		})
@@ -157,6 +209,9 @@ describe("validateSelection", () => {
 			{ sales_person: B.name, allocated_percentage: 33.33 },
 			{ sales_person: C.name, allocated_percentage: 33.33 },
 		]
-		expect(validateSelection({ mode: optional, selection: drift, available: 3 }).valid).toBe(true)
+		expect(
+			validateSelection({ mode: optional, selection: drift, available: 3 })
+				.valid,
+		).toBe(true)
 	})
 })

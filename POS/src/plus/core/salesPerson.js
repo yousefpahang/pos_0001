@@ -43,7 +43,8 @@ export function resolveMode(profileMode, posNextMode) {
 	const multiple = next === "Multiple"
 	/** @type {SalesPersonModeName} */
 	let mode = "Off"
-	if (profileMode === "Optional" || profileMode === "Mandatory") mode = profileMode
+	if (profileMode === "Optional" || profileMode === "Mandatory")
+		mode = profileMode
 	else if (next === "Single" || next === "Multiple") mode = "Mandatory"
 	return {
 		mode,
@@ -90,10 +91,7 @@ export function splitEvenly(count, decimals = PERCENT_DECIMALS) {
 export function normalizeAllocation(percentages, decimals = PERCENT_DECIMALS) {
 	if (!percentages?.length) return []
 	const rounded = percentages.map((p) => roundPercent(Number(p) || 0, decimals))
-	const drift = roundPercent(
-		100 - rounded.reduce((a, b) => a + b, 0),
-		decimals,
-	)
+	const drift = roundPercent(100 - rounded.reduce((a, b) => a + b, 0), decimals)
 	if (drift && Math.abs(drift) <= DRIFT_TOLERANCE) {
 		rounded[rounded.length - 1] = roundPercent(
 			rounded[rounded.length - 1] + drift,
@@ -230,7 +228,8 @@ export function validateSelection({ mode, selection, available }) {
 	if (!mode?.enabled) return { valid: true, reason: null }
 	const list = selection || []
 	if (!list.length) {
-		if (mode.required && available > 0) return { valid: false, reason: "required" }
+		if (mode.required && available > 0)
+			return { valid: false, reason: "required" }
 		return { valid: true, reason: null }
 	}
 	if (Math.abs(allocationTotal(list) - 100) > DRIFT_TOLERANCE)
