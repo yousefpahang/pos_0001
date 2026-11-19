@@ -1113,3 +1113,165 @@ The manual checks of the first and second runs still apply. Also:
    area). It is a demo helper and is not called by any hook.
 
 PHASE 6: DONE
+
+## Phase 7
+
+Run date: 2026-11-19 (unattended). Scope: SPEC section 11, Phase 7 prompt (SPEC section 7, UAE localization),
+with DECISIONS item 8 applied (Arabic in `pos_next/translations/ar.csv`, no ar.json). The upstream `Feat/RTL`
+branch named in ARCHITECTURE_NOTES is not fetched in this clone (`git branch -r` lists only `version-15`) and was
+not fetched over the network; the RTL work below is our own.
+
+### What was built
+
+**UAE Tax Invoice receipt**
+
+- Print format **UAE Tax Invoice 80mm** (`pos_0001/print_format/`, Jinja, Sales Invoice, standard): bilingual
+  English / Arabic. Seller name, address, TRN, phone; title; invoice number, date and time, till, cashier, sales
+  person; customer and customer TRN when the customer has one; lines with English and Arabic item names, qty or
+  weight, unit price, amount and the VAT rate per line when rates differ; total excl. VAT, discount, "VAT 5%"
+  in AED, rounding adjustment, total incl. VAT, payments by mode, change, balance due; footer and logo per POS
+  Profile. Returns print as **Tax Credit Note / إشعار دائن ضريبي** with the original invoice. All values are
+  escaped. The data comes from one Python function, `pos_0001/uae.py` `uae_receipt(doc)` (Jinja method).
+- The till's own receipt (`plus/core/receipt.js`) follows the same rules: bilingual raster receipt (new draw op
+  `bi`: English label left, Arabic label and value right; long values wrap under the labels), bilingual HTML
+  page for `browser` mode and for local invoices in `qz_html` mode (`plus/core/receiptHtml.js`), English-only
+  text mode with "AED" (printer fonts have no Arabic). The wording lives in `plus/core/receiptLabels.js`; Vitest
+  checks every Arabic label equals `ar.csv`, which the print format uses through `_(text, "ar")`.
+- Configurable title: POS Profile custom field **Receipt Title** (`pos0001_invoice_title`): Tax Invoice (default),
+  Simplified Tax Invoice, or Auto (full tax invoice when the customer has a TRN, simplified otherwise).
+- Receipts printed before the server answers (offline sales, DECISIONS item 13 background sales) now show the
+  same **rounded total, rounding adjustment and change as ERPNext** (`plus/core/rounding.js`, a copy of Frappe's
+  `round_based_on_smallest_currency_fraction` and `rounded`), and "VAT 5%" from the profile's tax template. Found
+  while checking the sample asked for in Phase 6 decision 3: a AED 40.96 sale printed "Total 40.96, change 0.04"
+  while ERPNext recorded total 41.00, rounding 0.04, change 0.00.
+- The pos_0001 default receipt print format is now UAE Tax Invoice 80mm (when the profile has none). Demo seed
+  `ensure_uae_receipt_setup()`: both profiles use it; Main Till title "Tax Invoice", Express Till "Auto"; company
+  TRN 100000000000003 and customer "Gulf Office Supplies" TRN 100222333400003 (only when empty).
+
+**Arabic names, AED, translations**
+
+- `item_name_ar` is now part of POS Next's `get_items` result (UPSTREAM_PATCHES 47), so the browser item cache,
+  the search index (Phase 6), receipts and cart lines have it without the label cache. Labels already used it
+  (Phase 5). On an Arabic till, grid, list, cart lines and favourites show the Arabic name (English as tooltip).
+  Tills cached before this phase get the names with their next item refresh.
+- AED: `plus/core/money.js`. POS 0001 Settings **AED Symbol**: By language (default: "AED" in English, "د.إ" in
+  Arabic), AED, or د.إ. Used by receipts, the print format and the till (POS Next's `currency.js` for AED,
+  UPSTREAM_PATCHES 49). Always 2 decimals, Western digits.
+- Arabic for every new string in `ar.csv` (12 rows: receipt wording, settings labels, and the till's untranslated
+  search placeholder and refresh button).
+
+**RTL on every POS screen**
+
+- New e2e audit (`e2e/uae-rtl.spec.js`): the cashier is switched to Arabic (`dir="rtl"`, `lang="ar"`, real
+  translations) and every screen and dialog is checked at 1280 x 720 and 1024 x 768: till, Arabic search, cart,
+  sales person picker, payment, customer edit and inline customer search, hold, sync panel, labels, shortcuts
+  overlay, user menu, view shift, held carts, invoice history, return invoice, close shift (offline invoices only
+  when sales are queued). Checks: no sideways scrolling, nothing outside the screen, no text outside its box or
+  cut without an ellipsis, no visible text on text. The screenshots (`test-results/rtl-*.png`) were also checked
+  by eye.
+- Fixed from the audit and the screenshots (UPSTREAM_PATCHES 50-55): dates and times were reordered by the bidi
+  algorithm ("AM 4:09:35 ,11/19/2026"), now left-to-right isolates (`plus/core/bidi.js`); English item names in
+  an Arabic till were cut at their start, now `dir="auto"`; the product name in the header was cut to "001…" and
+  the shift chip wrapped under the clock; at 1024 px the cart line total was pushed out of the cart.
+
+**E-invoicing hook**
+
+- Every POS sale (live, background, offline single and batch, Retry) goes through one service function, POS
+  Next's `submit_invoice()`. Right after `submit()` it calls `pos_0001.einvoice.after_pos_invoice_submit(doc)`,
+  which runs handlers other apps list under the hook `pos0001_after_invoice_submit`. None are registered: a no-op.
+
+**Docs**: HARDWARE.md (UAE tax invoice per print mode), ARCHITECTURE_NOTES "After Phase 7", UPSTREAM_PATCHES 46-55.
+
+### Test results
+
+- **Python** (`run-tests --module`): `test_uae` **18 tests, OK** (new): AED symbol and 2-decimal formatting (same
+  cases as Vitest), titles, Arabic wording from the CSV, rounding vectors against Frappe's own function, line VAT
+  rates, print format installed and default, tax invoice / Auto with customer TRN and "د.إ" / credit note /
+  escaping and footer / desk print of a synced invoice, printing cache (title, symbol, VAT rate, rounding), receipt
+  data with line VAT and Arabic name, `get_items` returns `item_name_ar`, e-invoicing hook: no-op without
+  handlers, called once per invoice on live, single, batch and duplicate submits, a failing handler is rolled back
+  and logged and the sale is kept.
+  Regression: `test_printing` 17, `test_sync` 17, `test_labels` 21, `test_barcode` 19, `test_held_carts` 11,
+  `test_sales_person` 20, `test_favourites` 3, `test_workspace` 7, `pos_next.test_promotions` 18,
+  `pos_next.api.test_credit_sales` 4, `pos_next.test_packed_items_regression` 3. All OK. Whole-app `run-tests`
+  still does not start on v15 (Phase 1 decision 8). Demo prices rebuilt afterwards (`seed.ensure_item_prices`).
+- **Vitest** `yarn test:run`: **227 tests, 24 files, all pass** (30 new: `money`, `receiptLabels` incl. the
+  `ar.csv` check, `receiptHtml`, `rounding` with the shared vectors, `itemName`, `bidi`, and UAE cases in
+  `receipt.test.js`). The two `escpos_text` byte snapshots were updated on purpose (English labels "Invoice No.",
+  "Total excl. VAT", "Total incl. VAT", amounts with "AED").
+- **Playwright** `yarn e2e`: **18 passed** (5.8 min), 3 new in `e2e/uae-rtl.spec.js`:
+  1. Desk `/printview` of a POS sale on UAE Tax Invoice 80mm: bilingual title, labels, TRN, VAT 5%, AED
+     (`test-results/uae-tax-invoice-desk.png`, checked by eye).
+  2. Five carts (one item, 3 x one item, weight label, price label + item, two items) sold for cash through the
+     background submit: for each, the receipt model the till prints equals the submitted invoice's grand total,
+     rounded total, rounding adjustment and change (40.96 -> 41.00 / +0.04, 122.88 -> 123.00 / +0.12,
+     50.18 -> 50.00 / -0.18, 51.45 -> 51.00 / -0.45, 154.54 -> 155.00 / +0.46). The grand totals (net + VAT)
+     were equal before rounding, which answers Phase 6 decision 3 for this sample.
+  3. The Arabic RTL audit above, plus: Arabic search "مناديل" finds ITM-00001, the cart line shows "مناديل فاخرة",
+     amounts use "د.إ" with Western digits. No unexpected console errors.
+  `receipt-printing.spec.js` now expects the bilingual page in the QZ-down browser fallback
+  (`test-results/receipt-browser-fallback.png`); the raster receipt image (`receipt-raster-online.png`) was
+  checked by eye: bilingual header rows, VAT 5%, rounding 0.04, total AED 41.00, no change on AED 41 cash.
+- `bench --site pos.test migrate`, `bench build --app pos_next`: OK. `biome check` clean on `src/plus` and `e2e`.
+
+### Manual checks (need real hardware or a person)
+
+- [ ] Confirm the receipt fields and wording against current Federal Tax Authority guidance with the client
+      (SPEC section 7), including when a simplified tax invoice is allowed (Receipt Title "Auto") and the credit
+      note wording.
+- [ ] Bilingual raster receipt on the client's printers (Epson TM-T20/T82, Xprinter XP-80), 80 mm and 58 mm:
+      Arabic shaping, the English / Arabic label rows, long Arabic item names, logo.
+- [ ] `escpos_text` on a real printer: English only, "AED", no garbage characters from Arabic footers.
+- [ ] Print UAE Tax Invoice 80mm from desk and through QZ Tray (`qz_html`) on a real 80 mm printer: width and
+      font size.
+- [ ] Return a sale at the till and print the Tax Credit Note on the receipt printer.
+- [ ] A cashier who reads Arabic uses the till for a shift: wording of the new translations, Arabic item names in
+      grid, cart and receipt, "د.إ" placement, RTL on a 10-inch tablet (only 1280 x 720 and 1024 x 768 were
+      checked here).
+- [ ] Before selling to large clients: check the UAE e-invoicing timeline and the provider that will plug into
+      the `pos0001_after_invoice_submit` hook.
+
+### Not done in this phase
+
+- Tills without a POS Printer Profile still print POS Next's own receipt (Phase 4 decision 1): English, and for
+  local invoices the unrounded total. Assign a printer profile (any mode) to get the UAE receipt at the till; desk
+  and `qz_html` use the print format.
+- Customer TRN on offline receipts: POS Next's customer cache has no `tax_id`, so a receipt printed before the
+  server answers for a customer with a TRN shows no customer TRN (and "Auto" prints "Simplified Tax Invoice");
+  the ERPNext invoice and every reprint have it.
+- Thermal labels keep "AED": label printer fonts cannot print "د.إ" (a template can draw it with `draw_arabic`).
+- Many POS Next strings outside the screens above are still English in an Arabic till (POS Next's own
+  translations); only the ones seen on the main till were added. The customer dialog's phone prefix defaults to
+  +20 (POS Next).
+
+### Decisions to review
+
+1. **Bilingual receipt whatever the till language.** Receipt labels are fixed English + Arabic pairs, not the
+   cashier's UI language. Before, `escpos_text` printed `__()` translations, i.e. Arabic text that a text-mode
+   printer cannot print. The pairs are kept equal to `ar.csv` by a test.
+2. **Receipt Title default "Tax Invoice"** on every profile (a full tax invoice is always valid). "Auto"
+   (simplified for customers without TRN) is opt-in per POS Profile.
+3. **E-invoicing handlers never fail a sale.** A handler runs inside the submit transaction; on an exception its
+   own writes are rolled back to a savepoint and the error is logged, so handlers should queue their work. This
+   keeps the "never drop an offline invoice" rule; a future e-invoicing provider may need the opposite (block the
+   sale), to be decided with that provider.
+4. **Receipts printed before the server answers use ERPNext's rounding** (display only; the invoice is rounded by
+   ERPNext's rounding adjustment, never by editing line amounts). Rule = POS Profile "Disable Rounded Total" (POS
+   Next copies it onto the invoice), currency `smallest_currency_fraction_value` (AED has none, so whole dirhams),
+   System Settings rounding method. This changes what Phase 6 background receipts showed (total and change). POS
+   0001 Settings `default_cash_rounding` is still not wired to ERPNext.
+5. **AED symbol "By language"** by default: "AED" on English tills and English desk prints, "د.إ" on Arabic tills.
+   Receipts write "41.00 د.إ" (symbol after the number); POS Next's screens keep their own order ("د.إ 41.00").
+6. **POS Next UI patches for RTL** (UPSTREAM_PATCHES 50-55), a few lines in six POS Next files. From 1024 to 1279
+   px the header no longer shows the clock and shift chips (a compact clock instead), in English too; English
+   keeps the labelled shift chip from 1280 px.
+7. **New fields, ours, not in SPEC section 8**: POS Profile `pos0001_invoice_title`, POS 0001 Settings
+   `currency_symbol`.
+8. **Item display names**: an Arabic till shows `item_name_ar` instead of the item name where one exists; the
+   English name stays as tooltip and is what is sent to ERPNext.
+9. The RTL e2e audit ignores a pre-existing POS Next console error: the customer edit dialog reads Selling
+   Settings, which cashiers may not read (HTTP 403, in English too). Not changed (POS Next permissions).
+10. `test_uae` may create disabled test currencies (`XR000`, `XR005`, `XR025`, `XR050`) on the test site to check
+    the rounding vectors against Frappe's own function.
+
+PHASE 7: DONE
