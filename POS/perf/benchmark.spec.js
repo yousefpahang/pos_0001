@@ -11,10 +11,11 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { expect, request, test } from "@playwright/test"
+import { PERF_PROFILE, syncInvoice } from "./syncPayload.js"
 
 const CASHIER = { usr: "cashier@pos.test", pwd: "cashier" }
 const ADMIN = { usr: "Administrator", pwd: "admin" }
-const PROFILE = "Main Till"
+const PROFILE = PERF_PROFILE
 const PRINTER = "Perf Receipt Raster"
 // Options come from the environment, or from <tmp>/pos0001-perf-options.json
 // (e.g. {"PERF_LABEL": "before", "PERF_SYNC_COUNT": 0}) where setting variables is awkward.
@@ -37,6 +38,10 @@ const ITEM_COUNT = Number(opt("PERF_ITEM_COUNT", 20000))
 const SYNC_COUNT = Number(opt("PERF_SYNC_COUNT", 500))
 const LABEL = String(opt("PERF_LABEL", "run"))
 const ASSERT = String(opt("PERF_ASSERT", "0")) === "1"
+// DECISIONS item 14: send the till's /api calls to another server (e.g. the multi-worker
+// gunicorn at http://127.0.0.1:8002) while the page and its assets still come from baseURL.
+const API_URL = String(opt("PERF_API_URL", "")).replace(/\/$/, "")
+const API_SITE = String(opt("PERF_API_SITE", "pos.test"))
 
 const TARGETS = {
 	initial_cache_ms: 60_000,
@@ -158,6 +163,36 @@ async function fakeQz(context) {
 		})
 	})
 	return jobs
+}
+
+/**
+ * Forward the page's /api requests to API_URL (same site and session: both servers share
+ * the database and Redis). No-op when PERF_API_URL is not set.
+ */
+async function routeApi(context) {
+	if (!API_URL) return
+	await context.route(
+		(url) => url.pathname.startsWith("/api/"),
+		async (route) => {
+			const req = route.request()
+			const url = new URL(req.url())
+			const headers = {
+				...(await req.allHeaders()),
+				"x-frappe-site-name": API_SITE,
+			}
+			delete headers.host
+			try {
+				const response = await route.fetch({
+					url: `${API_URL}${url.pathname}${url.search}`,
+					headers,
+					timeout: 120_000,
+				})
+				await route.fulfill({ response })
+			} catch {
+				await route.abort().catch(() => {})
+			}
+		},
+	)
 }
 
 async function openTill(page) {
@@ -455,34 +490,6 @@ async function pendingQueue(page, prefix) {
 	}, prefix)
 }
 
-function syncInvoice(offlineId, n) {
-	const item = `ITM-${String(1000 + (n % 5000)).padStart(5, "0")}`
-	return {
-		doctype: "Sales Invoice",
-		is_pos: 1,
-		update_stock: 1,
-		pos_profile: PROFILE,
-		company: "Demo Trading LLC",
-		customer: "Walk-in Customer",
-		currency: "AED",
-		selling_price_list: "Standard Selling",
-		set_warehouse: "Stores - DTL",
-		taxes_and_charges: "UAE VAT 5% - DTL",
-		items: [
-			{
-				item_code: item,
-				qty: 1,
-				rate: 20,
-				uom: "Nos",
-				warehouse: "Stores - DTL",
-			},
-		],
-		payments: [{ mode_of_payment: "Cash", amount: 21 }],
-		grand_total: 21,
-		offline_id: offlineId,
-	}
-}
-
 test.describe
 	.serial("section 6 performance targets", () => {
 		test.afterAll(async ({ baseURL }) => {
@@ -496,6 +503,8 @@ test.describe
 			await setProfilePrinter(baseURL, PRINTER)
 			const context = await browser.newContext()
 			const jobs = await fakeQz(context)
+			await routeApi(context)
+			results.api = API_URL || baseURL
 			const page = await context.newPage()
 			expect(
 				(await page.request.post("/api/method/login", { data: CASHIER })).ok(),
@@ -635,7 +644,7 @@ test.describe
 				record(
 					"pay_to_print_ms",
 					median(prints),
-					`runs ${prints.join(", ")} (includes the server submit)`,
+					`runs ${prints.join(", ")} (printed from the local invoice; submit runs in the background)`,
 				)
 			} catch (error) {
 				record(
