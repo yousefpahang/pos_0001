@@ -210,7 +210,7 @@ scheduler_events = {
 # Testing
 # -------
 
-# before_tests = "pos_next.install.before_tests"
+before_tests = "pos_next.pos_0001.tests.setup.before_tests"  # pos_0001
 
 # Overriding Methods
 # ------------------------------

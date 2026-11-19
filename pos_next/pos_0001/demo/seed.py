@@ -387,12 +387,17 @@ def create_items(item_count: int) -> None:
 	existing = frappe.db.count("Item", {"item_code": ["like", "ITM-%"]})
 	if existing >= item_count:
 		return
+	create_numbered_items(range(existing + 1, item_count + 1), total=item_count)
+
+
+def create_numbered_items(numbers, total: int | None = None) -> None:
+	"""Create demo items ITM-<n> for the given numbers (skips codes that exist)."""
 	words_a = ["Fresh", "Classic", "Premium", "Organic", "Family", "Daily", "Golden", "Royal", "Pure", "Natural"]
 	words_b = ["Rice", "Milk", "Juice", "Tea", "Coffee", "Soap", "Shampoo", "Biscuits", "Chips", "Water",
 		"Yogurt", "Cheese", "Bread", "Pasta", "Oil", "Sugar", "Dates", "Nuts", "Tissue", "Detergent"]
 	sizes = ["250g", "500g", "1kg", "330ml", "1L", "1.5L", "6pc", "12pc", "200ml", "2kg"]
 	frappe.flags.in_import = True
-	for n in range(existing + 1, item_count + 1):
+	for n in numbers:
 		code = f"ITM-{n:05d}"
 		if frappe.db.exists("Item", code):
 			continue
@@ -418,7 +423,7 @@ def create_items(item_count: int) -> None:
 		item.insert(ignore_permissions=True)
 		if n % BATCH == 0:
 			frappe.db.commit()
-			print(f"items: {n}/{item_count}")
+			print(f"items: {n}/{total or n}")
 	frappe.flags.in_import = False
 	frappe.db.commit()
 

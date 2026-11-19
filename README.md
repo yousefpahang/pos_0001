@@ -94,7 +94,9 @@ In short:
 
 ```bash
 cd ~/frappe-bench
-bench --site your-test-site run-tests --app pos_next --skip-test-records
+bench setup requirements --dev          # once per bench: Frappe's test packages (freezegun, ...)
+bench --site your-test-site set-config allow_tests true
+bench --site your-test-site run-tests --app pos_next
 bench --site your-test-site run-tests --module pos_next.test_promotions
 bench --site your-test-site run-tests --module pos_next.test_packed_items_regression
 cd apps/pos_next/POS
@@ -102,9 +104,12 @@ yarn test:run      # Vitest
 yarn e2e           # Playwright, needs the site running at http://localhost:8001
 ```
 
-Run the tests on a test site only: ERPNext's `before_tests` hook deletes every Item Price on the site.
-`--skip-test-records` is needed on v15 because ERPNext's standard test records need a "_Test Company"; the
-pos_0001 tests create their own data. Frappe v15's runner skips test files at the package root, hence the two
+Run the tests on a test site only. pos_next's `before_tests` hook (`pos_next/pos_0001/tests/setup.py`) runs
+ERPNext's `before_tests` (which deletes every Item Price), completes the setup wizard with the demo company
+"Demo Trading LLC" on a site without a company, and creates the small demo data set the tests use (POS
+Profiles "Main Till" / "Express Till", "UAE VAT 5% - DTL", scale barcode rules, test items, prices, stock). A
+freshly created site needs no other step. `--skip-test-records` still works and is faster on a site that has
+not built ERPNext's "_Test Company" records yet. Frappe v15's runner skips test files at the package root, hence the two
 `--module` lines.
 
 `yarn e2e` runs against the demo data (`pos_next.pos_0001.demo.seed`) and needs the whole `bench start` stack

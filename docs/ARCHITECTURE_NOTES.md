@@ -176,8 +176,8 @@ when online. Rules, PLU map and UOM barcodes come from `pos_0001.api.barcode.get
 Sales Invoice Item, where a `validate` hook re-checks item, weight or amount (`pos_0001/scale_barcode.py`).
 `barcode_resolver` and `POS Barcode Rules` are untouched. Note: POS Next caches an item's barcodes as one
 comma-joined string without UOMs (`get_items` `GROUP_CONCAT`), which is why the UOM barcode map exists.
-ERPNext's `before_tests` hook deletes every Item Price on the site; re-run
-`bench --site pos.test execute pos_next.pos_0001.demo.seed.ensure_item_prices` after `run-tests`.
+ERPNext's `before_tests` deletes every Item Price on the site; pos_next's own `before_tests`
+(`pos_0001/tests/setup.py`, Phase 9) rebuilds the demo prices right after it.
 
 ### 2.5 Sales person
 
