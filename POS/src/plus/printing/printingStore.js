@@ -28,6 +28,8 @@ import {
 	qzConnected,
 	sendRaw,
 } from "@/plus/printing/qz"
+import { receiptHtml } from "@/plus/core/receiptHtml"
+import { printReceiptWindow } from "@/plus/printing/browserReceipt"
 import { renderReceiptImage } from "@/plus/printing/rasterClient"
 import { getDeviceId } from "@/plus/sync/syncClient"
 import { usePOSShiftStore } from "@/stores/posShift"
@@ -35,12 +37,11 @@ import { usePOSSyncStore } from "@/stores/posSync"
 import { call } from "@/utils/apiWrapper"
 import { logger } from "@/utils/logger"
 import { db } from "@/utils/offline/db"
+import { printHTML as qzPrintHTML } from "@/utils/qzTray"
 import { getOfflineInvoiceByOfflineId } from "@/utils/offline/sync"
 import {
 	printInvoice as posNextBrowserPrint,
-	printInvoiceCustom,
 	silentPrintDoc,
-	silentPrintInvoiceFromDoc,
 } from "@/utils/printInvoice"
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
@@ -232,8 +233,41 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 		return out
 	}
 
+	/**
+	 * Arabic item names (Item `item_name_ar`, SPEC section 7) for lines that lack one:
+	 * from the cached items, then the label cache.
+	 * @param {Record<string, any>} doc
+	 * @returns {Promise<Record<string, string>>}
+	 */
+	async function arabicNamesFor(doc) {
+		const codes = [
+			...new Set(
+				(doc.items || [])
+					.filter((i) => i?.item_code && !i.item_name_ar)
+					.map((i) => i.item_code),
+			),
+		]
+		if (!codes.length) return {}
+		const names = {}
+		try {
+			const rows = await db.items.bulkGet(codes)
+			for (const row of rows)
+				if (row?.item_name_ar) names[row.item_code] = row.item_name_ar
+		} catch (error) {
+			log.debug("Could not read Arabic names", error)
+		}
+		if (codes.some((c) => !names[c])) {
+			const labels = await readSetting(
+				`pos0001_label_cache::${profile.value || ""}`,
+			)
+			for (const c of codes)
+				if (!names[c] && labels?.ar_names?.[c]) names[c] = labels.ar_names[c]
+		}
+		return names
+	}
+
 	/** @param {Record<string, any>} doc @param {boolean} reprint */
-	function modelFor(doc, reprint) {
+	async function modelFor(doc, reprint) {
 		const c = cache.value || {}
 		return buildReceiptModel(doc, {
 			currency: posShift.profileCurrency,
@@ -243,7 +277,11 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			logo: c.logo,
 			cashier: doc.cashier || c.cashier,
 			reprint,
-			t,
+			titleMode: c.invoice_title,
+			symbolMode: c.currency_symbol,
+			lang:
+				typeof document !== "undefined" ? document.documentElement.lang : "en",
+			arabicNames: await arabicNamesFor(doc),
 		})
 	}
 
@@ -262,7 +300,6 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			const ops = layoutReceipt(model, {
 				widthDots,
 				barcode: p.receipt_barcode,
-				t,
 			})
 			const image = await renderReceiptImage({
 				ops,
@@ -283,7 +320,6 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 				drawer,
 				copies,
 				barcode: p.receipt_barcode,
-				t,
 			})
 			await sendRaw(bytes, p)
 			return
@@ -292,8 +328,16 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			if (drawer) await sendRaw(Uint8Array.from(DRAWER_KICK), p)
 			const printerName = p.qz_printer || undefined
 			for (let i = 0; i < copies; i++) {
+				// Local invoices: the bilingual receipt from local data (works offline).
 				if (isLocalInvoiceName(doc.name))
-					await silentPrintInvoiceFromDoc(doc, printerName)
+					await qzPrintHTML(
+						receiptHtml(model, {
+							paperWidthMm: p.paper_width_mm,
+							barcode: p.receipt_barcode,
+						}),
+						printerName,
+						{ width: Number(p.paper_width_mm) === 58 ? 58 : 80 },
+					)
 				else
 					await silentPrintDoc(
 						"Sales Invoice",
@@ -318,7 +362,13 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			}
 		}
 		if (isLocalInvoiceName(doc.name) || posSync.isOffline)
-			printInvoiceCustom(doc)
+			printReceiptWindow(
+				receiptHtml(model, {
+					paperWidthMm: p.paper_width_mm,
+					barcode: p.receipt_barcode,
+					autoPrint: true,
+				}),
+			)
 		else
 			await posNextBrowserPrint(
 				{ name: doc.name, doctype: "Sales Invoice" },
@@ -341,7 +391,7 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 			if (needsQz.value && !qzConnected.value)
 				await ensureQz().catch(() => false)
 			const doc = await resolveDoc(invoice)
-			const model = modelFor(doc, reason === "reprint")
+			const model = await modelFor(doc, reason === "reprint")
 			const drawer = shouldKickDrawer(printer.value, model, { reason })
 			let plan = planPrint(printer.value, { qzConnected: qzConnected.value })
 			try {

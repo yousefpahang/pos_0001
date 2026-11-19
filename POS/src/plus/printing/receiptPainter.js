@@ -146,6 +146,62 @@ export function measure(ctx, ops, { widthDots, logo }) {
 				})
 				break
 			}
+			case "bi": {
+				// English label on the left, Arabic label next to the value on the right.
+				ctx.font = font(op.size, op.bold)
+				const h = lineHeight(op.size)
+				const enW = ctx.measureText(op.en).width
+				const arW = ctx.measureText(op.ar).width
+				const valW = op.value ? ctx.measureText(op.value).width : 0
+				const gaps = op.value ? GAP * 2 : GAP
+				if (enW + arW + valW + gaps <= inner) {
+					rows.push({ kind: "bi", ...op, y, h, font: ctx.font, valW })
+					y += h
+				} else if (op.value && enW + valW + GAP <= inner) {
+					rows.push({
+						kind: "pair",
+						left: op.en,
+						right: op.value,
+						y,
+						h,
+						font: ctx.font,
+					})
+					y += h
+					rows.push({
+						kind: "pair",
+						left: op.ar,
+						right: "",
+						y,
+						h,
+						font: ctx.font,
+					})
+					y += h
+				} else {
+					// Long value (offline invoice id): both labels, then the value below.
+					rows.push({
+						kind: "bi",
+						...op,
+						value: "",
+						y,
+						h,
+						font: ctx.font,
+						valW: 0,
+					})
+					y += h
+					for (const text of wrapText(ctx, op.value, inner)) {
+						rows.push({
+							kind: "text",
+							text,
+							y,
+							h,
+							font: ctx.font,
+							align: "right",
+						})
+						y += h
+					}
+				}
+				break
+			}
 			case "rule":
 				rows.push({ kind: "rule", y: y + 6, style: op.style || "dashed" })
 				y += 14
@@ -253,6 +309,21 @@ export function draw(ctx, layout, { widthDots, logo }) {
 					ctx.textAlign = "right"
 					ctx.fillText(row.right, right, row.y)
 				}
+				break
+			}
+			case "bi": {
+				ctx.font = row.font
+				ctx.direction = "ltr"
+				ctx.textAlign = "left"
+				ctx.fillText(row.en, left, row.y)
+				if (row.value) {
+					ctx.textAlign = "right"
+					ctx.fillText(row.value, right, row.y)
+				}
+				ctx.direction = "rtl"
+				ctx.textAlign = "right"
+				ctx.fillText(row.ar, row.value ? right - row.valW - GAP : right, row.y)
+				ctx.direction = "ltr"
 				break
 			}
 			case "rule": {

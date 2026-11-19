@@ -3,6 +3,7 @@ import { toHex } from "./escpos.js"
 import {
 	buildReceiptModel,
 	chooseBarcode,
+	latinFooter,
 	layoutReceipt,
 	money,
 	planPrint,
@@ -10,6 +11,7 @@ import {
 	receiptTextLines,
 	shouldKickDrawer,
 	textReceipt,
+	withSymbol,
 } from "./receipt.js"
 
 const SERVER_DOC = {
@@ -145,16 +147,18 @@ describe("receipt model", () => {
 			},
 			CTX,
 		)
-		expect(m.title).toBe("Credit Note")
+		expect(m.title).toBe("Tax Credit Note")
+		expect(m.titleBi.ar).toBe("إشعار دائن ضريبي")
 		expect(m.total).toBe(-22)
-		expect(receiptTextLines(m, 48).body.join("\n")).toContain(
-			"ACC-SINV-2026-00001",
-		)
+		const body = receiptTextLines(m, 48).body.join("\n")
+		expect(body).toContain("Credit Note No.")
+		expect(body).toMatch(/Original invoice +ACC-SINV-2026-00001/)
 	})
 
-	it("uses the translator", () => {
+	it("is bilingual whatever the till language (the translator is not used)", () => {
 		const m = buildReceiptModel(SERVER_DOC, { ...CTX, t: (s) => `<${s}>` })
-		expect(m.title).toBe("<Tax Invoice>")
+		expect(m.title).toBe("Tax Invoice")
+		expect(m.titleBi).toEqual({ en: "Tax Invoice", ar: "فاتورة ضريبية" })
 	})
 
 	it("formats the time and falls back to the till currency", () => {
@@ -253,8 +257,13 @@ describe("raster layout", () => {
 		expect(
 			code.widths.reduce((a, b) => a + b, 0) * code.moduleWidth,
 		).toBeLessThanOrEqual(576)
-		const total = ops.find((o) => o.type === "pair" && o.left === "TOTAL")
-		expect(total.right).toBe("AED 22.00")
+		const total = ops.find((o) => o.type === "bi" && o.en === "Total incl. VAT")
+		expect(total).toMatchObject({
+			ar: "الإجمالي شامل الضريبة",
+			value: "AED 22.00",
+			size: "lg",
+			bold: true,
+		})
 	})
 
 	it("offline receipt gets a QR code that fits 58 mm", () => {
@@ -316,5 +325,135 @@ describe("print plan and drawer", () => {
 			}),
 		).toBe(false)
 		expect(shouldKickDrawer(null, cash, { reason: "sale" })).toBe(false)
+	})
+})
+
+describe("UAE tax invoice (SPEC section 7)", () => {
+	const MIXED = {
+		...SERVER_DOC,
+		customer_tax_id: "100222333400003",
+		items: [
+			{ ...SERVER_DOC.items[0], vat_rate: 5 },
+			{ ...SERVER_DOC.items[1], vat_rate: 0 },
+		],
+		taxes: [{ description: "VAT 5% - DTL", rate: 5, tax_amount: 0.55 }],
+	}
+
+	it("title follows the profile setting and the customer's TRN", () => {
+		expect(buildReceiptModel(SERVER_DOC, CTX).titleBi.ar).toBe("فاتورة ضريبية")
+		const simple = { ...CTX, titleMode: "Simplified Tax Invoice" }
+		expect(buildReceiptModel(SERVER_DOC, simple).title).toBe(
+			"Simplified Tax Invoice",
+		)
+		const auto = { ...CTX, titleMode: "Auto" }
+		expect(buildReceiptModel(SERVER_DOC, auto).title).toBe(
+			"Simplified Tax Invoice",
+		)
+		expect(buildReceiptModel(MIXED, auto).title).toBe("Tax Invoice")
+		expect(buildReceiptModel(MIXED, auto).customerTaxId).toBe("100222333400003")
+	})
+
+	it("prints the VAT rate per line only when rates differ", () => {
+		const mixed = buildReceiptModel(MIXED, CTX)
+		expect(mixed.lineVat).toBe(true)
+		const body = receiptTextLines(mixed, 48).body.join("\n")
+		expect(body).toContain("2 Nos x 5.50 (VAT 5%)")
+		expect(body).toContain("1.25 Kg x 8.00 (VAT 0%)")
+		expect(body).toMatch(/VAT 5% +AED 0\.55/)
+		const same = buildReceiptModel(
+			{
+				...MIXED,
+				items: MIXED.items.map((i) => ({ ...i, vat_rate: 5 })),
+			},
+			CTX,
+		)
+		expect(same.lineVat).toBe(false)
+		expect(receiptTextLines(same, 48).body.join("\n")).not.toContain(
+			"(VAT",
+		)
+	})
+
+	it("AED or د.إ by language setting; text mode stays Latin", () => {
+		const ar = buildReceiptModel(SERVER_DOC, { ...CTX, lang: "ar" })
+		expect(ar.symbol).toBe("د.إ")
+		expect(withSymbol(ar, 22)).toBe("22.00 د.إ")
+		expect(withSymbol(ar, 22, true)).toBe("AED 22.00")
+		const ops = layoutReceipt(ar, { widthDots: 576 })
+		expect(
+			ops.find((o) => o.type === "bi" && o.en === "Total incl. VAT").value,
+		).toBe("22.00 د.إ")
+		const text = new TextDecoder().decode(textReceipt(ar, { paperWidthMm: 80 }))
+		expect(text).toContain("AED 22.00")
+		expect(text).not.toMatch(/[؀-ۿ]/)
+		const fixed = buildReceiptModel(SERVER_DOC, {
+			...CTX,
+			lang: "en",
+			symbolMode: "د.إ",
+		})
+		expect(fixed.symbol).toBe("د.إ")
+	})
+
+	it("text mode leaves Arabic footer lines out", () => {
+		expect(latinFooter("شكراً لزيارتكم\nThank you for shopping")).toBe(
+			"Thank you for shopping",
+		)
+		const m = buildReceiptModel(SERVER_DOC, {
+			...CTX,
+			footer: "شكراً لزيارتكم",
+		})
+		const text = new TextDecoder().decode(textReceipt(m, { paperWidthMm: 80 }))
+		expect(text).toContain("Thank you")
+		expect(text).not.toMatch(/[؀-ۿ]/)
+	})
+
+	it("takes Arabic item names from the till cache when the line has none", () => {
+		const m = buildReceiptModel(SERVER_DOC, {
+			...CTX,
+			arabicNames: { "PLU-12345": "طماطم", "ITM-00001": "غير مستخدم" },
+		})
+		expect(m.lines.map((l) => l.nameAr)).toEqual(["حليب", "طماطم"])
+	})
+
+	it("raster receipt is bilingual: title, header rows, VAT and total", () => {
+		const m = buildReceiptModel(MIXED, CTX)
+		const ops = layoutReceipt(m, { widthDots: 576 })
+		const texts = ops.filter((o) => o.type === "text").map((o) => o.text)
+		expect(texts).toContain("Tax Invoice")
+		expect(texts).toContain("فاتورة ضريبية")
+		const bi = Object.fromEntries(
+			ops.filter((o) => o.type === "bi").map((o) => [o.en, o]),
+		)
+		expect(bi.TRN).toMatchObject({
+			ar: "الرقم الضريبي",
+			value: "100000000000003",
+		})
+		expect(bi["Invoice No."].value).toBe("ACC-SINV-2026-00012")
+		expect(bi["Customer TRN"].value).toBe("100222333400003")
+		expect(bi["Sales person"].value).toBe("Ahmed Ali")
+		expect(bi["VAT 5%"]).toMatchObject({
+			ar: "ضريبة القيمة المضافة 5%",
+			value: "AED 0.55",
+		})
+		expect(bi.Rounding.value).toBe("-0.05")
+		expect(bi.Change.value).toBe("AED 8.00")
+	})
+
+	it("credit note shows the original invoice in both languages", () => {
+		const m = buildReceiptModel(
+			{ ...SERVER_DOC, is_return: 1, return_against: "ACC-SINV-2026-00001" },
+			CTX,
+		)
+		const ops = layoutReceipt(m, { widthDots: 384 })
+		const bi = ops.filter((o) => o.type === "bi")
+		expect(bi.find((o) => o.en === "Credit Note No.").ar).toBe(
+			"رقم الإشعار الدائن",
+		)
+		expect(bi.find((o) => o.en === "Original invoice")).toMatchObject({
+			ar: "الفاتورة الأصلية",
+			value: "ACC-SINV-2026-00001",
+		})
+		expect(ops.filter((o) => o.type === "text").map((o) => o.text)).toContain(
+			"إشعار دائن ضريبي",
+		)
 	})
 })
