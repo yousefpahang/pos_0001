@@ -19,6 +19,7 @@
   {
    "creation": "2026-11-19 12:00:00.000000",
    "default": "Off",
+   "description": "Optional: the cashier may pick a sales person. Mandatory: payment is blocked until one is picked. Off: keep the POS Settings \"Enable Sales Persons\" behaviour (Disabled = no picker, Single or Multiple = mandatory). Several sales persons per sale only when POS Settings says Multiple.",
    "doctype": "Custom Field",
    "dt": "POS Profile",
    "fieldname": "pos0001_sales_person_mode",

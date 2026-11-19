@@ -186,6 +186,8 @@ def process_offline_invoice(invoice: dict, device_id: str | None = None) -> dict
 		return {**base, "status": "Pending"}
 
 	frappe.db.savepoint(SAVEPOINT)
+	# Hooks can tell a queued offline sale from a live one (sales person check, Phase 3).
+	frappe.flags.pos0001_offline_submit = True
 	try:
 		# submit_invoice changes the dict it gets; keep the original payload for storage.
 		result = submit_invoice(invoice=json.loads(json.dumps(invoice, default=str)), data={})
@@ -204,6 +206,8 @@ def process_offline_invoice(invoice: dict, device_id: str | None = None) -> dict
 		store_failure(invoice, message, device)
 		frappe.log_error(title=f"POS offline sync failed: {offline_id}", message=traceback)
 		return {**base, "status": "Failed", "error": message, "stored": True}
+	finally:
+		frappe.flags.pos0001_offline_submit = False
 
 	invoice_name = (result or {}).get("name")
 	if not invoice_name:
