@@ -192,7 +192,11 @@ test("favourites grid and new parts in RTL", async ({ page }) => {
 	// Main Till has sales in the demo data (earlier tests), so favourites exist.
 	const grid = page.getByTestId("favourites-grid")
 	await expect(grid).toBeVisible({ timeout: 60_000 })
-	const first = grid.getByTestId("favourite-item").first()
+	// Skip items the Item Wizard e2e sells by several units: those ask which unit first.
+	const first = grid
+		.getByTestId("favourite-item")
+		.filter({ hasNotText: "E2E " })
+		.first()
 	const box = await first.boundingBox()
 	expect(box.height).toBeGreaterThanOrEqual(44)
 	await first.click()
