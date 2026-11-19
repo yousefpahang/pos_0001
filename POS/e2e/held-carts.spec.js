@@ -223,8 +223,10 @@ test("held carts dialog in RTL: touch targets and no overflow", async ({
 	const dialog = page.getByTestId("held-carts-dialog")
 	await expect(dialog).toBeVisible()
 	const refresh = page.getByTestId("held-carts-refresh")
-	const box = await refresh.boundingBox()
-	expect(box.height).toBeGreaterThanOrEqual(44)
+	// Layout height: boundingBox() reads the dialog's opening scale transition.
+	expect(
+		await refresh.evaluate((el) => el.offsetHeight),
+	).toBeGreaterThanOrEqual(44)
 	const overflow = await dialog.evaluate(
 		(el) => el.scrollWidth - el.clientWidth,
 	)
