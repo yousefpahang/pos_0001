@@ -501,9 +501,11 @@ test.describe
 			expect(
 				await panel.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
 			).toBe(true)
+			// Layout height, not boundingBox(): the dialog opens with a scale
+			// transition, so boundingBox() can read 43.96 px mid-animation.
 			for (const id of ["printer-reprint", "printer-test", "no-sale-open"]) {
 				expect(
-					(await panel.getByTestId(id).boundingBox()).height,
+					await panel.getByTestId(id).evaluate((el) => el.offsetHeight),
 				).toBeGreaterThanOrEqual(44)
 			}
 			await page.screenshot({ path: "test-results/printer-panel-rtl.png" })

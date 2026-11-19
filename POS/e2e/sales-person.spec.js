@@ -313,9 +313,10 @@ test("sales person picker fits in RTL with 44 px targets", async ({ page }) => {
 	)
 	expect(fits).toBe(true)
 	const options = panel.getByTestId("sales-person-option")
-	expect((await options.first().boundingBox()).height).toBeGreaterThanOrEqual(
-		44,
-	)
+	// Layout height: boundingBox() reads the dialog's opening scale transition.
+	expect(
+		await options.first().evaluate((el) => el.offsetHeight),
+	).toBeGreaterThanOrEqual(44)
 	await page.screenshot({ path: "test-results/sales-person-rtl.png" })
 	await panel.getByTestId("sales-person-done").click()
 })

@@ -430,7 +430,11 @@ test.describe
 				"label-print",
 			]) {
 				expect(
-					(await panel.getByTestId(id).first().boundingBox()).height,
+					// Layout height: boundingBox() reads the dialog's opening scale transition.
+					await panel
+						.getByTestId(id)
+						.first()
+						.evaluate((el) => el.offsetHeight),
 					id,
 				).toBeGreaterThanOrEqual(44)
 			}
