@@ -33,6 +33,7 @@
 				@logout="uiStore.showLogoutDialog = true"
 			>
 				<template #menu-items>
+					<NewItemMenuItem />
 					<button
 						v-if="shiftStore.hasOpenShift"
 						@click="uiStore.showOpenShiftDialog = true"
@@ -1017,6 +1018,7 @@ import CustomerDialog from "@/components/sale/CustomerDialog.vue";
 import HeldCartsDialog from "@/plus/components/HeldCartsDialog.vue"; // pos_0001
 import HoldCartDialog from "@/plus/components/HoldCartDialog.vue"; // pos_0001
 import ShortcutsOverlay from "@/plus/components/ShortcutsOverlay.vue"; // pos_0001
+import NewItemMenuItem from "@/plus/components/NewItemMenuItem.vue"; // pos_0001
 import { useShortcuts } from "@/plus/shortcuts/useShortcuts"; // pos_0001
 import InvoiceCart from "@/components/sale/InvoiceCart.vue";
 import InvoiceHistoryDialog from "@/components/sale/InvoiceHistoryDialog.vue";

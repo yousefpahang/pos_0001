@@ -13,7 +13,13 @@ import {
 
 const here = dirname(fileURLToPath(import.meta.url))
 const VECTORS = JSON.parse(
-	readFileSync(resolve(here, "../../../../pos_next/pos_0001/tests/item_wizard_vectors.json"), "utf8"),
+	readFileSync(
+		resolve(
+			here,
+			"../../../../pos_next/pos_0001/tests/item_wizard_vectors.json",
+		),
+		"utf8",
+	),
 )
 
 describe("item wizard: shared vectors with pos_0001/item_wizard.py", () => {
@@ -42,15 +48,30 @@ describe("item wizard: SPEC F13 rice example", () => {
 
 	it("costs 3.00 per Kg from AED 75 per 25 kg bag, 50% margin at 4.50", () => {
 		expect(out.cost_per_stock_uom).toBe(3)
-		expect(unit("Kg")).toMatchObject({ price: 4.5, cost: 3, margin_pct: 50, shelf_price: 4.5 })
+		expect(unit("Kg")).toMatchObject({
+			price: 4.5,
+			cost: 3,
+			margin_pct: 50,
+			shelf_price: 4.5,
+		})
 	})
 
 	it("calculates the 500 g pack at 2.25 and keeps the user's 2.50", () => {
-		expect(unit("Pack")).toMatchObject({ factor: 0.5, calculated: 2.25, price: 2.5, overridden: 1 })
+		expect(unit("Pack")).toMatchObject({
+			factor: 0.5,
+			calculated: 2.25,
+			price: 2.5,
+			overridden: 1,
+		})
 	})
 
 	it("keeps the cheaper bag price 99.00 (25 x 4.50 = 112.50)", () => {
-		expect(unit("Bag")).toMatchObject({ factor: 25, calculated: 112.5, price: 99, shelf_price: 99 })
+		expect(unit("Bag")).toMatchObject({
+			factor: 25,
+			calculated: 112.5,
+			price: 99,
+			shelf_price: 99,
+		})
 	})
 
 	it("has no Gram row: Gram is an entry unit", () => {
@@ -86,7 +107,10 @@ describe("item wizard helpers", () => {
 
 	it("filters errors by step and shows progress", () => {
 		const p = normalize({ stock_uom: "Kg", selling_units: [{ uom: "Kg" }] })
-		expect(payloadErrors(p, ["basics"]).map((e) => e.field)).toEqual(["item_name", "item_group"])
+		expect(payloadErrors(p, ["basics"]).map((e) => e.field)).toEqual([
+			"item_name",
+			"item_group",
+		])
 		expect(payloadErrors(p, ["barcodes"])).toEqual([])
 		expect(progressPercent("start")).toBe(13)
 		expect(progressPercent("review")).toBe(100)

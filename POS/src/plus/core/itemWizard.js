@@ -95,7 +95,10 @@ export function normalize(raw) {
 			uom,
 			size: size !== null ? size : 1,
 			size_uom: text(row.size_uom) || (uom === stockUom ? uom : stockUom),
-			priced: row.priced === null || row.priced === undefined || flag(row.priced) ? 1 : 0,
+			priced:
+				row.priced === null || row.priced === undefined || flag(row.priced)
+					? 1
+					: 0,
 			price: num(row.price),
 			barcode: text(row.barcode),
 			margin: num(row.margin),
@@ -157,7 +160,9 @@ export function unitFactors(p) {
 		if (u.size === null || u.size <= 0)
 			errors.push({ step: "buying", code: "size_not_positive", uom: u.uom })
 	}
-	let pending = p.buying_units.filter((u) => u.size && u.size > 0 && !(u.uom in factors))
+	let pending = p.buying_units.filter(
+		(u) => u.size && u.size > 0 && !(u.uom in factors),
+	)
 	while (pending.length) {
 		let progress = false
 		for (const u of [...pending]) {
@@ -169,7 +174,12 @@ export function unitFactors(p) {
 		}
 		if (!progress) {
 			for (const u of pending)
-				errors.push({ step: "buying", code: "unknown_unit", uom: u.uom, parent_uom: u.parent_uom })
+				errors.push({
+					step: "buying",
+					code: "unknown_unit",
+					uom: u.uom,
+					parent_uom: u.parent_uom,
+				})
 			break
 		}
 	}
@@ -191,12 +201,22 @@ export function unitFactors(p) {
 			continue
 		}
 		if (!(u.size_uom in factors)) {
-			errors.push({ step: "selling", code: "unknown_unit", uom, parent_uom: u.size_uom })
+			errors.push({
+				step: "selling",
+				code: "unknown_unit",
+				uom,
+				parent_uom: u.size_uom,
+			})
 			continue
 		}
 		if (u.size_uom === uom) {
 			if (!(uom in factors) || Math.abs(u.size - 1) > 1e-9)
-				errors.push({ step: "selling", code: "unknown_unit", uom, parent_uom: uom })
+				errors.push({
+					step: "selling",
+					code: "unknown_unit",
+					uom,
+					parent_uom: uom,
+				})
 			continue
 		}
 		const factor = roundTo(u.size * factors[u.size_uom], 9)
@@ -257,7 +277,12 @@ export function unitPrices(p, vatRate, profileInclusive) {
 	const done = new Set()
 	for (const u of p.selling_units) {
 		const factor = factors[u.uom]
-		if (factor === undefined || u.remove || done.has(u.uom) || (entry && u.uom === entry.uom))
+		if (
+			factor === undefined ||
+			u.remove ||
+			done.has(u.uom) ||
+			(entry && u.uom === entry.uom)
+		)
 			continue
 		done.add(u.uom)
 		let calculated = null
@@ -279,7 +304,8 @@ export function unitPrices(p, vatRate, profileInclusive) {
 		if (u.priced) {
 			if (u.price !== null) {
 				row.price = roundTo(u.price, 2)
-				row.overridden = row.calculated === null || row.price !== row.calculated ? 1 : 0
+				row.overridden =
+					row.calculated === null || row.price !== row.calculated ? 1 : 0
 			} else row.price = row.calculated
 		}
 		const price = row.price
@@ -287,13 +313,17 @@ export function unitPrices(p, vatRate, profileInclusive) {
 			const net = p.prices_include_vat ? price / (1 + vat) : price
 			const gross = p.prices_include_vat ? price : price * (1 + vat)
 			row.list_rate = roundTo(inclusive ? gross : net, 2)
-			row.shelf_price = inclusive ? row.list_rate : roundTo(row.list_rate * (1 + vat), 2)
+			row.shelf_price = inclusive
+				? row.list_rate
+				: roundTo(row.list_rate * (1 + vat), 2)
 			if (costPerStock !== null && costPerStock > 0) {
 				const exactCost = costPerStock * factor
 				row.margin_pct = roundTo(((price - exactCost) / exactCost) * 100, 1)
-				if (net < exactCost - 0.005) warnings.push({ step: "prices", code: "below_cost", uom: u.uom })
+				if (net < exactCost - 0.005)
+					warnings.push({ step: "prices", code: "below_cost", uom: u.uom })
 			}
-			if (price <= 0) warnings.push({ step: "prices", code: "zero_price", uom: u.uom })
+			if (price <= 0)
+				warnings.push({ step: "prices", code: "zero_price", uom: u.uom })
 			if (p.prices_include_vat && Math.abs(row.shelf_price - price) > 0.001)
 				warnings.push({
 					step: "prices",
@@ -329,8 +359,13 @@ export function unitPrices(p, vatRate, profileInclusive) {
  */
 export function barcodeFormatError(code) {
 	if (!code) return null
-	if (code.length > 40 || !/^[A-Za-z0-9\-.]+$/.test(code)) return "barcode_format"
-	if (isDigits(code) && [8, 12, 13, 14].includes(code.length) && !hasValidCheckDigit(code))
+	if (code.length > 40 || !/^[A-Za-z0-9\-.]+$/.test(code))
+		return "barcode_format"
+	if (
+		isDigits(code) &&
+		[8, 12, 13, 14].includes(code.length) &&
+		!hasValidCheckDigit(code)
+	)
 		return "barcode_check_digit"
 	return null
 }
@@ -344,9 +379,12 @@ export function barcodeFormatError(code) {
 export function payloadErrors(p, steps) {
 	/** @type {WizardIssue[]} */
 	let errors = []
-	if (!p.item_name) errors.push({ step: "basics", code: "required", field: "item_name" })
-	if (!p.item_group) errors.push({ step: "basics", code: "required", field: "item_group" })
-	if (!p.stock_uom) errors.push({ step: "basics", code: "required", field: "stock_uom" })
+	if (!p.item_name)
+		errors.push({ step: "basics", code: "required", field: "item_name" })
+	if (!p.item_group)
+		errors.push({ step: "basics", code: "required", field: "item_group" })
+	if (!p.stock_uom)
+		errors.push({ step: "basics", code: "required", field: "stock_uom" })
 	const { factors, errors: unitErrs } = unitFactors(p)
 	errors.push(...unitErrs)
 	const live = p.selling_units.filter((u) => !u.remove)
@@ -362,29 +400,47 @@ export function payloadErrors(p, steps) {
 	)
 		errors.push({ step: "prices", code: "required", field: "base_price" })
 	if (p.price_mode === "margin") {
-		if (p.buying_price === null) errors.push({ step: "prices", code: "margin_needs_cost" })
-		if (p.margin_pct === null) errors.push({ step: "prices", code: "required", field: "margin_pct" })
+		if (p.buying_price === null)
+			errors.push({ step: "prices", code: "margin_needs_cost" })
+		if (p.margin_pct === null)
+			errors.push({ step: "prices", code: "required", field: "margin_pct" })
 	}
 	for (const u of live)
 		if (u.price !== null && u.price < 0)
 			errors.push({ step: "prices", code: "negative_price", uom: u.uom })
 	if (p.buying_price !== null && p.buying_price < 0)
-		errors.push({ step: "buying", code: "negative_price", field: "buying_price" })
+		errors.push({
+			step: "buying",
+			code: "negative_price",
+			field: "buying_price",
+		})
 	const seen = new Map()
 	for (const u of live) {
 		const code = u.barcode
 		if (!code) continue
 		const problem = barcodeFormatError(code)
-		if (problem) errors.push({ step: "barcodes", code: problem, uom: u.uom, barcode: code })
+		if (problem)
+			errors.push({
+				step: "barcodes",
+				code: problem,
+				uom: u.uom,
+				barcode: code,
+			})
 		if (seen.has(code))
-			errors.push({ step: "barcodes", code: "barcode_repeated", uom: u.uom, barcode: code })
+			errors.push({
+				step: "barcodes",
+				code: "barcode_repeated",
+				uom: u.uom,
+				barcode: code,
+			})
 		seen.set(code, u.uom)
 	}
 	const o = p.opening_stock
 	if (o.qty !== null) {
 		if (o.qty < 0) errors.push({ step: "stock", code: "negative_qty" })
 		else if (o.qty > 0) {
-			if (!o.warehouse) errors.push({ step: "stock", code: "required", field: "warehouse" })
+			if (!o.warehouse)
+				errors.push({ step: "stock", code: "required", field: "warehouse" })
 			if (!((o.uom || purchaseUom(p)) in factors))
 				errors.push({ step: "stock", code: "unknown_unit", uom: o.uom })
 			if (o.cost !== null && o.cost < 0)
@@ -411,5 +467,14 @@ export function progressPercent(step, steps = [...STEPS]) {
  * @param {string} stockUom
  */
 export function defaultSellingUnits(stockUom) {
-	return [{ uom: stockUom, size: 1, size_uom: stockUom, priced: 1, price: null, barcode: "" }]
+	return [
+		{
+			uom: stockUom,
+			size: 1,
+			size_uom: stockUom,
+			priced: 1,
+			price: null,
+			barcode: "",
+		},
+	]
 }

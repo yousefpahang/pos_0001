@@ -15,6 +15,17 @@ const routes = [
 		name: "Labels",
 		component: () => import("@/plus/pages/LabelsPage.vue"),
 	},
+	// pos_0001: Item Wizard (SPEC F13): new item, and edit packaging of an existing one
+	{
+		path: "/items/new",
+		name: "ItemWizard",
+		component: () => import("@/plus/pages/ItemWizardPage.vue"),
+	},
+	{
+		path: "/items/edit",
+		name: "ItemWizardEdit",
+		component: () => import("@/plus/pages/ItemWizardPage.vue"),
+	},
 	{
 		name: "Login",
 		path: "/account/login",
