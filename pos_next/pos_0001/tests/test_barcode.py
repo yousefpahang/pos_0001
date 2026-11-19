@@ -119,6 +119,10 @@ class TestScaleBarcodeLogic(FrappeTestCase):
 		self.assertEqual(bad, [])
 		self.assertEqual(sb.price_line(9.99, 12), {"qty": 0.833, "rate": 11.99, "amount": 9.99, "exact": True})
 		self.assertIsNone(sb.price_line(10, 0))
+		# 0.5 x 12.01 = 6.005 is avoided: banker's and half-up rounding disagree there.
+		tie = sb.price_line(6.0, 12.01)
+		self.assertFalse(sb.is_half_tie(tie["qty"] * tie["rate"], 2))
+		self.assertEqual(flt(tie["qty"] * tie["rate"], 2), 6.0)
 
 	def test_generate_round_trip(self) -> None:
 		for code, rule, _type, value in VECTORS:

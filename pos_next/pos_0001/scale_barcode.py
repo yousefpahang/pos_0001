@@ -43,6 +43,12 @@ def round_to(value: float | Decimal, decimals: int) -> float:
 	return float(d)
 
 
+def is_half_tie(value: float, decimals: int) -> bool:
+	"""True at an exact half (6.005 at 2 places): half-up and banker's rounding disagree there."""
+	shifted = abs(Decimal(str(value)).scaleb(decimals))
+	return abs(shifted - int(shifted) - Decimal("0.5")) < Decimal("0.000001")
+
+
 @dataclass(frozen=True)
 class ScaleRule:
 	name: str
@@ -184,7 +190,11 @@ def price_line(
 			hi = round_to((target + half) / qty, rate_decimals)
 			for raw in (ru, lo - rate_step, lo, lo + rate_step, hi - rate_step, hi, hi + rate_step):
 				rate = round_to(raw, rate_decimals)
-				if rate <= 0 or round_to(qty * rate, amount_decimals) != target:
+				if (
+					rate <= 0
+					or is_half_tie(qty * rate, amount_decimals)
+					or round_to(qty * rate, amount_decimals) != target
+				):
 					continue
 				dev = abs(rate - unit_rate)
 				if best is None or dev < best["dev"] - 1e-9:

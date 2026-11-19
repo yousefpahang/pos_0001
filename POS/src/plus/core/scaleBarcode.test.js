@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
 	buildScaleItem,
 	generateScaleBarcode,
+	isHalfTie,
 	normalizeRule,
 	parseScaleBarcode,
 	pluCandidates,
@@ -123,6 +124,15 @@ describe("priceLine", () => {
 			}
 		}
 		expect(bad).toEqual([])
+	})
+
+	it("avoids half-way amounts where banker's and half-up rounding differ", () => {
+		// 0.5 kg x 12.01 = 6.005: banker's gives 6.00, half-up 6.01.
+		const line = priceLine(6.0, 12.01)
+		expect(isHalfTie(line.qty * line.rate, 2)).toBe(false)
+		expect(roundTo(line.qty * line.rate, 2)).toBe(6)
+		expect(isHalfTie(6.005, 2)).toBe(true)
+		expect(isHalfTie(6.0051, 2)).toBe(false)
 	})
 
 	it("returns null without a positive rate", () => {

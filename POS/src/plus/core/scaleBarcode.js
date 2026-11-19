@@ -61,6 +61,18 @@ export function roundTo(value, decimals) {
 }
 
 /**
+ * True when `value` sits exactly half-way at `decimals` places (6.005 at 2). Half-up and
+ * banker's rounding (ERPNext's default) disagree there, so such amounts are avoided.
+ * @param {number} value
+ * @param {number} decimals
+ * @returns {boolean}
+ */
+export function isHalfTie(value, decimals) {
+	const shifted = Math.abs(Number(`${value}e${decimals}`))
+	return Math.abs(shifted - Math.floor(shifted) - 0.5) < 1e-6
+}
+
+/**
  * Coerce a rule from the server (numbers may arrive as strings) and check it.
  * @param {Object} raw
  * @returns {ScaleRule|null} null when the rule cannot be used
@@ -202,7 +214,7 @@ export function priceLine(price, unitRate, opts = {}) {
 			const candidates = [ru, lo - rateStep, lo, lo + rateStep, hi - rateStep, hi, hi + rateStep]
 			for (const raw of candidates) {
 				const rate = roundTo(raw, rd)
-				if (rate <= 0 || roundTo(qty * rate, ad) !== target) continue
+				if (rate <= 0 || isHalfTie(qty * rate, ad) || roundTo(qty * rate, ad) !== target) continue
 				const dev = Math.abs(rate - unitRate)
 				if (!best || dev < best.dev - 1e-9) best = { qty, rate, dev }
 			}
