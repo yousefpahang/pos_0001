@@ -54,17 +54,37 @@ cached. "Before" is the code at the end of Phase 5. "After" is the code at the e
 | Barcode scan to line in cart | < 150 ms | 613 ms (runs 60 to 1,762) | **24 ms** | yes |
 | Scale barcode scan to line | < 150 ms | 213 ms | **27 ms** | yes |
 | Scan with no field focused | < 150 ms | not supported | **13 ms** | yes |
-| Pay -> receipt starts printing | < 1 s | 1,825 ms | 1,735 ms | **no** (see below) |
+| Pay -> receipt starts printing | < 1 s | 1,825 ms | 1,735 ms; second run **1,296 ms** | **no** (see below) |
 | Submit invoice offline | < 50 ms | 20 ms | 26 ms | yes |
 | Reopen POS, cached | < 3 s | 7,802 ms | **2,483 ms** | yes |
 | Initial full cache of 20,000 items | < 60 s, with progress bar | 20.4 s, no progress bar | 17.8 s, with progress bar | yes |
-| Sync 500 queued invoices | < 5 min, no duplicates | not changed in this phase | 9 min 34 s; 500 synced, 500 different invoices, no duplicates | **no** (see below) |
+| Sync 500 queued invoices | < 5 min, no duplicates | 9 min 34 s (first run, one at a time) | second run, batches: **6 min 44 s**; 500 synced, 500 different invoices, no duplicates | **no** (see below) |
 
 Raw files: `POS/test-results/perf-before.json` and `perf-after.json` from the runs. They are not committed
 because Playwright empties that folder at the start of each run. Single runs vary by about ±30 % on this
 laptop: Python tests, a build or a second browser running at the same time all slow the page.
 
 ### Targets not met on the dev bench
+
+Second run (same day). Two changes, then measured again:
+
+- **Batch sync.** The browser sends the queue in batches of 10 to `pos_0001.api.sync.submit_offline_invoices`,
+  two requests at a time. The server processes and commits each invoice on its own, so a confirmed answer is
+  durable. Invoices that a batch did not settle go through POS Next's one-by-one path, as before. This removes
+  the pre-check and one HTTP round trip per invoice: 1.15 s -> 0.8 s per invoice, 9 min 34 s -> 6 min 44 s.
+  What is left is server CPU. `submit_invoice` takes about 0.55 s per invoice, warm, in `bench console`
+  (`update_invoice` saves a draft, then the submit makes GL and stock entries). `bench serve` is one Python
+  process, so the two requests do not run in parallel. On a production server with several gunicorn workers,
+  the two requests should run in parallel (about 0.3 s per invoice, or 2.5 min for 500). This could not be
+  measured here: starting a gunicorn server was not allowed in the unattended run.
+- **Pay -> print.** POS Next's `submit_invoice` answer now carries the receipt data (`pos0001_receipt`, the same
+  data as `get_receipt_data`, read inside the submit transaction). So the till prints without a second request.
+  The stock refresh after a sale runs while the receipt prints. 1,735 -> 1,296 ms. What is left is POS Next's two
+  calls, `update_invoice` and `submit_invoice` (about 1.1 s together on this server), plus about 150 ms for the
+  raster. Printing before the server answers would mean printing the browser's VAT and rounding on a tax
+  invoice, so it was not done (Phase 4 decision 8 stays).
+
+First run notes:
 
 - **Pay -> print (1.7 s).** An online sale waits for POS Next's `submit_invoice`, which takes about
   1.0 to 1.3 s on this dev server. After that, Phase 4 fetches `get_receipt_data` so the receipt shows

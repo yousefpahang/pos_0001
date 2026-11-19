@@ -351,6 +351,12 @@ Taxes), POS Coupon (+ Detail), POS Offer (+ Detail), POS Opening Shift (+ Detail
 - Scanner: `plus/scan/globalScanner.js` (installed by `useSearchInput`) catches scans when no text field has focus.
 - Shortcuts: `plus/core/shortcuts.js` (map), `plus/shortcuts/useShortcuts.js` (used in `POSSale.vue`),
   `plus/components/ShortcutsOverlay.vue` (`?`).
+- Offline sync: `syncOfflineInvoices()` sends batches of 10 to `pos_0001.api.sync.submit_offline_invoices`
+  (one commit per invoice), two at a time (`plus/core/syncOutcome.js` `chunkQueue`, `runInLanes`). An invoice the
+  batch did not settle goes through `syncOneQueued()` (POS Next's per-invoice path with the pre-check). A run
+  starts no new batch after 40 s and then starts a follow-up run.
+- Online sale printing: `submit_invoice` answers with `pos0001_receipt` (`pos_0001.api.printing.receipt_for`), and
+  `POSSale.vue` prints from it; `get_receipt_data` is the fallback and is still used for reprints by name.
 
 ## 3. POS Awesome (reference only)
 
