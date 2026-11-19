@@ -1489,6 +1489,10 @@ def submit_invoice(invoice=None, data=None):
 		# Submit invoice
 		invoice_doc.submit()
 		invoice_submitted = True
+		# pos_0001: hook point for future UAE e-invoicing (no-op until an app registers one)
+		from pos_next.pos_0001.einvoice import after_pos_invoice_submit
+
+		after_pos_invoice_submit(invoice_doc)
 		# Handle wallet transaction reversal for returns
 		wallet_reversal_ok = False
 		if invoice_doc.get("is_return") and invoice_doc.get("return_against"):
