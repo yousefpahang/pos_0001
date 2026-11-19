@@ -56,7 +56,23 @@ class TestWorkspace(FrappeTestCase):
 				self.assertIn(block["data"]["card_name"], cards)
 			if block["type"] == "shortcut":
 				self.assertIn(block["data"]["shortcut_name"], shortcuts)
+			if block["type"] == "custom_block":
+				self.assertTrue(frappe.db.exists("Custom HTML Block", block["data"]["custom_block_name"]))
+			if block["type"] == "chart":
+				self.assertTrue(frappe.db.exists("Dashboard Chart", block["data"]["chart_name"]))
 
+	def test_blocks_match_shipped_files(self) -> None:
+		from pos_next.pos_0001.install import BLOCKS_DIR, WORKSPACE_BLOCKS, ensure_workspace_blocks
+
+		ensure_workspace_blocks()
+		for name, stem in WORKSPACE_BLOCKS.items():
+			with open(f"{BLOCKS_DIR}/{stem}.js", encoding="utf-8") as handle:
+				self.assertEqual(frappe.db.get_value("Custom HTML Block", name, "script"), handle.read())
+
+	def test_shortcut_filters_use_real_fields(self) -> None:
+		for shortcut in self.ws.shortcuts:
+			for doctype, field, *_ in json.loads(shortcut.stats_filter or "[]"):
+				self.assertTrue(frappe.get_meta(doctype).has_field(field) or field == "docstatus", field)
 
 
 class TestBrandWorkspace(FrappeTestCase):

@@ -44,3 +44,28 @@ def hide_upstream_workspace() -> None:
 	if frappe.db.exists("Workspace", UPSTREAM_WORKSPACE):
 		frappe.db.set_value("Workspace", UPSTREAM_WORKSPACE, "is_hidden", 1, update_modified=False)
 
+
+BLOCKS_DIR = os.path.join(os.path.dirname(__file__), "workspace_blocks")
+WORKSPACE_BLOCKS = {"POS 0001 Hero": "hero", "POS 0001 Features": "features"}
+
+
+def ensure_workspace_blocks() -> None:
+	"""Create or refresh the Custom HTML Blocks of the "POS 0001" workspace from workspace_blocks/.
+	These blocks are shipped design, so local edits are replaced on migrate."""
+	if not frappe.db.table_exists("Custom HTML Block"):
+		return
+	for name, stem in WORKSPACE_BLOCKS.items():
+		parts = {}
+		for field, ext in (("html", "html"), ("style", "css"), ("script", "js")):
+			with open(os.path.join(BLOCKS_DIR, f"{stem}.{ext}"), encoding="utf-8") as handle:
+				parts[field] = handle.read()
+		if frappe.db.exists("Custom HTML Block", name):
+			doc = frappe.get_doc("Custom HTML Block", name)
+			if all(doc.get(field) == value for field, value in parts.items()):
+				continue
+			doc.update(parts)
+			doc.save(ignore_permissions=True)
+		else:
+			frappe.get_doc({"doctype": "Custom HTML Block", "name": name, "private": 0, **parts}).insert(
+				ignore_permissions=True, set_name=name
+			)

@@ -1,8 +1,22 @@
 {
- "charts": [],
- "content": "[{\"id\":\"cDBfxZcI12\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\",\"col\":12}},{\"id\":\"EuDVjJUKSQ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Start POS\",\"col\":3}},{\"id\":\"uXQ4aBaRfk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"jEFYB2fX3t\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Settings\",\"col\":3}},{\"id\":\"RoWvjX8Ocp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Profile\",\"col\":3}},{\"id\":\"p4KrSYzInK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Opening Shift\",\"col\":3}},{\"id\":\"VO-VLNdx_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Closing Shift\",\"col\":3}},{\"id\":\"OYrA05uyCG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Offer\",\"col\":3}},{\"id\":\"FUd4_fFBgH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Coupon\",\"col\":3}},{\"id\":\"p0001_s_Print_Labels\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Labels\",\"col\":3}},{\"id\":\"p0001_s_Scale_Barcode_Rules\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Scale Barcode Rules\",\"col\":3}},{\"id\":\"p0001_s_Held_Carts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Held Carts\",\"col\":3}},{\"id\":\"p0001_s_Failed_Offline_Invoices\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Failed Offline Invoices\",\"col\":3}},{\"id\":\"spacer1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"p0001_h\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>What this POS can do</b></span>\",\"col\":12}},{\"id\":\"p0001_f0\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Offline selling and sync log</b><br>Sell with no network. Invoices queue on the till and sync when it is back. The header badge shows pending and failed invoices; failed ones can be retried from the till or from <i>Offline Invoice Sync</i>.\",\"col\":6}},{\"id\":\"p0001_f1\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Fast search and scanning</b><br>Instant search over large catalogues (Arabic names too), favourites row, and scans that work with no field selected. Press <b>?</b> on the till for keyboard shortcuts.\",\"col\":6}},{\"id\":\"p0001_f2\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Scale barcodes</b><br>Labels from a weighing scale with the weight or price inside the barcode. Set the layout in <i>POS Scale Barcode Rule</i> and the PLU in the Item's <i>Scale PLU</i> field.\",\"col\":6}},{\"id\":\"p0001_f3\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Sales persons</b><br>Off, Optional or Mandatory per POS Profile, with badge scanning, split commission, and the <i>Sales Person Commission</i> report.\",\"col\":6}},{\"id\":\"p0001_f4\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Held carts</b><br>Hold a cart (F8) and resume it on any till. Held carts are draft Sales Invoices, removed after the days set in <i>POS 0001 Settings</i>.\",\"col\":6}},{\"id\":\"p0001_f5\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Receipt printing and cash drawer</b><br>One-click receipts through QZ Tray (ESC/POS or raster, Arabic supported) or the browser, F9 reprint, and No Sale drawer openings logged in <i>POS Drawer Event</i>. Set up in <i>POS Printer Profile</i>.\",\"col\":6}},{\"id\":\"p0001_f6\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Barcode labels</b><br>Shelf and product labels for ZPL, EPL and TSPL printers or A4 sheets. Print from the till, from <i>Print Labels</i>, or from a Purchase Receipt or Stock Entry. Templates in <i>POS Label Template</i>.\",\"col\":6}},{\"id\":\"p0001_f7\",\"type\":\"paragraph\",\"data\":{\"text\":\"<b>Tills and devices</b><br>Each browser till registers as a <i>POS Device</i>, where you can give it its own receipt and label printers.\",\"col\":6}},{\"id\":\"p0001_sp\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"header2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Configuration</b></span>\",\"col\":12}},{\"id\":\"reports_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"id\":\"pos_card\",\"type\":\"card\",\"data\":{\"card_name\":\"POS\",\"col\":4}},{\"id\":\"config_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"shift_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Shift Management\",\"col\":4}},{\"id\":\"offers_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers & Coupons\",\"col\":4}},{\"id\":\"items_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Items\",\"col\":4}},{\"id\":\"p0001_c_barcodes\",\"type\":\"card\",\"data\":{\"card_name\":\"Barcodes & Labels\",\"col\":4}},{\"id\":\"p0001_c_printing\",\"type\":\"card\",\"data\":{\"card_name\":\"Printing & Cash Drawer\",\"col\":4}},{\"id\":\"p0001_c_devices\",\"type\":\"card\",\"data\":{\"card_name\":\"Devices & Offline Sync\",\"col\":4}},{\"id\":\"p0001_c_sales\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales Persons\",\"col\":4}}]",
+ "charts": [
+  {
+   "chart_name": "POS Sales (Last 30 Days)",
+   "label": "POS Sales (Last 30 Days)"
+  }
+ ],
+ "content": "[{\"id\":\"p0001_hero\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"POS 0001 Hero\",\"col\":12}},{\"id\":\"p0001_sp0\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"cDBfxZcI12\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Your Shortcuts</b></span>\",\"col\":12}},{\"id\":\"EuDVjJUKSQ\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Start POS\",\"col\":3}},{\"id\":\"uXQ4aBaRfk\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Item\",\"col\":3}},{\"id\":\"jEFYB2fX3t\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Settings\",\"col\":3}},{\"id\":\"RoWvjX8Ocp\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Profile\",\"col\":3}},{\"id\":\"p4KrSYzInK\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Opening Shift\",\"col\":3}},{\"id\":\"VO-VLNdx_2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Closing Shift\",\"col\":3}},{\"id\":\"OYrA05uyCG\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Offer\",\"col\":3}},{\"id\":\"FUd4_fFBgH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pos Coupon\",\"col\":3}},{\"id\":\"p0001_s_Print_Labels\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Print Labels\",\"col\":3}},{\"id\":\"p0001_s_Scale_Barcode_Rules\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Scale Barcode Rules\",\"col\":3}},{\"id\":\"p0001_s_Held_Carts\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Held Carts\",\"col\":3}},{\"id\":\"p0001_s_Failed_Offline_Invoices\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Failed Offline Invoices\",\"col\":3}},{\"id\":\"spacer1\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"p0001_chart\",\"type\":\"chart\",\"data\":{\"chart_name\":\"POS Sales (Last 30 Days)\",\"col\":12}},{\"id\":\"p0001_sp2\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"p0001_features\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"POS 0001 Features\",\"col\":12}},{\"id\":\"p0001_sp\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"header2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Reports &amp; Configuration</b></span>\",\"col\":12}},{\"id\":\"reports_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"id\":\"pos_card\",\"type\":\"card\",\"data\":{\"card_name\":\"POS\",\"col\":4}},{\"id\":\"config_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Configuration\",\"col\":4}},{\"id\":\"shift_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Shift Management\",\"col\":4}},{\"id\":\"offers_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Offers & Coupons\",\"col\":4}},{\"id\":\"items_card\",\"type\":\"card\",\"data\":{\"card_name\":\"Items\",\"col\":4}},{\"id\":\"p0001_c_barcodes\",\"type\":\"card\",\"data\":{\"card_name\":\"Barcodes & Labels\",\"col\":4}},{\"id\":\"p0001_c_printing\",\"type\":\"card\",\"data\":{\"card_name\":\"Printing & Cash Drawer\",\"col\":4}},{\"id\":\"p0001_c_devices\",\"type\":\"card\",\"data\":{\"card_name\":\"Devices & Offline Sync\",\"col\":4}},{\"id\":\"p0001_c_sales\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales Persons\",\"col\":4}}]",
  "creation": "2026-11-19 14:00:00.000000",
- "custom_blocks": [],
+ "custom_blocks": [
+  {
+   "custom_block_name": "POS 0001 Hero",
+   "label": "POS 0001 Hero"
+  },
+  {
+   "custom_block_name": "POS 0001 Features",
+   "label": "POS 0001 Features"
+  }
+ ],
  "docstatus": 0,
  "doctype": "Workspace",
  "hide_custom": 0,
@@ -413,7 +427,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-11-19 14:00:00.000000",
+ "modified": "2026-11-19 15:00:00.000000",
  "modified_by": "Administrator",
  "module": "POS 0001",
  "name": "POS 0001",
@@ -425,21 +439,21 @@
  "sequence_id": 0.0,
  "shortcuts": [
   {
-   "color": "Grey",
+   "color": "Blue",
    "doc_view": "",
    "label": "Start POS",
    "type": "URL",
    "url": "/pos/"
   },
   {
-   "color": "Grey",
+   "color": "Green",
    "doc_view": "",
    "label": "Print Labels",
    "type": "URL",
    "url": "/pos/labels"
   },
   {
-   "color": "Grey",
+   "color": "Cyan",
    "doc_view": "List",
    "label": "Item",
    "link_to": "Item",
@@ -447,7 +461,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Purple",
    "doc_view": "List",
    "label": "Pos Profile",
    "link_to": "POS Profile",
@@ -463,7 +477,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Green",
    "doc_view": "List",
    "label": "Pos Opening Shift",
    "link_to": "POS Opening Shift",
@@ -471,7 +485,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Orange",
    "doc_view": "List",
    "label": "Pos Closing Shift",
    "link_to": "POS Closing Shift",
@@ -479,7 +493,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Pink",
    "doc_view": "List",
    "label": "Pos Offer",
    "link_to": "POS Offer",
@@ -487,7 +501,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Yellow",
    "doc_view": "List",
    "label": "Pos Coupon",
    "link_to": "POS Coupon",
@@ -495,7 +509,7 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
+   "color": "Orange",
    "doc_view": "List",
    "label": "Scale Barcode Rules",
    "link_to": "POS Scale Barcode Rule",
@@ -503,7 +517,7 @@
    "type": "DocType"
   },
   {
-   "color": "Orange",
+   "color": "Yellow",
    "doc_view": "List",
    "format": "{} held",
    "label": "Held Carts",

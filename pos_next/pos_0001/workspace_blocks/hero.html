@@ -1,0 +1,49 @@
+<section class="hero">
+	<div class="hero-top">
+		<div class="brand">
+			<div class="logo" aria-hidden="true">
+				<svg viewBox="0 0 24 24"><path d="M20 7h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v3H4c-1.1 0-2 .9-2 2v11c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 4h4v3h-4V4zm10 16H4V9h16v11z"/></svg>
+			</div>
+			<div>
+				<h2 class="title" data-t="POS 0001"></h2>
+				<p class="subtitle" data-t="Point of sale for UAE retail: offline selling, scale barcodes, receipts and labels."></p>
+			</div>
+		</div>
+		<div class="actions">
+			<a class="btn primary" href="/pos">
+				<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+				<span data-t="Open Till"></span>
+			</a>
+			<a class="btn" href="/app/pos-labels">
+				<svg viewBox="0 0 24 24"><path d="M3 5h2v14H3zm4 0h1v14H7zm3 0h2v14h-2zm4 0h1v14h-1zm3 0h1v14h-1zm3 0h1v14h-1z"/></svg>
+				<span data-t="Print Labels"></span>
+			</a>
+			<a class="btn" href="/app/pos-0001-settings">
+				<svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.3 7.3 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.3 7.3 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.3 7.3 0 0 0 1.7 1L11 21h4l.4-2.7a7.3 7.3 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+				<span data-t="Settings"></span>
+			</a>
+		</div>
+	</div>
+	<div class="kpis">
+		<a class="kpi" data-kpi="sales" href="/app/sales-invoice?is_pos=1&docstatus=1">
+			<span class="kpi-label" data-t="Today's sales"></span>
+			<span class="kpi-value">–</span>
+		</a>
+		<a class="kpi" data-kpi="invoices" href="/app/sales-invoice?is_pos=1&docstatus=1">
+			<span class="kpi-label" data-t="Invoices today"></span>
+			<span class="kpi-value">–</span>
+		</a>
+		<a class="kpi" data-kpi="shifts" href="/app/pos-opening-shift?status=Open">
+			<span class="kpi-label" data-t="Open shifts"></span>
+			<span class="kpi-value">–</span>
+		</a>
+		<a class="kpi" data-kpi="held" href="/app/sales-invoice?pos0001_held=1">
+			<span class="kpi-label" data-t="Held carts"></span>
+			<span class="kpi-value">–</span>
+		</a>
+		<a class="kpi warn" data-kpi="failed" href="/app/offline-invoice-sync?status=Failed">
+			<span class="kpi-label" data-t="Failed offline invoices"></span>
+			<span class="kpi-value">–</span>
+		</a>
+	</div>
+</section>

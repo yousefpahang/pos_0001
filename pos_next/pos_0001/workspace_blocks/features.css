@@ -1,0 +1,44 @@
+:host { display: block; }
+.features { padding: 4px 0; container-type: inline-size; }
+.head h3 { margin: 0; font-size: 18px; font-weight: 700; color: var(--heading-color, var(--text-color)); }
+.head p { margin: 4px 0 0; font-size: 13px; color: var(--text-muted); }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.tile {
+	--c: #2563eb;
+	position: relative;
+	display: flex; flex-direction: column; gap: 8px;
+	padding: 16px; border-radius: 14px; text-decoration: none;
+	background: var(--card-bg, #fff);
+	border: 1px solid var(--border-color, #e5e7eb);
+	transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+	overflow: hidden;
+}
+.tile::before {
+	content: ""; position: absolute; inset: 0 0 auto 0; height: 4px;
+	background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 45%, #fde047));
+}
+.tile:hover {
+	transform: translateY(-2px); text-decoration: none;
+	border-color: color-mix(in srgb, var(--c) 45%, transparent);
+	box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--c) 70%, transparent);
+}
+.tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.ficon {
+	margin: 0;
+	width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+	background: color-mix(in srgb, var(--c) 14%, transparent);
+	color: var(--c);
+}
+.ficon svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.name { font-size: 15px; font-weight: 600; color: var(--text-color); }
+.desc { font-size: 13px; line-height: 1.5; color: var(--text-muted); }
+.go { margin-top: auto; font-size: 12px; font-weight: 600; color: var(--c); }
+.tag {
+	position: absolute; inset-block-start: 14px; inset-inline-end: 14px;
+	font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+	padding: 2px 7px; border-radius: 999px;
+	color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent);
+}
+@container (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .tile { transition: none; } }

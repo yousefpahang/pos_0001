@@ -1003,5 +1003,9 @@ The manual checks of the first run still apply. Also:
   English because Frappe does not translate workspace paragraph text.
 - Product name "POS 0001" in the till header, browser tab, installed app, login, welcome and sign-out texts
   (`plus/core/brand.js`, UPSTREAM_PATCHES 43). Internal names and the "Powered by BrainWise" footer are unchanged.
+- Workspace design: gradient hero with Open Till / Print Labels / Settings and live counts (today's sales and
+  invoices, open shifts, held carts, failed offline invoices; normal list permissions apply), coloured shortcuts,
+  chart "POS Sales (Last 30 Days)" (`pos_0001/dashboard_chart`) and eight colour-coded feature tiles. Blocks live in
+  `pos_0001/workspace_blocks/` and are refreshed on migrate. Checked in light, dark and Arabic (RTL).
 
 PHASE 6: BLOCKED - pay -> receipt (1.3 s, target 1 s) and sync of 500 queued invoices (6 min 44 s, target 5 min) are still not met on the dev bench; both are now bound by server time in POS Next's submit_invoice and need a measurement on a production (multi-worker) server, which this unattended run was not allowed to start

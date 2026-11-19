@@ -1,0 +1,58 @@
+:host { display: block; }
+.hero {
+	--h-from: #0f766e;
+	--h-to: #1d4ed8;
+	position: relative;
+	overflow: hidden;
+	border-radius: 16px;
+	padding: 24px;
+	color: #fff;
+	background:
+		radial-gradient(circle at 92% -10%, rgba(255, 255, 255, 0.22) 0, transparent 38%),
+		radial-gradient(circle at 0% 120%, rgba(253, 224, 71, 0.25) 0, transparent 40%),
+		linear-gradient(120deg, var(--h-from), var(--h-to));
+	box-shadow: 0 10px 30px -12px rgba(29, 78, 216, 0.55);
+}
+.hero-top { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+.brand { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.logo {
+	width: 52px; height: 52px; flex: none; border-radius: 14px;
+	display: grid; place-items: center;
+	background: rgba(255, 255, 255, 0.18);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+}
+.logo svg { width: 28px; height: 28px; fill: #fff; }
+.title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: #fff; }
+.subtitle { margin: 4px 0 0; font-size: 14px; color: rgba(255, 255, 255, 0.85); max-width: 60ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn {
+	display: inline-flex; align-items: center; gap: 8px;
+	padding: 9px 14px; border-radius: 10px;
+	font-size: 14px; font-weight: 600; text-decoration: none;
+	color: #fff; background: rgba(255, 255, 255, 0.14);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	transition: background 0.15s, transform 0.15s;
+}
+.btn svg { width: 16px; height: 16px; fill: currentColor; }
+.btn:hover { background: rgba(255, 255, 255, 0.26); color: #fff; text-decoration: none; transform: translateY(-1px); }
+.btn.primary { background: #fff; color: #0f766e; border-color: #fff; }
+.btn.primary:hover { background: #ecfeff; color: #0f766e; }
+.btn:focus-visible, .kpi:focus-visible { outline: 2px solid #fde047; outline-offset: 2px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 22px; }
+.kpi {
+	display: flex; flex-direction: column; gap: 4px;
+	padding: 12px 14px; border-radius: 12px; text-decoration: none;
+	background: rgba(255, 255, 255, 0.12);
+	border: 1px solid rgba(255, 255, 255, 0.22);
+	transition: background 0.15s;
+}
+.kpi:hover { background: rgba(255, 255, 255, 0.2); text-decoration: none; }
+.kpi-label { font-size: 12px; font-weight: 500; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 0.04em; }
+.kpi-value { margin-top: auto; font-size: 24px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; direction: ltr; text-align: start; }
+.kpi.warn.alert { background: rgba(254, 202, 202, 0.25); border-color: #fecaca; }
+.kpi.warn.alert .kpi-value { color: #fee2e2; }
+@media (max-width: 640px) {
+	.hero { padding: 18px; }
+	.title { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .btn, .kpi { transition: none; } }
