@@ -1,6 +1,7 @@
-# Hardware: receipt printers, cash drawer, QZ Tray
+# Hardware: receipt printers, label printers, cash drawer, QZ Tray
 
-How a till prints receipts and opens the cash drawer (SPEC F9). Label printers follow in Phase 5.
+How a till prints receipts and opens the cash drawer (SPEC F9), and how barcode labels print (SPEC F4,
+section 8 below).
 
 ## How it works
 
@@ -108,6 +109,11 @@ Fill in with the clients' models (SPEC section 10).
 | Receipt printer | Epson TM-T20 / T82 | USB, LAN | raster, escpos_text | not tested yet | |
 | Receipt printer | Xprinter XP-80 series | USB, LAN | raster, escpos_text | not tested yet | |
 | Cash drawer | RJ11 via receipt printer | printer kick | | not tested yet | |
+| Label printer | Zebra (ZD220 / ZD420 / GK420) | USB, LAN | ZPL | not tested yet | |
+| Label printer | TSC (TE200 / TE210) | USB, LAN | TSPL | not tested yet | |
+| Label printer | Xprinter label (XP-360B / XP-420B) | USB | TSPL | not tested yet | |
+| Label printer | older Zebra / Eltron (LP2844) | USB | EPL | not tested yet | |
+| Office printer | any A4 laser / inkjet, label sheets 70 x 37 mm (3 x 8) | browser | PDF | not tested yet | |
 
 ## 7. Troubleshooting
 
@@ -119,3 +125,51 @@ Fill in with the clients' models (SPEC section 10).
 | Garbage characters | Printer not in ESC/POS mode, or `escpos_text` with Arabic text: use `raster` |
 | Receipt too wide / cut off | Paper Width does not match the printer (58 vs 80 mm) |
 | Drawer does not open | Payment mode not of type Cash; Open Cash Drawer off; cable in the printer's DK port; `browser` mode without QZ Tray |
+| Label prints blank or as text | Printer language differs from the template (ZPL template on a TSPL printer); set the printer's emulation or pick a template of its language |
+| Labels drift / skip one | Gap (mm) and label size do not match the roll; run the printer's own calibration (Zebra: hold feed; TSC: `~!C` / feed button) |
+| Arabic name prints inverted (white on black) | The printer reads bitmap bits the other way round; note the model and report it (EPL `GW` and TSPL `BITMAP` are sent with 0 = black) |
+| A4 labels off the die-cut grid | Turn off "Fit to page" / scaling in the print dialog (print at 100 %); use Download PDF for an exact sheet |
+
+## 8. Label printers (SPEC F4)
+
+```text
+POS or desk page "POS Labels" (browser) --WebSocket--> QZ Tray --USB / LAN--> label printer (ZPL / EPL / TSPL)
+                                         \--> browser print dialog / PDF --> A4 office printer (label sheets)
+```
+
+1. Install QZ Tray and the certificate as for receipts (sections 1 and 2). One QZ Tray serves both printers.
+2. Create a **POS Printer Profile** with Purpose **Label**: Connection (QZ Local Printer with the QZ Printer Name,
+   or Network host + port 9100) and **Label Language** (ZPL for Zebra, TSPL for TSC / Xprinter, EPL for older
+   Zebra / Eltron).
+3. Assign it per till (**POS Device** > Label Printer) or per profile (**POS Profile** > POS 0001 > Label Printer).
+4. **POS Profile** > POS 0001: **Print Labels Role** (who may print labels; empty = POS managers only) and,
+   optionally, **Default Label Template**.
+5. **POS Label Template** (desk): five ship with the app and are created on install / migrate when missing:
+
+   | Template | Language | Size |
+   | --- | --- | --- |
+   | Shelf Label 38x25 (ZPL) | ZPL | 38 x 25 mm, 203 dpi |
+   | Product Label 50x30 (ZPL) | ZPL | 50 x 30 mm |
+   | Product Label 50x30 (TSPL) | TSPL | 50 x 30 mm |
+   | Product Label 50x30 (EPL) | EPL | 50 x 30 mm |
+   | A4 Sheet 3x8 (PDF) | PDF | 24 labels of 70 x 37 mm per A4 sheet |
+
+   The body is Jinja limited to values, `draw_barcode()`, `draw_arabic()`, `fit()` and `if` blocks, so the POS
+   can print the same label offline; the form explains the values. Set Width / Height / DPI / Gap to the roll in
+   the printer, and use a 300 dpi copy of a template for 300 dpi printers (positions are in dots).
+
+Where to print from:
+
+- **Till**: header **Labels** button (tag icon). Starts with the items in the cart; scan or search to add more;
+  per row UOM (that UOM's barcode and price), label quantity, price override, and **Scale label** for weighed
+  goods packed in store (choose a POS Scale Barcode Rule, enter the weight or amount; the EAN-13 gets a valid
+  check digit). Works offline from the till's caches.
+- **Desk**: page **POS Labels** (`/app/pos-labels`), and **Print Labels** on a Purchase Receipt or Stock Entry
+  (rows and received quantities filled in; Stock Entry only lines with a target warehouse).
+
+Arabic item names (`item_name_ar`) are drawn by the browser and sent as a bitmap (ZPL `^GFA`, TSPL `BITMAP`,
+EPL `GW`), because label printer fonts cannot join Arabic letters. Prices on labels include VAT (the POS
+Profile's tax template, or the item's own Item Tax Template).
+
+A4 sheets: **Print A4 sheet** opens the browser print dialog (works offline); **Download PDF** makes the same
+sheet on the server (WeasyPrint). Print at 100 % without "fit to page".

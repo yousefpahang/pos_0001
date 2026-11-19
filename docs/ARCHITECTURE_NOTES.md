@@ -258,6 +258,21 @@ in `pos0001_last_receipt::<profile>`), receipt barcode (Code128, or QR from `plu
 events (`POS Drawer Event`) queue in `pos0001_drawer_events` and upload through `printing.log_drawer_events`.
 Setup steps in `docs/HARDWARE.md`.
 
+**After Phase 5** (SPEC F4 labels): doctype **POS Label Template** (ZPL / EPL / TSPL / PDF, size, DPI, gap, barcode
+type, A4 columns / rows / label margin, Jinja `body`); defaults in `pos_0001/default_label_templates.json`, created by
+`pos_0001/install.py` on install and migrate. The body is a Jinja subset (values, `draw_barcode`, `draw_arabic`,
+`fit`, `if/elif/else`) rendered by Jinja on the server (`pos_0001/labels.py`, sandbox, `trim_blocks` + `lstrip_blocks`)
+and by `plus/core/labelTemplate.js` in the browser; `plus/core/labels.js` builds rows (barcode and price incl. VAT per
+UOM, scale labels via `generateScaleBarcode`), raw jobs (`zpl.js`, `epl.js`, `tspl.js`) and the A4 HTML. Both copies
+are checked against one byte snapshot, `pos_0001/tests/label_snapshots.json`. Arabic is a 1-bit bitmap (browser canvas,
+`plus/labels/textBitmap.js`; server Pillow + libraqm). `pos_0001.api.labels` gives the label cache (Dexie `settings`
+key `pos0001_label_cache::<profile>`: templates, label printer from POS Device or POS Profile `pos0001_label_printer`,
+VAT, item VAT overrides, Arabic names), `resolve_rows`, `search_items`, `items_from_document` (Purchase Receipt, Stock
+Entry) and `render` (raw base64 or a private PDF made with WeasyPrint; wkhtmltopdf 0.12.6 without patched Qt scales
+mm layouts). UI: `plus/components/LabelPrintPanel.vue` in the header `LabelButton` dialog and in
+`plus/pages/LabelsPage.vue` (`/pos/labels`), which the desk page `pos-labels` shows in an iframe. Raw jobs use
+`plus/printing/qz.js` `sendRaw`. Access: POS role, profile access, POS Profile `pos0001_label_role` (empty = managers).
+
 ### 2.9 i18n and RTL
 
 - Strings: `__()` from `POS/src/utils/translation.ts` (Vue plugin). Messages loaded from
