@@ -5,8 +5,16 @@ import { db } from "./db";
 import { offlineState } from "./offlineState";
 import { removeOfflineReceiptPayload } from "./offlineReceiptCache";
 import { generateOfflineId } from "./uuid";
-import { classifySubmitResponse, queueUpdateFor } from "@/plus/core/syncOutcome";
-import { submitQueuedInvoice } from "@/plus/sync/syncClient";
+import {
+	SYNC_BATCH_LANES,
+	SYNC_BATCH_SIZE,
+	chunkQueue,
+	classifySubmitResponse,
+	matchBatchResponses,
+	queueUpdateFor,
+	runInLanes,
+} from "@/plus/core/syncOutcome";
+import { submitQueuedInvoice, submitQueuedInvoices } from "@/plus/sync/syncClient";
 
 // Re-export for backwards compatibility
 export { generateOfflineId };
@@ -26,6 +34,9 @@ const SYNC_CONFIG = {
 	CLEANUP_AGE_DAYS: 7,
 	PING_TIMEOUT_MS: 3000,
 };
+
+// pos_0001: stop starting new batches after this long in one sync run (mutex timeout 60 s).
+const SYNC_RUN_BUDGET_MS = 40000;
 
 // Duplicate error patterns to detect already-synced invoices
 const DUPLICATE_ERROR_PATTERNS = ["DUPLICATE_OFFLINE_INVOICE", "already been synced"];
@@ -302,11 +313,23 @@ const normalizeInvoiceForSync = (invoiceData, offlineId) => ({
  * @param {number} retryCount - Current retry attempt (for in-progress waits)
  * @returns {Promise<{status: 'success'|'skipped'|'failed', error?: Error}>}
  */
-const syncInvoiceToServer = async (invoice, retryCount = 0) => {
+const syncInvoiceToServer = async (invoice, retryCount = 0, batchResponse = null) => {
 	const MAX_IN_PROGRESS_RETRIES = 3;
 	const IN_PROGRESS_WAIT_MS = 2000; // Wait 2 seconds between retries
 
 	const offlineId = invoice.offline_id || invoice.data?.offline_id;
+
+	// pos_0001: the batch request already answered Synced or Failed-and-stored.
+	const batchOutcome = batchResponse ? classifySubmitResponse(batchResponse) : null;
+	if (batchOutcome && batchOutcome.action !== "retry_later") {
+		if (batchOutcome.action === "synced") {
+			await markInvoiceSynced(invoice.id, batchOutcome.invoiceName, offlineId);
+		}
+		await db.invoice_queue.update(invoice.id, queueUpdateFor(batchOutcome));
+		return batchOutcome.action === "synced"
+			? { status: "success" }
+			: { status: "stored_failed", error: batchOutcome.error };
+	}
 
 	// Pre-sync deduplication check
 	if (offlineId) {
@@ -396,52 +419,35 @@ export const syncOfflineInvoices = async () => {
 
 		const result = { success: 0, failed: 0, skipped: 0, errors: [] };
 
-		for (const invoice of pendingInvoices) {
-			try {
-				const syncResult = await syncInvoiceToServer(invoice);
-
-				if (syncResult.status === "success") {
-					result.success++;
-				} else if (syncResult.status === "skipped") {
-					result.skipped++;
-				} else if (syncResult.status === "stored_failed") {
-					result.failed++;
-					result.errors.push({
-						invoiceId: invoice.id,
-						offlineId: invoice.offline_id,
-						customer: invoice.data?.customer || "Walk-in Customer",
-						error: new Error(syncResult.error),
-						stored: true,
-					});
+		// pos_0001: send the queue in batches, two requests at a time (SPEC section 6).
+		// An invoice the batch did not settle goes through the one-by-one path below.
+		// Batches not started before SYNC_RUN_BUDGET_MS go in a follow-up run, so a long
+		// queue never outlives the mutex timeout (that would start a second sync at once).
+		const batches = chunkQueue(pendingInvoices, SYNC_BATCH_SIZE);
+		const deadline = Date.now() + SYNC_RUN_BUDGET_MS;
+		let leftOver = 0;
+		await runInLanes(
+			batches.map((batch) => async () => {
+				if (Date.now() > deadline) {
+					leftOver += batch.length;
+					return;
 				}
-			} catch (error) {
-				log.error("Failed to sync invoice", { id: invoice.id, error });
-
-				// Check for duplicate error from server
-				const { isDuplicate, invoiceName } = checkDuplicateError(error);
-				if (isDuplicate) {
-					await markInvoiceSynced(
-						invoice.id,
-						invoiceName,
-						invoice.offline_id || invoice.data?.offline_id
+				const ids = batch.map((inv) => inv.offline_id || inv.data?.offline_id);
+				let responses = null;
+				try {
+					responses = await submitQueuedInvoices(
+						batch.map((inv, i) => normalizeInvoiceForSync(inv.data, ids[i]))
 					);
-					log.debug("Invoice is duplicate, marked as synced", { id: invoice.id });
-					result.skipped++;
-					continue;
+				} catch (error) {
+					log.warn("Batch sync failed, sending one by one", { error });
 				}
-
-				// Handle genuine failure
-				result.errors.push({
-					invoiceId: invoice.id,
-					offlineId: invoice.offline_id,
-					customer: invoice.data?.customer || "Walk-in Customer",
-					error,
-				});
-
-				await handleSyncFailure(invoice, error.message);
-				result.failed++;
-			}
-		}
+				const answers = matchBatchResponses(ids, responses);
+				for (let i = 0; i < batch.length; i++) {
+					await syncOneQueued(batch[i], answers[i], result);
+				}
+			}),
+			SYNC_BATCH_LANES
+		);
 
 		// Cleanup old synced invoices
 		await cleanupSyncedInvoices();
@@ -450,10 +456,70 @@ export const syncOfflineInvoices = async () => {
 			success: result.success,
 			skipped: result.skipped,
 			failed: result.failed,
+			left_for_next_run: leftOver,
 		});
+
+		if (leftOver > 0) {
+			setTimeout(() => {
+				syncOfflineInvoices().catch((error) => log.warn("Follow-up sync failed", { error }));
+			}, 0);
+		}
 
 		return result;
 	}, log.debug.bind(log));
+};
+
+/**
+ * Settle one queued invoice and count it in `result` (POS Next's per-invoice loop body).
+ * @param {Object} invoice - Invoice queue record
+ * @param {Object|null} batchResponse - pos_0001 batch answer for it, if any
+ * @param {{success: number, failed: number, skipped: number, errors: Array}} result
+ */
+const syncOneQueued = async (invoice, batchResponse, result) => {
+	try {
+		const syncResult = await syncInvoiceToServer(invoice, 0, batchResponse);
+
+		if (syncResult.status === "success") {
+			result.success++;
+		} else if (syncResult.status === "skipped") {
+			result.skipped++;
+		} else if (syncResult.status === "stored_failed") {
+			result.failed++;
+			result.errors.push({
+				invoiceId: invoice.id,
+				offlineId: invoice.offline_id,
+				customer: invoice.data?.customer || "Walk-in Customer",
+				error: new Error(syncResult.error),
+				stored: true,
+			});
+		}
+	} catch (error) {
+		log.error("Failed to sync invoice", { id: invoice.id, error });
+
+		// Check for duplicate error from server
+		const { isDuplicate, invoiceName } = checkDuplicateError(error);
+		if (isDuplicate) {
+			await markInvoiceSynced(
+				invoice.id,
+				invoiceName,
+				invoice.offline_id || invoice.data?.offline_id
+			);
+			log.debug("Invoice is duplicate, marked as synced", { id: invoice.id });
+			result.skipped++;
+			return;
+		}
+
+		// Handle genuine failure
+		result.errors.push({
+			invoiceId: invoice.id,
+			offlineId: invoice.offline_id,
+			customer: invoice.data?.customer || "Walk-in Customer",
+			error,
+		});
+
+		await handleSyncFailure(invoice, error.message);
+		result.failed++;
+	}
 };
 
 /**

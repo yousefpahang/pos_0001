@@ -1,13 +1,76 @@
 import { describe, expect, it } from "vitest"
 import {
 	AUTO_SYNC_INTERVAL_MS,
+	SYNC_BATCH_SIZE,
 	badgeState,
 	buildSyncLogRows,
+	chunkQueue,
 	classifySubmitResponse,
+	matchBatchResponses,
 	plainError,
 	queueUpdateFor,
+	runInLanes,
 	shouldAutoSync,
 } from "./syncOutcome.js"
+
+describe("batch sync helpers", () => {
+	it("chunks the queue in order, within the server limit of 25", () => {
+		expect(SYNC_BATCH_SIZE).toBeLessThanOrEqual(25)
+		expect(chunkQueue([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
+		expect(chunkQueue([], 10)).toEqual([])
+		expect(chunkQueue([1, 2], 0)).toEqual([[1], [2]])
+	})
+
+	it("matches answers by offline_id, null when missing", () => {
+		const answers = [
+			{ offline_id: "b", status: "Failed", stored: true },
+			{ offline_id: "a", status: "Synced", invoice_name: "SINV-1" },
+		]
+		const matched = matchBatchResponses(["a", "b", "c", undefined], answers)
+		expect(matched[0].invoice_name).toBe("SINV-1")
+		expect(matched[1].status).toBe("Failed")
+		expect(matched[2]).toBeNull()
+		expect(matched[3]).toBeNull()
+		expect(matchBatchResponses(["a"], null)).toEqual([null])
+		expect(matchBatchResponses(["a"], { message: "x" })).toEqual([null])
+	})
+
+	it("an Error answer keeps the invoice queued", () => {
+		expect(
+			classifySubmitResponse({
+				offline_id: "a",
+				status: "Error",
+				error: "Lock wait timeout",
+				stored: false,
+			}).action,
+		).toBe("retry_later")
+	})
+
+	it("runs jobs with at most N at once and catches each error", async () => {
+		let running = 0
+		let peak = 0
+		const job =
+			(value, fail = false) =>
+			async () => {
+				running++
+				peak = Math.max(peak, running)
+				await new Promise((r) => setTimeout(r, 5))
+				running--
+				if (fail) throw new Error(`bad ${value}`)
+				return value
+			}
+		const results = await runInLanes(
+			[job(1), job(2, true), job(3), job(4), job(5)],
+			2,
+		)
+		expect(peak).toBe(2)
+		expect(results.map((r) => r.ok)).toEqual([true, false, true, true, true])
+		expect(results[0].value).toBe(1)
+		expect(results[1].error.message).toBe("bad 2")
+		expect(results[4].value).toBe(5)
+		expect(await runInLanes([], 2)).toEqual([])
+	})
+})
 
 describe("classifySubmitResponse", () => {
 	it("synced with an invoice name leaves the queue", () => {

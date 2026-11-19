@@ -84,6 +84,76 @@ export function queueUpdateFor(outcome, now = Date.now()) {
 	return null
 }
 
+/** Invoices per batch request (server limit: pos_0001.api.sync.MAX_BATCH = 25). */
+export const SYNC_BATCH_SIZE = 10
+
+/** Batch requests in flight at the same time. */
+export const SYNC_BATCH_LANES = 2
+
+/**
+ * Split the queue into batches, keeping the queue order.
+ * @template T
+ * @param {T[]} rows
+ * @param {number} [size]
+ * @returns {T[][]}
+ */
+export function chunkQueue(rows = [], size = SYNC_BATCH_SIZE) {
+	const n = Math.max(1, Math.floor(Number(size) || 1))
+	/** @type {T[][]} */
+	const out = []
+	for (let i = 0; i < rows.length; i += n) out.push(rows.slice(i, i + n))
+	return out
+}
+
+/**
+ * Pair each queued invoice with its answer from a batch request, by offline_id.
+ * An invoice without a matching answer gets null (it is then sent again on its own).
+ * @param {string[]} offlineIds  offline_id of each invoice in the batch, in order
+ * @param {unknown} responses    answer list from submit_offline_invoices
+ * @returns {Array<SubmitResponse|null>}
+ */
+export function matchBatchResponses(offlineIds, responses) {
+	/** @type {Map<string, SubmitResponse>} */
+	const byId = new Map()
+	if (Array.isArray(responses)) {
+		for (const r of responses) {
+			if (r && typeof r === "object" && r.offline_id && !byId.has(r.offline_id))
+				byId.set(r.offline_id, r)
+		}
+	}
+	return offlineIds.map((id) => (id && byId.get(id)) || null)
+}
+
+/**
+ * Run async jobs with at most `lanes` running at the same time.
+ * Each job's error is caught and returned, so one bad batch does not stop the others.
+ * @template T
+ * @param {Array<() => Promise<T>>} jobs
+ * @param {number} [lanes]
+ * @returns {Promise<Array<{ok: true, value: T} | {ok: false, error: unknown}>>}
+ */
+export async function runInLanes(jobs, lanes = SYNC_BATCH_LANES) {
+	/** @type {Array<{ok: true, value: T} | {ok: false, error: unknown}>} */
+	const results = new Array(jobs.length)
+	let next = 0
+	const worker = async () => {
+		while (next < jobs.length) {
+			const index = next++
+			try {
+				results[index] = { ok: true, value: await jobs[index]() }
+			} catch (error) {
+				results[index] = { ok: false, error }
+			}
+		}
+	}
+	const count = Math.max(
+		1,
+		Math.min(Math.floor(Number(lanes) || 1), jobs.length),
+	)
+	await Promise.all(Array.from({ length: count }, worker))
+	return results
+}
+
 /**
  * @typedef {Object} SyncLogRow  One line of the sync panel
  * @property {string} offlineId

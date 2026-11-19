@@ -41,6 +41,19 @@ export function submitQueuedInvoice(invoiceData) {
 }
 
 /**
+ * Submit several queued invoices in one request. One answer per invoice, in order.
+ * An answer with status "Error" (not stored) means: send this invoice again on its own.
+ * @param {Object[]} invoices
+ * @returns {Promise<import("@/plus/core/syncOutcome").SubmitResponse[]>}
+ */
+export function submitQueuedInvoices(invoices) {
+	return call(`${API}.submit_offline_invoices`, {
+		invoices: JSON.stringify(invoices),
+		device_id: getDeviceId(),
+	})
+}
+
+/**
  * @param {number} [limit]
  * @returns {Promise<{rows: Array<Object>, failed_count: number}>}
  */
