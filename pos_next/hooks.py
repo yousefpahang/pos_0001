@@ -154,6 +154,7 @@ doc_events = {
 		"validate": [
 			"pos_next.api.sales_invoice_hooks.validate",
 			"pos_next.api.wallet.validate_wallet_payment",
+			"pos_next.pos_0001.api.barcode.validate_sales_invoice",
 		],
 		"before_cancel": "pos_next.api.sales_invoice_hooks.before_cancel",
 		"on_submit": [

@@ -1,0 +1,27 @@
+{
+ "custom_fields": [
+  {
+   "creation": "2026-11-19 12:00:00.000000",
+   "description": "Scale label this line was scanned from. The server checks the item and the weight or price against the POS Scale Barcode Rules.",
+   "doctype": "Custom Field",
+   "dt": "Sales Invoice Item",
+   "fieldname": "pos0001_scale_barcode",
+   "fieldtype": "Data",
+   "insert_after": "barcode",
+   "is_system_generated": 0,
+   "label": "Scale Barcode",
+   "modified": "2026-11-19 12:00:00.000000",
+   "modified_by": "Administrator",
+   "module": "POS 0001",
+   "name": "Sales Invoice Item-pos0001_scale_barcode",
+   "owner": "Administrator",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "custom_perms": [],
+ "doctype": "Sales Invoice Item",
+ "links": [],
+ "property_setters": [],
+ "sync_on_migrate": 1
+}

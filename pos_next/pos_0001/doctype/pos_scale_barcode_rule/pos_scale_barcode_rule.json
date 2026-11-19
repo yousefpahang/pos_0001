@@ -1,0 +1,236 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:rule_name",
+ "creation": "2026-11-19 12:00:00.000000",
+ "description": "How to read barcodes printed by shop scales, with the weight or the price inside the barcode.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "rule_name",
+  "enabled",
+  "company",
+  "priority",
+  "column_break_head",
+  "pos_profiles",
+  "layout_section",
+  "prefix",
+  "total_length",
+  "check_digit_mode",
+  "column_break_layout",
+  "item_code_start",
+  "item_code_length",
+  "item_match",
+  "value_section",
+  "value_type",
+  "uom",
+  "column_break_value",
+  "value_start",
+  "value_length",
+  "decimals",
+  "example_section",
+  "example"
+ ],
+ "fields": [
+  {
+   "fieldname": "rule_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Rule Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "default": "10",
+   "description": "Lower runs first when several rules could read the same barcode.",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Priority"
+  },
+  {
+   "fieldname": "column_break_head",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Leave empty to use this rule on every POS Profile of the company.",
+   "fieldname": "pos_profiles",
+   "fieldtype": "Table MultiSelect",
+   "label": "POS Profiles",
+   "options": "POS Scale Barcode Rule Profile"
+  },
+  {
+   "fieldname": "layout_section",
+   "fieldtype": "Section Break",
+   "label": "Barcode Layout"
+  },
+  {
+   "description": "1 to 3 digits at the start of the barcode. Most scales use 20 to 29.",
+   "fieldname": "prefix",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Prefix",
+   "length": 3,
+   "reqd": 1
+  },
+  {
+   "default": "13",
+   "description": "Number of digits including the check digit: 13 for EAN-13, 12 for UPC-A, up to 20 for custom layouts.",
+   "fieldname": "total_length",
+   "fieldtype": "Int",
+   "label": "Total Length",
+   "reqd": 1
+  },
+  {
+   "default": "Validate",
+   "description": "The last digit is the check digit. Choose Ignore only for scales that print wrong check digits.",
+   "fieldname": "check_digit_mode",
+   "fieldtype": "Select",
+   "label": "Check Digit",
+   "options": "Validate\nIgnore",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_layout",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "3",
+   "description": "Position of the first digit, counting from 1.",
+   "fieldname": "item_code_start",
+   "fieldtype": "Int",
+   "label": "Item Code Start",
+   "reqd": 1
+  },
+  {
+   "default": "5",
+   "fieldname": "item_code_length",
+   "fieldtype": "Int",
+   "label": "Item Code Length",
+   "reqd": 1
+  },
+  {
+   "default": "Scale PLU",
+   "description": "Scale PLU: the Scale PLU field on Item. Item Barcode: a barcode in the item's Barcodes table.",
+   "fieldname": "item_match",
+   "fieldtype": "Select",
+   "label": "Match Item By",
+   "options": "Scale PLU\nItem Barcode",
+   "reqd": 1
+  },
+  {
+   "fieldname": "value_section",
+   "fieldtype": "Section Break",
+   "label": "Embedded Value"
+  },
+  {
+   "default": "Weight",
+   "description": "Price: quantity = price / item rate, and the line amount equals the printed price.",
+   "fieldname": "value_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Value Type",
+   "options": "Weight\nPrice",
+   "reqd": 1
+  },
+  {
+   "default": "Kg",
+   "description": "Unit the item is sold in for this rule. Weights are read in this unit. Leave empty to skip the unit check (price labels only).",
+   "fieldname": "uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "options": "UOM"
+  },
+  {
+   "fieldname": "column_break_value",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "8",
+   "fieldname": "value_start",
+   "fieldtype": "Int",
+   "label": "Value Start",
+   "reqd": 1
+  },
+  {
+   "default": "5",
+   "fieldname": "value_length",
+   "fieldtype": "Int",
+   "label": "Value Length",
+   "reqd": 1
+  },
+  {
+   "default": "3",
+   "description": "3 for weight in kg (01250 = 1.250), 2 for price (02500 = 25.00).",
+   "fieldname": "decimals",
+   "fieldtype": "Int",
+   "label": "Decimals",
+   "reqd": 1
+  },
+  {
+   "fieldname": "example_section",
+   "fieldtype": "Section Break",
+   "label": "Example"
+  },
+  {
+   "fieldname": "example",
+   "fieldtype": "Small Text",
+   "is_virtual": 1,
+   "label": "Example Barcode",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-11-19 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "POS 0001",
+ "name": "POS Scale Barcode Rule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Nexus POS Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "POSNext Cashier"
+  }
+ ],
+ "sort_field": "priority",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

@@ -11,7 +11,8 @@ Creates (idempotent, safe to re-run):
   Credit sales use POS Next's allow_credit_sale / allow_partial_payment, not a mode.
 - Two POS Profiles ("Main Till", "Express Till") with POS Next POS Settings.
 - 20,000 regular items with EAN-13 barcodes (GS1 prefix 629) and Standard Selling prices.
-- 50 weighed items (UOM Kg, codes PLU-12345 .. PLU-12394).
+- 50 weighed items (UOM Kg, codes PLU-12345 .. PLU-12394, Scale PLU 12345 .. 12394) and two
+  POS Scale Barcode Rules: prefix 20 = weight in kg, prefix 22 = price in AED (SPEC F5).
 - 5 sales persons, a walk-in customer and two credit customers.
 - Opening stock in "Stores - DTL" through Stock Reconciliation.
 - A cashier user cashier@pos.test (password "cashier") with the POSNext Cashier role.
@@ -62,8 +63,43 @@ def run(item_count: int = 20000) -> None:
 	ensure_cashier()
 	for name in ("Main Till", "Express Till"):
 		ensure_pos_profile(name, modes)
+	ensure_scale_barcodes()
 	frappe.db.commit()
 	print("Seed done:", summary())
+
+
+SCALE_RULES = [
+	# Rule A and Rule B of SPEC F5: 20 = weight in kg, 22 = price in AED.
+	{"rule_name": "Scale Weight 20", "prefix": "20", "value_type": "Weight", "decimals": 3, "uom": "Kg"},
+	{"rule_name": "Scale Price 22", "prefix": "22", "value_type": "Price", "decimals": 2, "uom": "Kg"},
+]
+
+
+def ensure_scale_barcodes() -> None:
+	"""Scale PLU on the weighed items (PLU-12345 -> 12345) and the two demo scale rules."""
+	for code in frappe.get_all(
+		"Item", filters={"item_code": ["like", "PLU-%"], "scale_plu": ["in", ["", None]]}, pluck="name"
+	):
+		frappe.db.set_value("Item", code, "scale_plu", code.removeprefix("PLU-"), update_modified=False)
+	for spec in SCALE_RULES:
+		if frappe.db.exists("POS Scale Barcode Rule", spec["rule_name"]):
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "POS Scale Barcode Rule",
+				"company": COMPANY,
+				"enabled": 1,
+				"priority": 10,
+				"total_length": 13,
+				"item_code_start": 3,
+				"item_code_length": 5,
+				"item_match": "Scale PLU",
+				"value_start": 8,
+				"value_length": 5,
+				"check_digit_mode": "Validate",
+				**spec,
+			}
+		).insert(ignore_permissions=True)
 
 
 def setup_wizard() -> None:
