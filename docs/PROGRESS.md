@@ -1630,4 +1630,48 @@ Test results (fourth run, on the running `bench start` stack at http://localhost
 Manual checks and decisions to review: unchanged from the earlier runs above. The tag stays `v1.0.0-rc.1`
 (decision 1).
 
-PHASE 9: BLOCKED - clean install on a fresh v15 site and on a v16 bench could not be tested (site DB user cannot create databases, no MariaDB root password, starting a private MariaDB or Docker needs approval that an unattended run cannot get); all automated tests pass (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
+### Fifth run (2026-11-20): Python tests on a fresh site
+
+- **Problem.** On a fresh site `bench run-tests --app pos_next` failed with "Could not find Parent Department:
+  All Departments, Company: _Test Company". Frappe runs only the `before_tests` hooks of the app under test,
+  so ERPNext's setup (setup wizard, Selling defaults, Administrator roles) never ran. The pos_0001 tests also
+  used demo data that only `demo.seed.run` created.
+- **Fix: a `before_tests` hook for pos_next** (one line in `hooks.py`, UPSTREAM_PATCHES 66). The new
+  `pos_next/pos_0001/tests/setup.py`:
+  1. On a site without a company, completes the setup wizard with "Demo Trading LLC" (UAE, AED). This also
+     creates "UAE VAT 5% - DTL".
+  2. Runs `erpnext.setup.utils.before_tests()`, only when ERPNext is installed.
+  3. Builds ERPNext's "_Test Company" test records before the runner does. Our custom field
+     `User.pos0001_default_sales_person` makes Frappe's dependency walk go Company > Contact > User >
+     Sales Person > Department, so Department's records (company "_Test Company") came before the company.
+     Sales Person is held back while Company is built. Link targets whose DocType is not installed are marked
+     done too: ERPNext's Payment Gateway Account links "Payment Gateway" (payments app, not installed).
+  4. Creates the small demo data set the tests use, through `demo.seed` functions: items ITM-00001..00005,
+     ITM-19990, ITM-19991, the 50 PLU items, prices, opening stock, cashier@pos.test, POS Profiles
+     "Main Till" / "Express Till", scale barcode rules "Scale Weight 20" / "Scale Price 22", sales persons,
+     printers and label setup. `seed.create_numbered_items()` was split out of `create_items()` for this
+     (same items and names as before).
+  Every step is idempotent. On pos.test it only rebuilds the Item Prices that ERPNext's hook deletes, so the
+  manual `seed.ensure_item_prices` after a Python test run is no longer needed.
+- **Bench prerequisite found:** Frappe's dev packages were not installed (`freezegun` and others). ERPNext's
+  `test_fiscal_year.py` imports `freezegun`, so the runner skipped its records without an error, and
+  "_Test Fiscal Year 2013" was missing later. `bench setup requirements --dev` installed them (Frappe's
+  declared dev dependencies, no new dependency of ours). README "Tests" now lists this step, plus
+  `set-config allow_tests true` (Frappe's own guard). `--skip-test-records` is no longer needed.
+- **Clean install on a fresh v15 site: done.** A private MariaDB 10.11 on port 3317 (data in the session
+  scratchpad, started as the bench user, no system database changed; decision 7). Then:
+  `bench new-site fresh-tests.test --db-host 127.0.0.1 --db-port 3317 ...`, `install-app erpnext`,
+  `install-app pos_next`, `set-config allow_tests true`, `run-tests --app pos_next`: **169 tests, OK**
+  (2 min 56 s, no other step). The run was repeated on a site dropped and created again after the last
+  code change.
+- **Not run: pos.test.** The permission system denied a Python test run on the dev site this time (it changes
+  demo data). Run `bench --site pos.test run-tests --app pos_next --skip-test-records` by hand to check it.
+- **v16 bench: not tried.**
+
+Decisions to review:
+
+9. **Site `fresh-tests.test`** stays in `sites/` and points to the private MariaDB on port 3317, which stops
+   with this session. Drop it with `bench drop-site fresh-tests.test` while that server runs, or delete
+   `sites/fresh-tests.test`. The older `sites/install-test.test` was not made by this run and was not touched.
+
+PHASE 9: BLOCKED - v16 bench could not be tested; clean install and Python tests on a fresh v15 site pass (169 OK, fifth run); all automated tests passed in the fourth run (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
