@@ -95,6 +95,14 @@ test("scale labels and barcodes scan from the browser cache with the network off
 	page.on("console", (msg) => {
 		if (msg.type() === "error") consoleErrors.push(msg.text())
 	})
+	// Startup CSRF race in POS Next gives 400 CSRFTokenError (see PROGRESS Phase 3);
+	// any other 400 is an error.
+	page.on("response", async (res) => {
+		if (res.status() !== 400) return
+		const body = await res.text().catch(() => "")
+		if (!body.includes("CSRFTokenError"))
+			consoleErrors.push(`HTTP 400 ${res.url()} ${body.slice(0, 200)}`)
+	})
 	const barcodeCalls = []
 	page.on("request", (req) => {
 		if (/search_by_barcode|resolve_scale_barcode/.test(req.url()))
@@ -177,6 +185,7 @@ test("scale labels and barcodes scan from the browser cache with the network off
 		/qz\.get_certificate/,
 		/status of 404/,
 		/status of 417/,
+		/status of 400/, // checked through the response listener
 		/ERR_INTERNET_DISCONNECTED/,
 		/Failed to fetch/,
 	]

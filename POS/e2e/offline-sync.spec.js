@@ -113,15 +113,21 @@ async function enqueue(page, invoices) {
 
 async function openTill(page) {
 	await page.goto("/pos")
-	const openShiftDialog = page.getByRole("dialog").filter({ hasText: "Open POS Shift" })
+	const openShiftDialog = page
+		.getByRole("dialog")
+		.filter({ hasText: "Open POS Shift" })
 	const shiftOpen = page.getByText("Shift Open:")
 	await expect(openShiftDialog.or(shiftOpen).first()).toBeVisible({
 		timeout: 30_000,
 	})
 	if (!(await shiftOpen.isVisible())) {
 		await openShiftDialog.getByText(PROFILE, { exact: true }).click()
-		await openShiftDialog.getByRole("button", { name: "Next", exact: true }).click()
-		await openShiftDialog.getByRole("button", { name: "Open Shift", exact: true }).click()
+		await openShiftDialog
+			.getByRole("button", { name: "Next", exact: true })
+			.click()
+		await openShiftDialog
+			.getByRole("button", { name: "Open Shift", exact: true })
+			.click()
 	}
 	await expect(shiftOpen).toBeVisible({ timeout: 30_000 })
 }
@@ -135,9 +141,17 @@ test("offline queue syncs, rejected invoice is stored as Failed and Retry fixes 
 	page.on("console", (msg) => {
 		if (msg.type() === "error") consoleErrors.push(msg.text())
 	})
-	page.on("response", (res) => {
+	page.on("response", async (res) => {
 		if (res.status() >= 500)
 			consoleErrors.push(`HTTP ${res.status()} ${res.url()}`)
+		// POS Next fetches a fresh CSRF token at startup while its first calls are in flight;
+		// those calls can get a 400 CSRFTokenError (upstream race, see PROGRESS Phase 3).
+		// Any other 400 is still an error.
+		if (res.status() === 400) {
+			const body = await res.text().catch(() => "")
+			if (!body.includes("CSRFTokenError"))
+				consoleErrors.push(`HTTP 400 ${res.url()} ${body.slice(0, 200)}`)
+		}
 	})
 
 	const admin = await request.newContext({ baseURL })
@@ -256,6 +270,7 @@ test("offline queue syncs, rejected invoice is stored as Failed and Retry fixes 
 		/qz\.get_certificate/,
 		/status of 404/,
 		/status of 417/,
+		/status of 400/, // checked through the response listener above
 		/ERR_INTERNET_DISCONNECTED/,
 		/Failed to fetch/,
 	]
