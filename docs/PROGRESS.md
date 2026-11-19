@@ -1275,3 +1275,153 @@ not fetched over the network; the RTL work below is our own.
     the rounding vectors against Frappe's own function.
 
 PHASE 7: DONE
+
+## Phase 8
+
+Run date: 2026-11-19 (unattended). Scope: SPEC section 11, Phase 8 prompt (SPEC section 5a, F13 Item Wizard; gram
+entry and unit picker in the cart), with DECISIONS.md applied.
+
+### Findings first: how POS Next handles item units and unit prices
+
+Full notes in ARCHITECTURE_NOTES section 2.13. Short version:
+
+- Units come from ERPNext's Item `uoms` table. `get_items` sends `item_uoms` without the stock unit;
+  `get_item_detail` (server barcode lookup) sends it with the stock unit, so the unit dropdown and the "which unit"
+  dialog showed the stock unit twice (fixed, UPSTREAM_PATCHES 59-60).
+- Unit prices: `uom_prices` = every Item Price of the profile's selling price list per unit (no validity-date filter).
+  Prices are in the basis of the profile's tax template (Main Till adds VAT 5% on top, so the till shows net prices).
+- Cart line: `uom`, `conversion_factor`, `item_uoms`. POS Next already has a unit picker on the cart line
+  (`changeItemUOM` -> `resolveUomPricing`: online ERPNext's price for that unit, offline `uom_prices`). Adding an item
+  that has other units (without auto-add) opens `ItemSelectionDialog`, which lists each unit with its price.
+- A per-gram price would be AED 0.0045 -> 0.00 at 2 decimals, and if Gram were an Item unit POS Next's picker would
+  offer it. Hence decision 1 below.
+- POS Next sends `rate = round(amount / qty)` for VAT-exclusive profiles, so a fractional line shows a 0.01 per-unit
+  discount (0.25 Kg x 4.29 = 1.07 -> rate 4.28). The amount is right; not changed (pricing logic).
+
+### What was built
+
+**Backend (`pos_next/pos_0001/`)**
+
+- Doctype **POS Item Wizard Preset** (+ child tables Buying Unit: uom, size, contains; Selling Unit: uom, size,
+  size unit, priced, default margin %), with the four shipped presets created on install / migrate
+  (`default_item_wizard_presets.json`, never overwritten): Bulk by weight (Bag 25 Kg -> Kg, 500 g Pack, Bag; on the
+  scale), Liquid (Drum 200 L -> Litre, 5 L Can), Pieces in a carton (Carton 24 Nos), Pre-packed portions from bulk
+  (Carton = 12 Pack, Pack = 500 g; sold by Pack, Carton, Kg). Missing UOMs are created (Bag, Pack, Carton, Drum, Can
+  as whole numbers; Kg, Gram, Litre, Millilitre not).
+- Role **POS Item Wizard** (created on install / migrate). POS 0001 Settings: `internal_barcode_prefix` (default 29),
+  `next_scale_plu`. Item Barcode custom field `pos0001_disabled`.
+- `item_wizard.py`: price logic (unit conversions in any order, cost per stock unit, price by "price per Kg" or
+  "margin % over cost", per-unit overrides, VAT basis, below-cost / VAT-rounding warnings, step checks), mirrored by
+  `POS/src/plus/core/itemWizard.js`; both are checked against `tests/item_wizard_vectors.json`. `create()` writes, in
+  one savepoint rolled back on any error: missing UOMs, the Item (stock / purchase / sales unit, conversion table,
+  `item_name_ar`, `scale_plu`, item tax template, default warehouse and price list, `is_stock_item`, one barcode row
+  per selling unit with its UOM, Item Supplier), Item Prices per priced selling unit in the profile's price list plus
+  the buying price in the buying price list, and a submitted Material Receipt for opening stock (4 Bags -> 100 Kg at
+  the cost per Kg). Edit packaging (`update_packaging`): adds units, conversion rows, barcodes and prices; a removed
+  unit only gets its Item Price ended (`valid_upto` yesterday) and its barcodes marked disabled. CSV import: template
+  with the wizard's columns (5 unit column groups, "generate" for barcodes), one result per row, each row through
+  `create()`.
+- Endpoints `pos_0001.api.items` (role + POS Profile access on each): `wizard_defaults` (price lists, warehouses, VAT
+  templates, units, groups, brands, suppliers, presets, scale rules, next PLU; `preset`, `copy_from`, `edit`),
+  `wizard_preview`, `wizard_validate` (per step: duplicate barcodes with the item that has them, item code, PLU,
+  links), `wizard_create`, `wizard_update_packaging`, `generate_internal_barcode`, `import_wizard_csv`, plus
+  `can_use_item_wizard`, `get_wizard_profiles`, `suggest_item_code`, `wizard_csv_template`, `save_wizard_preset`,
+  `search_items`.
+- Desk: "Create with Wizard" on the Item list and "Edit packaging" on the Item form (both open the POS pages).
+
+**Frontend (`POS/src/plus/`)**
+
+- `pages/ItemWizardPage.vue` at `/pos/items/new` (and `/pos/items/edit?item=` on steps 3-6 + review): 8 steps with a
+  progress bar, clickable visited steps, Back / Next, local and server checks before Next, a live price table
+  (calculated, price, cost, margin, customer pays), red below-cost warnings, Generate barcode, opening stock shown
+  converted, review, Create. After Create: print labels (the Phase 5 label panel), create another like this, save as
+  preset, open the item. Start step: presets, start blank, copy from existing item, CSV import with a results table.
+  State in `itemWizard/useItemWizard.js`, messages in `itemWizard/messages.js`.
+- "New item" in the till's menu (`components/NewItemMenuItem.vue`: role only, online only, opens a new tab).
+- Cart: `components/GramEntryButton.vue` + `core/units.js`: a "g" button on lines sold in Kg (ml on Litre) turns 250
+  into 0.250 Kg at the per-Kg price; not on scale-label lines or other units. The unit picker is POS Next's; each unit
+  is now listed once.
+- Arabic for all new strings (159 rows in `pos_next/translations/ar.csv`, incl. preset and unit names).
+
+### Test results
+
+- **Python** `test_item_wizard`: **18 tests, OK** (new): shared vectors, rice numbers, plain-word messages, four
+  presets installed and valid, rice Create (every F13 record: conversions, barcodes per unit, tax, defaults, selling
+  prices 4.29 / 2.38 / 94.29 for 4.50 / 2.50 / 99.00 incl. VAT, buying price 75 per Bag, Material Receipt 100 Kg at
+  3.00, PLU and counter), Create for each preset, rollback on a late error (no Item, UOM, barcode, Item Price, Stock
+  Entry, SLE or GL Entry left) and on a failed opening stock, duplicate barcode blocked with the owning item's name
+  (also repeated barcode, used code and PLU), preview / step validation, generated barcodes, defaults, copy from item,
+  edit packaging (adds Box, changes the Kg price, removes Pack without deleting anything), CSV import (created / failed
+  per row, stock 100 Kg), access (cashier without role, role without profile access, Guest).
+  Regression: `test_sync` 17, `test_barcode` 19, `test_sales_person` 20, `test_printing` 17, `test_labels` 21,
+  `test_held_carts` 11, `test_uae` 18, `test_favourites` 3, `test_workspace` 7, `pos_next.test_promotions` 18,
+  `pos_next.api.test_credit_sales` 4, `pos_next.test_packed_items_regression` 3. All OK. Whole-app `run-tests` still
+  does not start on v15 (Phase 1 decision 8). Demo prices rebuilt afterwards (`seed.ensure_item_prices`).
+- **Vitest** `yarn test:run`: **244 tests, 26 files, all pass** (17 new in `itemWizard.test.js` and `units.test.js`).
+- **Playwright** `yarn e2e`: **20 tests**. Full run: 19 passed, 1 failed: the `till-speed` favourites test clicked the
+  top favourite, which was now the e2e rice (sold by the bag), so the unit dialog opened instead of a cart line. The
+  test now skips the e2e wizard items; `till-speed.spec.js` re-run: 2 passed. New `e2e/item-wizard.spec.js` (2 tests):
+  1. Desk "Create with Wizard" button; the rice example through all 8 steps (Next blocked without a name, cost 3.00,
+     pack 2.25 -> 2.50, bag 112.50 -> 99.00, 50% margin, below-cost warning at 2.00, 3 generated barcodes, 4 Bags =
+     100 Kg); records checked on the server; then as cashier: scan the Kg barcode, switch the line to Bag with the unit
+     picker (94.29), scan again, type 250 g (0.25 Kg), scan the Pack barcode, pay cash. The synced invoice has
+     Bag 1 / 25 Kg, Kg 0.25 / 0.25 Kg, Pack 1 / 0.5 Kg at list prices 94.29 / 4.29 / 2.38 (customer prices incl. VAT
+     99.00 / 1.12 / 2.50), and stock goes 100 -> 74.25 Kg (SLE -25, -0.5, -0.25). No unexpected console errors. The
+     test fills the wizard in about 5 s.
+  2. Wizard in RTL at 1024 and 1280 px: no sideways scrolling, 44 px targets, Next / Back mirrored
+     (`test-results/item-wizard-rtl.png` and the cart `item-wizard-cart.png` checked by eye).
+- `bench --site pos.test migrate`, `bench build --app pos_next`: OK. `biome check` clean on `src/plus` and the new e2e.
+
+### Manual checks (need real hardware or a person)
+
+- [ ] A manager with no ERPNext training creates the rice example in under 2 minutes (SPEC section 10), then the till
+      sells 250 g, a 500 g pack and a whole bag at the right prices, and stock drops by 0.25, 0.5 and 25 Kg.
+- [ ] Program the wizard's scale PLU into the client's scale, print a weight label and scan it at the till.
+- [ ] "Print labels" after Create on the real label printer; scan the printed barcodes back.
+- [ ] CSV import with the client's real item list saved from Excel (UTF-8, Arabic names).
+- [ ] Desk: "Create with Wizard" on the Item list and "Edit packaging" on an Item, by eye.
+- [ ] An Arabic-reading manager goes through the wizard on a 10-inch tablet (wording, RTL).
+
+### Not done in this phase
+
+- A unit removed in edit packaging is still offered by POS Next's unit picker and barcode lookup: POS Next's item
+  cache ignores Item Price `valid_upto` and our `pos0001_disabled` flag; online, ERPNext then prices it from the stock
+  price x factor. Needs a small patch in POS Next's `get_items` / `search_by_barcode` (not made, to keep upstream edits
+  small) or a removal that deletes rows (the spec says never delete).
+- A new item reaches a till's offline cache with its next item refresh; until the scan cache refreshes
+  (`cache_refresh_minutes`), scanning one of its unit barcodes asks which unit instead of using the barcode's unit.
+- Scanning a unit barcode of a multi-unit item opens POS Next's unit dialog unless auto-add is on (POS Next
+  behaviour, unchanged).
+
+### Decisions to review
+
+1. **Gram and Millilitre are entry units only**: no row in the Item's UOM conversion table and no Item Price (the
+   SPEC F13 table lists Gram 0.001). Every cart line sold in Kg (Litre) gets the gram (ml) button, also for items not
+   made by the wizard. This keeps POS Next's unit picker, ERPNext and Sales Orders from ever pricing a gram.
+2. **Prices typed incl. VAT are stored in the profile's basis**: Main Till's VAT template adds VAT on top, so 4.50
+   incl. VAT is stored as 4.29 (2 decimals). The shelf price can then differ by 0.01; the wizard shows "Customer pays"
+   and a warning when it does. The POS Profile's tax template was not changed (tax logic: ask first).
+3. **Margin % is shown on the typed price** (4.50 on cost 3.00 = 50%, as in the SPEC example); the below-cost warning
+   compares the price **without VAT** with the cost (stricter).
+4. **Opening stock is a submitted Material Receipt** (SPEC), so it writes stock ledger and GL entries through standard
+   ERPNext (no ledger logic changed), in the stock unit at cost per stock unit (cost per buying unit / size).
+5. **Access**: every wizard endpoint needs the role "POS Item Wizard" (Administrator always passes; System Manager does
+   not by itself) and access to the POS Profile. Nobody gets the role automatically: assign it to managers.
+6. **Item code**: ERPNext has no naming series per item group, so the wizard suggests the first 4 letters of the group,
+   a dash and a running number (GROC-00001), editable; with Stock Settings "Naming Series" ERPNext names the item.
+7. **Purchase unit = the biggest buying unit**; the buying price is per that unit, in the Buying Settings price list
+   (Standard Buying).
+8. **Edit packaging "removal"**: Item Price `valid_upto` = yesterday and Item Barcode `pos0001_disabled` = 1 (new
+   custom field, not in SPEC section 8); conversion rows stay. See "Not done".
+9. **Internal barcodes**: prefix 29 + running number + check digit (POS 0001 Settings). Pick a prefix no scale rule
+   uses.
+10. **The wizard opens in a new tab** from the till so a sale in progress is not disturbed.
+11. Shipped presets have no VAT template (template names are per company); the wizard picks the company's template
+    whose rate equals the profile's VAT. Drum 200 L, Can 5 L and the pre-packed sizes are my choices.
+12. Two small POS Next UI fixes (stock unit listed twice, UPSTREAM_PATCHES 59-60).
+13. Other new fields not in SPEC section 8: preset `preset_name_ar`, `description`, `is_standard`; selling unit
+    `size_uom`.
+14. The Playwright test leaves its items ("E2E Basmati Rice ...", GROC-xxxxx) and their sales on the dev site, like
+    the other e2e tests.
+
+PHASE 8: DONE
