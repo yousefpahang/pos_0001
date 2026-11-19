@@ -56,6 +56,7 @@ def run(item_count: int = 20000) -> None:
 	create_items(item_count)
 	create_weighed_items()
 	mark_demo_items_sellable()
+	ensure_item_prices()
 	frappe.db.commit()
 	opening_stock()
 	ensure_cashier()
@@ -257,6 +258,48 @@ def create_weighed_items() -> None:
 				"item_defaults": [{"company": COMPANY, "default_warehouse": WAREHOUSE}],
 			}
 		).insert(ignore_permissions=True)
+
+
+def ensure_item_prices() -> None:
+	"""Create a Standard Selling price for every demo item that has none.
+
+	Item.after_insert only creates the price from standard_rate when the item is first inserted,
+	and standard_rate is not stored. The seed sets valuation_rate to 70% (regular) or 60% (weighed)
+	of the selling rate, so the price is rebuilt from it.
+	"""
+	price = frappe.qb.DocType("Item Price")
+	priced = set(
+		frappe.qb.from_(price).select(price.item_code).where(price.price_list == PRICE_LIST).run(pluck=True)
+	)
+	item = frappe.qb.DocType("Item")
+	rows = (
+		frappe.qb.from_(item)
+		.select(item.item_code, item.item_name, item.stock_uom, item.valuation_rate)
+		.where(item.item_code.like("ITM-%") | item.item_code.like("PLU-%"))
+		.run(as_dict=True)
+	)
+	now = frappe.utils.now()
+	values = []
+	for row in rows:
+		if row.item_code in priced:
+			continue
+		ratio = 0.6 if row.item_code.startswith("PLU-") else 0.7
+		values.append(
+			(
+				frappe.generate_hash(length=10), now, now, "Administrator", "Administrator",
+				row.item_code, row.item_name, row.stock_uom, PRICE_LIST, CURRENCY, 1,
+				round((row.valuation_rate or 1) / ratio, 2),
+			)
+		)
+	fields = [
+		"name", "creation", "modified", "owner", "modified_by",
+		"item_code", "item_name", "uom", "price_list", "currency", "selling", "price_list_rate",
+	]
+	for start in range(0, len(values), 5000):
+		frappe.db.bulk_insert("Item Price", fields, values[start : start + 5000])
+		frappe.db.commit()
+	if values:
+		print(f"item prices: {len(values)} created")
 
 
 def opening_stock() -> None:
