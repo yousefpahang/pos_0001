@@ -51,6 +51,8 @@ _asset_version = get_build_version()
 doctype_js = {
 	"Customer": "public/js/customer.js",
 	"Offline Invoice Sync": "pos_0001/client/offline_invoice_sync.js",  # pos_0001
+	"Purchase Receipt": "pos_0001/client/print_labels_button.js",  # pos_0001
+	"Stock Entry": "pos_0001/client/print_labels_button.js",  # pos_0001
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -99,8 +101,14 @@ fixtures = [
 # ------------
 
 # before_install = "pos_next.install.before_install"
-after_install = "pos_next.install.after_install"
-after_migrate = "pos_next.install.after_migrate"
+after_install = [
+	"pos_next.install.after_install",
+	"pos_next.pos_0001.install.ensure_default_label_templates",  # pos_0001
+]
+after_migrate = [
+	"pos_next.install.after_migrate",
+	"pos_next.pos_0001.install.ensure_default_label_templates",  # pos_0001
+]
 
 # Uninstallation
 # ------------
