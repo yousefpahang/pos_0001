@@ -578,3 +578,162 @@ reused; no key fields were added anywhere.
     are under Manual checks.
 
 PHASE 4: DONE
+
+## Phase 5
+
+Run date: 2026-11-21 (unattended). Scope: SPEC section 11, Phase 5 prompt (SPEC F4 barcode label printing). POS
+Awesome was read as a reference only (`useZplGenerator.ts`, `useBarcodePrintOutput.ts`, `BarcodePrinting.vue`,
+`label_data_sources.py`); nothing was added as a dependency and no Vuetify code was copied.
+
+### What was built
+
+**Pure logic (`POS/src/plus/core/`, plain JS + JSDoc, no Vue), mirrored in Python**
+
+- `zpl.js`, `epl.js`, `tspl.js`: escaping, barcode fields (ZPL `^BY`/`^BCN`/`^BEN`, EPL `B` with `1` / `E30`, TSPL
+  `BARCODE "128"` / `"EAN13"`) and bitmap commands for Arabic (ZPL `^GFA` hex with 1 = black, EPL `GW` and TSPL
+  `BITMAP` binary with 0 = black). ZPL and EPL parts adapted from POS Awesome (credited in file headers and NOTICE.md);
+  POS Awesome has no TSPL builder, so `tspl.js` is written from the TSPL manual.
+- `labelTemplate.js`: renderer for the template body, a Jinja subset (values, `draw_barcode()`, `draw_arabic()`,
+  `fit()`, `if / elif / else / not`) with Jinja's whitespace rules (`trim_blocks`, `lstrip_blocks`, trailing newline).
+  Anything else is rejected with a plain message, on the server too, so the POS prints exactly what the server would.
+- `labels.js`: label rows from the browser cache (that UOM's barcode, price incl. VAT, item VAT overrides, price
+  override, scale labels with `generateScaleBarcode` from POS Scale Barcode Rule), raw jobs with copies (`{{ qty }}` or
+  repeated labels), and the A4 sheet HTML (grid centred on the page, SVG barcodes, Arabic as text).
+- `ean.js` / `code128.js`: EAN-13 and Code128 module strings for the A4 sheet.
+- Python copies: `pos_0001/labels.py` (Jinja sandbox renderer, commands, A4 HTML, Arabic bitmap with Pillow + libraqm)
+  and `pos_0001/barcodes.py`. One byte snapshot, `pos_0001/tests/label_snapshots.json` (29 cases: every default
+  template plus 24 whitespace / helper cases in three languages), is checked by Vitest and by the Python tests.
+
+**Backend (`pos_next/pos_0001/`)**
+
+- Doctype **POS Label Template**: name, language ZPL / EPL / TSPL / PDF, enabled, default per language, company,
+  width / height mm, DPI 203 / 300, gap, barcode type Code128 / EAN13, A4 columns / rows / label margin, Jinja body
+  with help text. Validation renders a sample label, so a broken body cannot be saved.
+- Five default templates (`default_label_templates.json`): Shelf Label 38x25 (ZPL), Product Label 50x30 (ZPL),
+  A4 Sheet 3x8 (PDF) as asked, plus Product Label 50x30 in TSPL and EPL. Created on install and migrate when missing
+  (`pos_0001/install.py`), never overwritten.
+- POS Profile custom fields: `pos0001_label_printer`, `pos0001_default_label_template`, `pos0001_label_role`. The
+  till's label printer is POS Device `label_printer`, else the profile's (`printing.resolve_printers`).
+- `api/labels.py` (POS role, profile access and the Print Labels role on every endpoint): `get_label_cache`,
+  `get_label_profiles`, `resolve_rows`, `search_items`, `items_from_document` (Purchase Receipt; Stock Entry lines with a
+  target warehouse; label qty = received qty rounded up; the user must be able to read the document), `render` (raw job
+  as base64, or a private PDF File). Scale labels reuse `barcode.generate_scale_barcode` logic and the rules of the
+  profile.
+- Desk page **pos-labels** (shows `/pos/labels` in an iframe) and a **Print Labels** button on Purchase Receipt and
+  Stock Entry (`client/print_labels_button.js`).
+- Demo seed `ensure_label_setup()`: printer "Label Printer ZPL" on Main Till, role **POS Label Printer** for the cashier
+  on both profiles, Arabic names on ITM-00001, ITM-00002, PLU-12345 (run on `pos.test`).
+
+**Frontend (`POS/src/plus/`)**
+
+- `labels/labelStore.js`: label cache in IndexedDB (`pos0001_label_cache::<profile>`), rows resolved on the server when
+  online and from the item / scan caches offline, item search (server, or Dexie barcode / code / name offline), print
+  (raw through QZ Tray to the label printer, checking the printer's label language; A4 through the browser print
+  dialog), server PDF download.
+- `labels/textBitmap.js`: Arabic text drawn right to left on a canvas, shrunk to fit, 1-bit.
+- `components/LabelPrintPanel.vue` (Tailwind): template, output status, search / scan, rows with UOM, label quantity,
+  price override, scale label (rule + weight or amount), remove, total, Print / Download PDF. 44 px targets, logical
+  properties, numbers LTR. `components/LabelButton.vue`: header button, dialog pre-filled with the cart lines.
+  `pages/LabelsPage.vue`: `/pos/labels` with profile choice and document rows (`?doctype=&name=`).
+- POS Next patches (UPSTREAM_PATCHES.md entries 24-27): hooks (`doctype_js`, `after_install` / `after_migrate` lists),
+  one route, one header button.
+- Arabic for all new strings in `pos_next/translations/ar.csv` (78 rows; 13 already existed).
+- Docs: HARDWARE.md section 8 (label printers, templates, where to print), test matrix and troubleshooting rows,
+  NOTICE.md, ARCHITECTURE_NOTES "After Phase 5".
+
+### Test results
+
+- **Python** `bench --site pos.test run-tests --module pos_next.pos_0001.tests.test_labels`: **21 tests, OK**.
+  Shared snapshots (all 29 cases equal to the browser), ZPL text, subset errors, EAN-13 / Code128 modules, bitmap
+  commands, Arabic bitmap with Pillow + libraqm (shaped, shrunk to fit); default templates shipped, bad bodies and
+  sizes refused, one default per language; rows: price incl. VAT per UOM with that UOM's barcode, Arabic name, price
+  override, scale labels give the SPEC F5 barcodes (2012345012509, 2212345025008), item without a scale code refused;
+  search by barcode (with UOM) and name; cache; access (no role, outsider, Guest, profile list); Purchase Receipt rows
+  (Box UOM barcode, 2.4 kg -> 3 labels) and Stock Entry rows (received lines only; cashier without Stock Entry read is
+  refused); render TSPL (bytes, Arabic `BITMAP`) and A4 PDF (private file, 25 labels = 2 pages); bad input refused.
+- Regression: `test_printing` 14 OK (one assertion updated: `register_device` now also returns the profile's label
+  printer), `test_sync` 13 OK, `test_barcode` 19 OK, `test_sales_person` 20 OK, `pos_next.test_promotions` 18 OK,
+  `pos_next.api.test_credit_sales` 4 OK, `pos_next.test_packed_items_regression` 3 OK. Whole-app `run-tests` still does
+  not start on v15 (Phase 1 decision 8).
+- **Vitest** `cd POS && yarn test:run`: **146 tests, 12 files, all pass** (22 new in `labels.test.js`).
+- **Playwright** `cd POS && yarn e2e`: **11 tests pass** (3 new in `e2e/label-printing.spec.js`, fake QZ Tray):
+  1. Till, network off: Labels button, barcode 6290000000016 + Enter adds the item from the browser cache with its
+     Arabic name, 3 labels; PLU-12345 as a scale label of 1.250 kg shows 2012345012509; Print sends one base64 job to
+     "Fake Label": ZPL with `^PW304 ^LL200`, `^BEN ... ^FD629000000001`, `^PQ3`, the scale label's
+     `^FD201234501250`, two `^XA`, and a `^GFA` bitmap of the Arabic name (24 rows, saved as
+     `test-results/label-arabic.png`, checked by eye: correctly joined Arabic). No unexpected console errors.
+  2. Desk: a Purchase Receipt for 5 x ITM-00001, Print Labels opens `/app/pos-labels` with one row of 5 labels and the
+     source line; A4 template + Download PDF returns a PDF of 5 labels (`test-results/labels-a4.pdf`).
+  3. RTL: Labels button 44 x 44 inside the viewport, dialog without horizontal overflow, controls 44 px high.
+- The A4 PDF was also rendered to PNG on the server and checked by eye (24 labels on the 70 x 37 grid, SVG barcodes,
+  Arabic name, scale label with weight).
+- `bench --site pos.test migrate`, `bench build --app pos_next`: OK. `biome check` clean on `src/plus` and `e2e`.
+- After the Python runs, demo prices were rebuilt with `seed.ensure_item_prices` (ERPNext `before_tests`, see Phase 2).
+
+### Manual checks (need real hardware or a person)
+
+- [ ] Print 20 labels from a Purchase Receipt on the client's label printer and on an A4 sheet; scan every barcode
+      back with a real scanner (SPEC acceptance). Check EAN-13 and Code128 at 2 dots per module on 203 dpi.
+- [ ] Zebra (ZPL): Shelf Label 38x25 and Product Label 50x30 on 203 dpi; `^CI28` UTF-8 text; the Arabic `^GFA`
+      bitmap prints black on white and is readable.
+- [ ] TSC / Xprinter (TSPL) and an EPL printer: Arabic `BITMAP` / `GW` bitmaps are sent with 0 = black (from the
+      manuals); confirm they are not inverted. Confirm `CODEPAGE UTF-8` on the TSC model.
+- [ ] Gap and size calibration on real rolls (38 x 25, 50 x 30); 300 dpi printers need 300 dpi copies of the
+      templates (positions are in dots).
+- [ ] A4 3 x 8 sheet (70 x 37 mm, e.g. Avery 3474-type) from the browser at 100 % and from Download PDF: labels sit
+      inside the die-cut grid.
+- [ ] Scale label for goods packed in store: print one, scan it at the till, qty and amount match (weight and price
+      rules).
+- [ ] Network label printer through QZ Tray (raw port 9100).
+- [ ] Desk: POS Label Template form (help text, depends-on fields, error messages for a broken body) in English and
+      Arabic; Print Labels button on a submitted Purchase Receipt and on a Stock Entry.
+- [ ] Switch the POS to Arabic and look at the label dialog; only `dir="rtl"` was simulated automatically.
+
+### Not done in this phase (later phases or not in the Phase 5 prompt)
+
+- A visual label designer (POS Awesome has one); templates are edited as Jinja text.
+- RFID / EPC encoding, Sales Order / Delivery Note / BOM sources, serial number labels (POS Awesome extras, not in SPEC).
+- Arabic currency sign "د.إ" on labels per language setting (Phase 7 AED formatting).
+- POS Next's item cache has no `item_name_ar`; offline labels take Arabic names from the label cache (Phase 7 adds it
+  to search and receipts).
+
+### Decisions to review
+
+1. **Template body is a Jinja subset**, not full Jinja: the POS must render labels offline in the browser, where there
+   is no Jinja. Values, three helpers and `if` blocks only; enforced on save. Both renderers are proven equal by one
+   shared byte snapshot. A full Jinja body would need the server for every label.
+2. **Five default templates instead of three**: the three asked for plus TSPL and EPL copies of the 50 x 30 product
+   label, so every label language has a working default. They are created on install and every migrate when missing
+   (`after_install` / `after_migrate` in hooks.py, UPSTREAM_PATCHES 25); a deleted default comes back on the next
+   migrate, so disable it instead of deleting it.
+3. **A4 PDF uses WeasyPrint, not wkhtmltopdf.** The bench's wkhtmltopdf 0.12.6 is built without patched Qt and
+   scaled the A4 page to about 77 %, which would move labels off the sheet's grid. WeasyPrint is already a Frappe v15
+   dependency (`WeasyPrint==70.0`), so no new package. Check it is present on v16.
+4. **Grid layout**: the A4 grid is centred on the sheet and `margins_mm` is the space kept free inside each label
+   (field label "Label Margin"), because one margin value cannot describe both page margins of real label sheets.
+   Default 70 x 37 mm, 3 x 8.
+5. **Label printing permission**: POS role + access to the POS Profile + the profile's **Print Labels Role**; empty
+   role = POS managers only (same rule as No Sale). Desk users printing from a Purchase Receipt also need read access
+   to the document and a POS Profile of its company. Demo: role "POS Label Printer" for the cashier.
+6. **"POS item menu" entry point**: POS Next has no per-item menu, so the till entry point is a **Labels** button in
+   the header that opens the dialog pre-filled with the cart lines (scale lines left out). One header patch.
+7. **Desk page shows the POS label screen in an iframe** (`/pos/labels`) instead of a second UI in desk JavaScript:
+   one Tailwind UI, and raw jobs go through QZ Tray from the browser like on the till (the server cannot reach a
+   till's printer). `labels.render` still renders raw jobs and PDFs on the server (API and Download PDF).
+8. **Prices on labels include VAT**: rate of the price list for that UOM (else stock UOM price x conversion factor),
+   plus the POS Profile tax template's "On Net Total" rate, or the item's own Item Tax Template rate for those
+   accounts; unchanged when the template says "included in print rate". Item Group tax templates are not looked at.
+9. **Scale labels**: for Weight rules the label price is the line amount (weight x rate, 2 decimals) plus VAT; for
+   Price rules the entered amount is the encoded line amount (what the till will charge before VAT) and the label
+   shows it plus VAT when prices exclude VAT. Scale labels always print as EAN-13.
+10. **Barcode choice**: the UOM's own barcode, else (stock UOM) a barcode without a UOM, else the item code as Code128.
+    EAN-13 only for valid 13-digit codes; 12-digit UPC-A codes print as Code128.
+11. **Label quantity from documents** = received qty in the line's UOM rounded up (2.4 kg -> 3 labels), capped at 999.
+12. **Limits**: 500 rows, 999 labels per row, 2000 labels per print.
+13. **Server PDFs are private File records** named `labels-<hash>.pdf` and are not cleaned up automatically.
+14. **Label cache carries all Arabic item names** (item code -> `item_name_ar`, only items that have one) so offline
+    labels show them; large catalogues with Arabic names make this cache bigger.
+15. **Bitmap polarity** for EPL `GW` and TSPL `BITMAP` (0 = black) is from the manuals and not verified on hardware.
+16. `register_device` (Phase 1) now returns the profile's label printer too; the Phase 4 test was updated.
+
+PHASE 5: DONE
