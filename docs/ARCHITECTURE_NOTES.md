@@ -192,6 +192,20 @@ ERPNext's `before_tests` hook deletes every Item Price on the site; re-run
   table in `submit_invoice` (invoices.py ~1367, `sales_person`, `allocated_percentage`).
 - No default per user, no barcode scan.
 
+**After Phase 3** (DECISIONS item 5): the effective mode comes from POS Profile `pos0001_sales_person_mode`
+(Optional / Mandatory decide; Off keeps POS Next's rule: `enable_sales_persons` Disabled = off, Single or Multiple =
+mandatory); several sales persons only when POS Settings says Multiple. Logic in `plus/core/salesPerson.js`, mirrored in
+`pos_0001/sales_person.py`. `pos_0001.api.sales_person.get_sales_person_cache` sends mode, the user's
+`pos0001_default_sales_person` and the list with `sales_person_barcode`; the browser keeps it in the Dexie `settings` store
+under `pos0001_sales_person_cache::<profile>` (`plus/salesPerson/salesPersonStore.js`, loaded by the sync log store). The
+store holds the current cart's selection, resets to the default when the cart empties, and is shared by the cart header
+picker (`plus/components/SalesPersonPicker.vue`) and the payment dialog. Server side, Sales Invoice `before_validate`
+(and an explicit call in `update_invoice()`, because `calculate_taxes_and_totals()` checks the split early) fills Sales
+Team `commission_rate` from Sales Person (POS Next left it empty, so incentives were 0) and moves rounding drift to the
+last row; `validate` rejects online POS sales without a sales person when the profile says Mandatory (offline queued
+invoices are flagged by `pos_0001.api.sync` and never rejected for it). Script Report **Sales Person Commission**
+(`pos_0001/report/sales_person_commission/`) and `pos_0001.api.reports.sales_person_commission`.
+
 ### 2.6 Hold / drafts
 
 - Drafts are **local only**: IndexedDB database `pos_next_drafts`, store `invoices`
