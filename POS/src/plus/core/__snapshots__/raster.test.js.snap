@@ -1,0 +1,3 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`raster conversion > builds the GS v 0 job with drawer on the first copy and a cut per copy 1`] = `"1b 40 1b 70 00 19 fa 1d 76 30 00 02 00 04 00 ff c0 80 40 08 00 ff c0 1b 64 04 1d 56 00 1b 40 1d 76 30 00 02 00 04 00 ff c0 80 40 08 00 ff c0 1b 64 04 1d 56 00"`;
