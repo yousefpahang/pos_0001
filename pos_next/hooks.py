@@ -160,6 +160,7 @@ doc_events = {
 	},
 	"Sales Invoice": {
 		"before_validate": "pos_next.pos_0001.api.sales_person.prepare_sales_team",
+		"before_insert": "pos_next.pos_0001.api.held_carts.before_insert",  # pos_0001
 		"validate": [
 			"pos_next.api.sales_invoice_hooks.validate",
 			"pos_next.api.wallet.validate_wallet_payment",
@@ -192,6 +193,7 @@ scheduler_events = {
 	"daily": [
 		"pos_next.tasks.cleanup_expired_promotions.cleanup_expired_promotions",
 		"pos_next.tasks.branding_monitor.validate_all_active_sessions",
+		"pos_next.pos_0001.api.held_carts.cleanup_held_carts",  # pos_0001
 	],
 	"monthly": [
 		"pos_next.tasks.branding_monitor.reset_tampering_counter",
