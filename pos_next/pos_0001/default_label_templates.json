@@ -1,0 +1,72 @@
+[
+ {
+  "template_name": "Shelf Label 38x25 (ZPL)",
+  "language": "ZPL",
+  "is_default": 1,
+  "width_mm": 38,
+  "height_mm": 25,
+  "dpi": "203",
+  "gap_mm": 2,
+  "barcode_type": "EAN13",
+  "a4_columns": 0,
+  "a4_rows": 0,
+  "margins_mm": 0,
+  "body": "^XA\n^CI28\n^PW{{ width_dots }}\n^LL{{ height_dots }}\n^LH0,0\n^FO10,8^A0N,22,22^FB284,1,0,L^FD{{ fit(item_name, 28) }}^FS\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 10, 32, 24, 284) }}\n{% endif %}\n^FO10,62^A0N,36,36^FD{{ price_label }}^FS\n{{ draw_barcode(20, 104, 52, 2) }}\n^PQ{{ qty }}\n^XZ\n"
+ },
+ {
+  "template_name": "Product Label 50x30 (ZPL)",
+  "language": "ZPL",
+  "is_default": 0,
+  "width_mm": 50,
+  "height_mm": 30,
+  "dpi": "203",
+  "gap_mm": 2,
+  "barcode_type": "EAN13",
+  "a4_columns": 0,
+  "a4_rows": 0,
+  "margins_mm": 0,
+  "body": "^XA\n^CI28\n^PW{{ width_dots }}\n^LL{{ height_dots }}\n^LH0,0\n^FO16,10^A0N,24,24^FB368,1,0,L^FD{{ fit(item_name, 32) }}^FS\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 38, 26, 368) }}\n{% endif %}\n^FO16,72^A0N,20,20^FD{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}^FS\n^FO230,68^A0N,30,30^FB150,1,0,R^FD{{ price_label }}^FS\n{{ draw_barcode(60, 112, 70, 2) }}\n^PQ{{ qty }}\n^XZ\n"
+ },
+ {
+  "template_name": "Product Label 50x30 (TSPL)",
+  "language": "TSPL",
+  "is_default": 1,
+  "width_mm": 50,
+  "height_mm": 30,
+  "dpi": "203",
+  "gap_mm": 2,
+  "barcode_type": "EAN13",
+  "a4_columns": 0,
+  "a4_rows": 0,
+  "margins_mm": 0,
+  "body": "SIZE {{ width_mm }} mm,{{ height_mm }} mm\nGAP {{ gap_mm }} mm,0 mm\nDIRECTION 1\nCODEPAGE UTF-8\nCLS\nTEXT 16,10,\"3\",0,1,1,\"{{ fit(item_name, 30) }}\"\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 40, 26, 368) }}\n{% endif %}\nTEXT 16,74,\"2\",0,1,1,\"{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}\"\nTEXT 230,70,\"3\",0,1,1,\"{{ price_label }}\"\n{{ draw_barcode(60, 104, 60, 2) }}\nPRINT 1,{{ qty }}\n"
+ },
+ {
+  "template_name": "Product Label 50x30 (EPL)",
+  "language": "EPL",
+  "is_default": 1,
+  "width_mm": 50,
+  "height_mm": 30,
+  "dpi": "203",
+  "gap_mm": 2,
+  "barcode_type": "EAN13",
+  "a4_columns": 0,
+  "a4_rows": 0,
+  "margins_mm": 0,
+  "body": "\nN\nq{{ width_dots }}\nQ{{ height_dots }},{{ gap_dots }}\nI8,A,001\nA16,10,0,3,1,1,N,\"{{ fit(item_name, 30) }}\"\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 40, 26, 368) }}\n{% endif %}\nA16,74,0,2,1,1,N,\"{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}\"\nA230,70,0,3,1,1,N,\"{{ price_label }}\"\n{{ draw_barcode(60, 104, 60, 2) }}\nP{{ qty }}\n"
+ },
+ {
+  "template_name": "A4 Sheet 3x8 (PDF)",
+  "language": "PDF",
+  "is_default": 1,
+  "width_mm": 70,
+  "height_mm": 37,
+  "dpi": "203",
+  "gap_mm": 0,
+  "barcode_type": "EAN13",
+  "a4_columns": 3,
+  "a4_rows": 8,
+  "margins_mm": 3,
+  "body": "<div class=\"name\">{{ fit(item_name, 40) }}</div>\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar) }}\n{% endif %}\n<div class=\"small\">{{ item_code }} &middot; {{ uom }}{% if weight %} &middot; {{ weight }}{% endif %}</div>\n<div class=\"price\">{{ price_label }}</div>\n{{ draw_barcode(9) }}\n"
+ }
+]

@@ -206,6 +206,20 @@ export function code128Widths(text) {
 }
 
 /**
+ * "1" (bar) / "0" (space) per module, stop pattern included, no quiet zones.
+ * Mirrored by pos_next/pos_0001/barcodes.py `code128_modules`.
+ * @param {string} text
+ * @returns {string}
+ */
+export function code128Modules(text) {
+	let out = ""
+	code128Widths(text).forEach((width, k) => {
+		out += (k % 2 === 0 ? "1" : "0").repeat(width)
+	})
+	return out
+}
+
+/**
  * Total width in modules (without quiet zones).
  * @param {string} text
  */

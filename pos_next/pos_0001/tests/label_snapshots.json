@@ -1,0 +1,1716 @@
+{
+ "base": {
+  "currency": "AED",
+  "company": "Demo Trading LLC",
+  "date": "21-11-2026"
+ },
+ "cases": [
+  {
+   "kind": "raw",
+   "template": {
+    "template_name": "Shelf Label 38x25 (ZPL)",
+    "language": "ZPL",
+    "is_default": 1,
+    "width_mm": 38,
+    "height_mm": 25,
+    "dpi": "203",
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "a4_columns": 0,
+    "a4_rows": 0,
+    "margins_mm": 0,
+    "body": "^XA\n^CI28\n^PW{{ width_dots }}\n^LL{{ height_dots }}\n^LH0,0\n^FO10,8^A0N,22,22^FB284,1,0,L^FD{{ fit(item_name, 28) }}^FS\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 10, 32, 24, 284) }}\n{% endif %}\n^FO10,62^A0N,36,36^FD{{ price_label }}^FS\n{{ draw_barcode(20, 104, 52, 2) }}\n^PQ{{ qty }}\n^XZ\n",
+    "name": "Shelf Label 38x25 (ZPL)"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "XlhBCl5DSTI4Cl5QVzMwNApeTEwyMDAKXkxIMCwwCl5GTzEwLDheQTBOLDIyLDIyXkZCMjg0LDEsMCxMXkZEUHJlbWl1bSBUaXNzdWUgNTAwZyAjMV5GUwpeRk8xMCwzMl5HRkEsMzYsMzYsNiw5MjQ5MjQ5MjQ5MjQyNDkyNDkyNDkyNDk0OTI0OTI0OTI0OTI5MjQ5MjQ5MjQ5MjQyNDkyNDkyNDkyNDk0OTI0OTI0OTI0OTJeRlMKXkZPMTAsNjJeQTBOLDM2LDM2XkZEQUVEIDQwLjk2XkZTCl5GTzIwLDEwNF5CWTIsMyw1Ml5CRU4sNTIsWSxOXkZENjI5MDAwMDAwMDAxXkZTCl5QUTIKXlhaCl5YQQpeQ0kyOApeUFczMDQKXkxMMjAwCl5MSDAsMApeRk8xMCw4XkEwTiwyMiwyMl5GQjI4NCwxLDAsTF5GRFF1b3RlICIgY2FyZXQgICB0aWxkZSAgIGJhY2teRlMKXkZPMTAsNjJeQTBOLDM2LDM2XkZEQUVEIDUuMDBeRlMKXkZPMjAsMTA0XkJZMiwzLDUyXkJDTiw1MixZLE4sTl5GRE9ERC0iICA+PDFeRlMKXlBRMQpeWFoKXlhBCl5DSTI4Cl5QVzMwNApeTEwyMDAKXkxIMCwwCl5GTzEwLDheQTBOLDIyLDIyXkZCMjg0LDEsMCxMXkZEVG9tYXRvIChwZXIga2cpIDEyMzQ1XkZTCl5GTzEwLDMyXkdGQSwxOCwxOCwzLDkyNDkyMDI0OTI0MDQ5MjQ5MDkyNDkyMDI0OTI0MDQ5MjQ5MF5GUwpeRk8xMCw2Ml5BME4sMzYsMzZeRkRBRUQgNTAuMTheRlMKXkZPMjAsMTA0XkJZMiwzLDUyXkJFTiw1MixZLE5eRkQyMDEyMzQ1MDEyNTBeRlMKXlBRMQpeWFoK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "template_name": "Product Label 50x30 (ZPL)",
+    "language": "ZPL",
+    "is_default": 0,
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": "203",
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "a4_columns": 0,
+    "a4_rows": 0,
+    "margins_mm": 0,
+    "body": "^XA\n^CI28\n^PW{{ width_dots }}\n^LL{{ height_dots }}\n^LH0,0\n^FO16,10^A0N,24,24^FB368,1,0,L^FD{{ fit(item_name, 32) }}^FS\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 38, 26, 368) }}\n{% endif %}\n^FO16,72^A0N,20,20^FD{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}^FS\n^FO230,68^A0N,30,30^FB150,1,0,R^FD{{ price_label }}^FS\n{{ draw_barcode(60, 112, 70, 2) }}\n^PQ{{ qty }}\n^XZ\n",
+    "name": "Product Label 50x30 (ZPL)"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "XlhBCl5DSTI4Cl5QVzQwMApeTEwyNDAKXkxIMCwwCl5GTzE2LDEwXkEwTiwyNCwyNF5GQjM2OCwxLDAsTF5GRFByZW1pdW0gVGlzc3VlIDUwMGcgIzFeRlMKXkZPMTYsMzheR0ZBLDM2LDM2LDYsOTI0OTI0OTI0OTI0MjQ5MjQ5MjQ5MjQ5NDkyNDkyNDkyNDkyOTI0OTI0OTI0OTI0MjQ5MjQ5MjQ5MjQ5NDkyNDkyNDkyNDkyXkZTCl5GTzE2LDcyXkEwTiwyMCwyMF5GRElUTS0wMDAwMSAgTm9zXkZTCl5GTzIzMCw2OF5BME4sMzAsMzBeRkIxNTAsMSwwLFJeRkRBRUQgNDAuOTZeRlMKXkZPNjAsMTEyXkJZMiwzLDcwXkJFTiw3MCxZLE5eRkQ2MjkwMDAwMDAwMDFeRlMKXlBRMgpeWFoKXlhBCl5DSTI4Cl5QVzQwMApeTEwyNDAKXkxIMCwwCl5GTzE2LDEwXkEwTiwyNCwyNF5GQjM2OCwxLDAsTF5GRFF1b3RlICIgY2FyZXQgICB0aWxkZSAgIGJhY2sgXCDDqV5GUwpeRk8xNiw3Ml5BME4sMjAsMjBeRkRPREQtIiAgPjEgIEJveF5GUwpeRk8yMzAsNjheQTBOLDMwLDMwXkZCMTUwLDEsMCxSXkZEQUVEIDUuMDBeRlMKXkZPNjAsMTEyXkJZMiwzLDcwXkJDTiw3MCxZLE4sTl5GRE9ERC0iICA+PDFeRlMKXlBRMQpeWFoKXlhBCl5DSTI4Cl5QVzQwMApeTEwyNDAKXkxIMCwwCl5GTzE2LDEwXkEwTiwyNCwyNF5GQjM2OCwxLDAsTF5GRFRvbWF0byAocGVyIGtnKSAxMjM0NV5GUwpeRk8xNiwzOF5HRkEsMTgsMTgsMyw5MjQ5MjAyNDkyNDA0OTI0OTA5MjQ5MjAyNDkyNDA0OTI0OTBeRlMKXkZPMTYsNzJeQTBOLDIwLDIwXkZEUExVLTEyMzQ1ICBLZyAgMS4yNTAgS2deRlMKXkZPMjMwLDY4XkEwTiwzMCwzMF5GQjE1MCwxLDAsUl5GREFFRCA1MC4xOF5GUwpeRk82MCwxMTJeQlkyLDMsNzBeQkVOLDcwLFksTl5GRDIwMTIzNDUwMTI1MF5GUwpeUFExCl5YWgo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "template_name": "Product Label 50x30 (TSPL)",
+    "language": "TSPL",
+    "is_default": 1,
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": "203",
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "a4_columns": 0,
+    "a4_rows": 0,
+    "margins_mm": 0,
+    "body": "SIZE {{ width_mm }} mm,{{ height_mm }} mm\nGAP {{ gap_mm }} mm,0 mm\nDIRECTION 1\nCODEPAGE UTF-8\nCLS\nTEXT 16,10,\"3\",0,1,1,\"{{ fit(item_name, 30) }}\"\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 40, 26, 368) }}\n{% endif %}\nTEXT 16,74,\"2\",0,1,1,\"{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}\"\nTEXT 230,70,\"3\",0,1,1,\"{{ price_label }}\"\n{{ draw_barcode(60, 104, 60, 2) }}\nPRINT 1,{{ qty }}\n",
+    "name": "Product Label 50x30 (TSPL)"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "U0laRSA1MCBtbSwzMCBtbQ0KR0FQIDIgbW0sMCBtbQ0KRElSRUNUSU9OIDENCkNPREVQQUdFIFVURi04DQpDTFMNClRFWFQgMTYsMTAsIjMiLDAsMSwxLCJQcmVtaXVtIFRpc3N1ZSA1MDBnICMxIg0KQklUTUFQIDE2LDQwLDYsNiwwLG22222229tttttttrbbbbbbbW22222229tttttttrbbbbbbbQ0KVEVYVCAxNiw3NCwiMiIsMCwxLDEsIklUTS0wMDAwMSAgTm9zIg0KVEVYVCAyMzAsNzAsIjMiLDAsMSwxLCJBRUQgNDAuOTYiDQpCQVJDT0RFIDYwLDEwNCwiRUFOMTMiLDYwLDEsMCwyLDIsIjYyOTAwMDAwMDAwMSINClBSSU5UIDEsMg0KU0laRSA1MCBtbSwzMCBtbQ0KR0FQIDIgbW0sMCBtbQ0KRElSRUNUSU9OIDENCkNPREVQQUdFIFVURi04DQpDTFMNClRFWFQgMTYsMTAsIjMiLDAsMSwxLCJRdW90ZSBcWyJdIGNhcmV0IF4gdGlsZGUgfiBiYWNrIFwiDQpURVhUIDE2LDc0LCIyIiwwLDEsMSwiT0RELVxbIl1efj4xICBCb3giDQpURVhUIDIzMCw3MCwiMyIsMCwxLDEsIkFFRCA1LjAwIg0KQkFSQ09ERSA2MCwxMDQsIjEyOCIsNjAsMSwwLDIsMiwiT0RELVxbIl1efj4xIg0KUFJJTlQgMSwxDQpTSVpFIDUwIG1tLDMwIG1tDQpHQVAgMiBtbSwwIG1tDQpESVJFQ1RJT04gMQ0KQ09ERVBBR0UgVVRGLTgNCkNMUw0KVEVYVCAxNiwxMCwiMyIsMCwxLDEsIlRvbWF0byAocGVyIGtnKSAxMjM0NSINCkJJVE1BUCAxNiw0MCwzLDYsMCxttt/bbb+2229ttt/bbb+2228NClRFWFQgMTYsNzQsIjIiLDAsMSwxLCJQTFUtMTIzNDUgIEtnICAxLjI1MCBLZyINClRFWFQgMjMwLDcwLCIzIiwwLDEsMSwiQUVEIDUwLjE4Ig0KQkFSQ09ERSA2MCwxMDQsIkVBTjEzIiw2MCwxLDAsMiwyLCIyMDEyMzQ1MDEyNTAiDQpQUklOVCAxLDENCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "template_name": "Product Label 50x30 (EPL)",
+    "language": "EPL",
+    "is_default": 1,
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": "203",
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "a4_columns": 0,
+    "a4_rows": 0,
+    "margins_mm": 0,
+    "body": "\nN\nq{{ width_dots }}\nQ{{ height_dots }},{{ gap_dots }}\nI8,A,001\nA16,10,0,3,1,1,N,\"{{ fit(item_name, 30) }}\"\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar, 16, 40, 26, 368) }}\n{% endif %}\nA16,74,0,2,1,1,N,\"{{ item_code }}  {{ uom }}{% if weight %}  {{ weight }}{% endif %}\"\nA230,70,0,3,1,1,N,\"{{ price_label }}\"\n{{ draw_barcode(60, 104, 60, 2) }}\nP{{ qty }}\n",
+    "name": "Product Label 50x30 (EPL)"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "Ck4KcTQwMApRMjQwLDE2Ckk4LEEsMDAxCkExNiwxMCwwLDMsMSwxLE4sIlByZW1pdW0gVGlzc3VlIDUwMGcgIzEiCkdXMTYsNDAsNiw2LG22222229tttttttrbbbbbbbW22222229tttttttrbbbbbbbQpBMTYsNzQsMCwyLDEsMSxOLCJJVE0tMDAwMDEgIE5vcyIKQTIzMCw3MCwwLDMsMSwxLE4sIkFFRCA0MC45NiIKQjYwLDEwNCwwLEUzMCwyLDIsNjAsQiwiNjI5MDAwMDAwMDAxIgpQMgoKTgpxNDAwClEyNDAsMTYKSTgsQSwwMDEKQTE2LDEwLDAsMywxLDEsTiwiUXVvdGUgXCIgY2FyZXQgXiB0aWxkZSB+IGJhY2sgXFwiCkExNiw3NCwwLDIsMSwxLE4sIk9ERC1cIl5+PjEgIEJveCIKQTIzMCw3MCwwLDMsMSwxLE4sIkFFRCA1LjAwIgpCNjAsMTA0LDAsMSwyLDIsNjAsQiwiT0RELVwiXn4+MSIKUDEKCk4KcTQwMApRMjQwLDE2Ckk4LEEsMDAxCkExNiwxMCwwLDMsMSwxLE4sIlRvbWF0byAocGVyIGtnKSAxMjM0NSIKR1cxNiw0MCwzLDYsbbbf222/tttvbbbf222/tttvCkExNiw3NCwwLDIsMSwxLE4sIlBMVS0xMjM0NSAgS2cgIDEuMjUwIEtnIgpBMjMwLDcwLDAsMywxLDEsTiwiQUVEIDUwLjE4IgpCNjAsMTA0LDAsRTMwLDIsMiw2MCxCLCIyMDEyMzQ1MDEyNTAiClAxCg=="
+  },
+  {
+   "kind": "pdf_html",
+   "template": {
+    "template_name": "A4 Sheet 3x8 (PDF)",
+    "language": "PDF",
+    "is_default": 1,
+    "width_mm": 70,
+    "height_mm": 37,
+    "dpi": "203",
+    "gap_mm": 0,
+    "barcode_type": "EAN13",
+    "a4_columns": 3,
+    "a4_rows": 8,
+    "margins_mm": 3,
+    "body": "<div class=\"name\">{{ fit(item_name, 40) }}</div>\n{% if item_name_ar %}\n{{ draw_arabic(item_name_ar) }}\n{% endif %}\n<div class=\"small\">{{ item_code }} &middot; {{ uom }}{% if weight %} &middot; {{ weight }}{% endif %}</div>\n<div class=\"price\">{{ price_label }}</div>\n{{ draw_barcode(9) }}\n",
+    "name": "A4 Sheet 3x8 (PDF)"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "<!DOCTYPE html><html dir=\"ltr\"><head><meta charset=\"utf-8\"><title>A4 Sheet 3x8 (PDF)</title><style>@page{size:A4;margin:0}html,body{margin:0;padding:0}body{font-family:'DejaVu Sans', 'Noto Sans', Arial, sans-serif;color:#000}.page{position:relative;width:210mm;height:296mm;overflow:hidden;page-break-after:always}.page:last-child{page-break-after:auto}.cell{position:absolute;box-sizing:border-box;width:70mm;height:37mm;padding:3mm;overflow:hidden;font-size:9pt;line-height:1.2}.name{font-weight:bold;white-space:nowrap;overflow:hidden}.ar{display:block;direction:rtl;text-align:right;white-space:nowrap;overflow:hidden}.price{font-size:13pt;font-weight:bold}.small{font-size:7pt}.bc{display:block;width:100%}.bc-text{font-size:7pt;text-align:center;letter-spacing:1px}</style></head><body><div class=\"page\"><div class=\"cell\" style=\"left:0mm;top:0.5mm\"><div class=\"name\">Premium Tissue 500g #1</div>\n<span class=\"ar\" dir=\"rtl\" lang=\"ar\">مناديل فاخرة</span>\n<div class=\"small\">ITM-00001 &middot; Nos</div>\n<div class=\"price\">AED 40.96</div>\n<svg class=\"bc\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 115 1\" preserveAspectRatio=\"none\" style=\"height:9mm\"><rect x=\"10\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"12\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"15\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"18\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"22\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"24\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"28\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"31\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"35\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"38\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"44\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"47\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"51\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"54\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"56\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"58\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"60\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"65\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"67\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"72\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"74\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"79\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"81\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"86\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"88\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"92\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"95\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"97\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"102\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"104\" y=\"0\" width=\"1\" height=\"1\"/></svg><div class=\"bc-text\">6290000000016</div></div><div class=\"cell\" style=\"left:70mm;top:0.5mm\"><div class=\"name\">Premium Tissue 500g #1</div>\n<span class=\"ar\" dir=\"rtl\" lang=\"ar\">مناديل فاخرة</span>\n<div class=\"small\">ITM-00001 &middot; Nos</div>\n<div class=\"price\">AED 40.96</div>\n<svg class=\"bc\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 115 1\" preserveAspectRatio=\"none\" style=\"height:9mm\"><rect x=\"10\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"12\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"15\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"18\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"22\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"24\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"28\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"31\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"35\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"38\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"44\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"47\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"51\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"54\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"56\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"58\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"60\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"65\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"67\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"72\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"74\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"79\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"81\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"86\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"88\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"92\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"95\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"97\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"102\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"104\" y=\"0\" width=\"1\" height=\"1\"/></svg><div class=\"bc-text\">6290000000016</div></div><div class=\"cell\" style=\"left:140mm;top:0.5mm\"><div class=\"name\">Quote &quot; caret ^ tilde ~ back \\ é</div>\n<div class=\"small\">ODD-&quot;^~&gt;1 &middot; Box</div>\n<div class=\"price\">AED 5.00</div>\n<svg class=\"bc\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 154 1\" preserveAspectRatio=\"none\" style=\"height:9mm\"><rect x=\"10\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"13\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"16\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"21\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"25\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"29\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"32\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"34\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"39\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"43\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"45\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"50\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"54\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"57\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"60\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"65\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"69\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"73\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"76\" y=\"0\" width=\"4\" height=\"1\"/><rect x=\"83\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"85\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"87\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"91\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"93\" y=\"0\" width=\"4\" height=\"1\"/><rect x=\"98\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"101\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"104\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"109\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"112\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"117\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"120\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"123\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"125\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"131\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"136\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"140\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"142\" y=\"0\" width=\"2\" height=\"1\"/></svg><div class=\"bc-text\">ODD-&quot;^~&gt;1</div></div><div class=\"cell\" style=\"left:0mm;top:37.5mm\"><div class=\"name\">Tomato (per kg) 12345</div>\n<span class=\"ar\" dir=\"rtl\" lang=\"ar\">طماطم</span>\n<div class=\"small\">PLU-12345 &middot; Kg &middot; 1.250 Kg</div>\n<div class=\"price\">AED 50.18</div>\n<svg class=\"bc\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 115 1\" preserveAspectRatio=\"none\" style=\"height:9mm\"><rect x=\"10\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"12\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"16\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"19\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"22\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"26\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"29\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"32\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"35\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"40\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"42\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"46\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"49\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"54\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"56\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"58\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"60\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"65\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"67\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"71\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"74\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"77\" y=\"0\" width=\"2\" height=\"1\"/><rect x=\"81\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"84\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"88\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"93\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"95\" y=\"0\" width=\"3\" height=\"1\"/><rect x=\"99\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"102\" y=\"0\" width=\"1\" height=\"1\"/><rect x=\"104\" y=\"0\" width=\"1\" height=\"1\"/></svg><div class=\"bc-text\">2012345012509</div></div></div></body></html>"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-0",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "A{{ item_code }}B\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QUlUTS0wMDAwMUIKQUlUTS0wMDAwMUIKQU9ERC0iICA+MUIKQVBMVS0xMjM0NUIK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-1",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "line1\n  {% if item_name_ar %}\n  AR:{{ item_name_ar }}\n  {% endif %}\nend\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "bGluZTEKICBBUjrZhdmG2KfYr9mK2YQg2YHYp9iu2LHYqQplbmQKbGluZTEKICBBUjrZhdmG2KfYr9mK2YQg2YHYp9iu2LHYqQplbmQKbGluZTEKZW5kCmxpbmUxCiAgQVI62LfZhdin2LfZhQplbmQK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-2",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{% if weight %}W={{ weight }}{% elif item_name_ar %}AR{% else %}none{% endif %}|{{ qty }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QVJ8Mgpub25lfDEKVz0xLjI1MCBLZ3wxCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-3",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "x {% if not weight %}no weight{% endif %} y\n\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "eCBubyB3ZWlnaHQgeQoKeCBubyB3ZWlnaHQgeQoKeCBubyB3ZWlnaHQgeQoKeCAgeQoK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-4",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "\t{% if item_code %}\n\t\tcode {{ fit(item_code, 3) }}\n\t{% endif %}\n\n\ntail"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "CQljb2RlIElUTQoKCnRhaWwKCQljb2RlIElUTQoKCnRhaWwKCQljb2RlIE9ERAoKCnRhaWwKCQljb2RlIFBMVQoKCnRhaWwK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-5",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ fit(item_name, 5) }}|{{ fit('abcdef', 2) }}|{{ uom }}{% if price %} {{ price_label }}{% endif %}\r\nnext\r\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "UHJlbWl8YWJ8Tm9zIEFFRCA0MC45Nm5leHQKUHJlbWl8YWJ8Tm9zIEFFRCA0MC45Nm5leHQKUXVvdGV8YWJ8Qm94IEFFRCA1LjAwbmV4dApUb21hdHxhYnxLZyBBRUQgNTAuMThuZXh0Cg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-6",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_barcode(10, 20, 30) }}\n{{ draw_barcode(1.5, 2.5, 3.5, 2.5) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "XkZPMTAsMjBeQlkyLDMsMzBeQkVOLDMwLFksTl5GRDYyOTAwMDAwMDAwMV5GUwpeRk8yLDNeQlkzLDMsNF5CRU4sNCxZLE5eRkQ2MjkwMDAwMDAwMDFeRlMKXkZPMTAsMjBeQlkyLDMsMzBeQkVOLDMwLFksTl5GRDYyOTAwMDAwMDAwMV5GUwpeRk8yLDNeQlkzLDMsNF5CRU4sNCxZLE5eRkQ2MjkwMDAwMDAwMDFeRlMKXkZPMTAsMjBeQlkyLDMsMzBeQkNOLDMwLFksTixOXkZET0RELSIgID48MV5GUwpeRk8yLDNeQlkzLDMsNF5CQ04sNCxZLE4sTl5GRE9ERC0iICA+PDFeRlMKXkZPMTAsMjBeQlkyLDMsMzBeQkVOLDMwLFksTl5GRDIwMTIzNDUwMTI1MF5GUwpeRk8yLDNeQlkzLDMsNF5CRU4sNCxZLE5eRkQyMDEyMzQ1MDEyNTBeRlMK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-ZPL-7",
+    "language": "ZPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_arabic(item_name_ar, 5, 6, 7, 40) }}|{{ draw_arabic('', 1, 2) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "XkZPNSw2XkdGQSwzMCwzMCw1LDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNF5GU3wKXkZPNSw2XkdGQSwzMCwzMCw1LDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNDkyNF5GU3wKfApeRk81LDZeR0ZBLDE4LDE4LDMsOTI0OTIwMjQ5MjQwNDkyNDkwOTI0OTIwMjQ5MjQwNDkyNDkwXkZTfAo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-0",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "A{{ item_code }}B\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QUlUTS0wMDAwMUIKQUlUTS0wMDAwMUIKQU9ERC1cIl5+PjFCCkFQTFUtMTIzNDVCCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-1",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "line1\n  {% if item_name_ar %}\n  AR:{{ item_name_ar }}\n  {% endif %}\nend\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "bGluZTEKICBBUjo/Pz8/Pz8gPz8/Pz8KZW5kCmxpbmUxCiAgQVI6Pz8/Pz8/ID8/Pz8/CmVuZApsaW5lMQplbmQKbGluZTEKICBBUjo/Pz8/PwplbmQK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-2",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{% if weight %}W={{ weight }}{% elif item_name_ar %}AR{% else %}none{% endif %}|{{ qty }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QVJ8Mgpub25lfDEKVz0xLjI1MCBLZ3wxCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-3",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "x {% if not weight %}no weight{% endif %} y\n\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "eCBubyB3ZWlnaHQgeQoKeCBubyB3ZWlnaHQgeQoKeCBubyB3ZWlnaHQgeQoKeCAgeQoK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-4",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "\t{% if item_code %}\n\t\tcode {{ fit(item_code, 3) }}\n\t{% endif %}\n\n\ntail"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "CQljb2RlIElUTQoKCnRhaWwKCQljb2RlIElUTQoKCnRhaWwKCQljb2RlIE9ERAoKCnRhaWwKCQljb2RlIFBMVQoKCnRhaWwK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-5",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ fit(item_name, 5) }}|{{ fit('abcdef', 2) }}|{{ uom }}{% if price %} {{ price_label }}{% endif %}\r\nnext\r\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "UHJlbWl8YWJ8Tm9zIEFFRCA0MC45Nm5leHQKUHJlbWl8YWJ8Tm9zIEFFRCA0MC45Nm5leHQKUXVvdGV8YWJ8Qm94IEFFRCA1LjAwbmV4dApUb21hdHxhYnxLZyBBRUQgNTAuMThuZXh0Cg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-6",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_barcode(10, 20, 30) }}\n{{ draw_barcode(1.5, 2.5, 3.5, 2.5) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QjEwLDIwLDAsRTMwLDIsMiwzMCxCLCI2MjkwMDAwMDAwMDEiCkIyLDMsMCxFMzAsMywzLDQsQiwiNjI5MDAwMDAwMDAxIgpCMTAsMjAsMCxFMzAsMiwyLDMwLEIsIjYyOTAwMDAwMDAwMSIKQjIsMywwLEUzMCwzLDMsNCxCLCI2MjkwMDAwMDAwMDEiCkIxMCwyMCwwLDEsMiwyLDMwLEIsIk9ERC1cIl5+PjEiCkIyLDMsMCwxLDMsMyw0LEIsIk9ERC1cIl5+PjEiCkIxMCwyMCwwLEUzMCwyLDIsMzAsQiwiMjAxMjM0NTAxMjUwIgpCMiwzLDAsRTMwLDMsMyw0LEIsIjIwMTIzNDUwMTI1MCIK"
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-EPL-7",
+    "language": "EPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_arabic(item_name_ar, 5, 6, 7, 40) }}|{{ draw_arabic('', 1, 2) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "R1c1LDYsNSw2LG2222222222222222222222222222222222222223wKR1c1LDYsNSw2LG2222222222222222222222222222222222222223wKfApHVzUsNiwzLDYsbbbf222/tttvbbbf222/tttvfAo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-0",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "A{{ item_code }}B\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QUlUTS0wMDAwMUINCkFJVE0tMDAwMDFCDQpBT0RELVxbIl1efj4xQg0KQVBMVS0xMjM0NUINCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-1",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "line1\n  {% if item_name_ar %}\n  AR:{{ item_name_ar }}\n  {% endif %}\nend\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "bGluZTENCiAgQVI62YXZhtin2K/ZitmEINmB2KfYrtix2KkNCmVuZA0KbGluZTENCiAgQVI62YXZhtin2K/ZitmEINmB2KfYrtix2KkNCmVuZA0KbGluZTENCmVuZA0KbGluZTENCiAgQVI62LfZhdin2LfZhQ0KZW5kDQo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-2",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{% if weight %}W={{ weight }}{% elif item_name_ar %}AR{% else %}none{% endif %}|{{ qty }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QVJ8Mg0Kbm9uZXwxDQpXPTEuMjUwIEtnfDENCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-3",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "x {% if not weight %}no weight{% endif %} y\n\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "eCBubyB3ZWlnaHQgeQ0KDQp4IG5vIHdlaWdodCB5DQoNCnggbm8gd2VpZ2h0IHkNCg0KeCAgeQ0KDQo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-4",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "\t{% if item_code %}\n\t\tcode {{ fit(item_code, 3) }}\n\t{% endif %}\n\n\ntail"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "CQljb2RlIElUTQ0KDQoNCnRhaWwNCgkJY29kZSBJVE0NCg0KDQp0YWlsDQoJCWNvZGUgT0REDQoNCg0KdGFpbA0KCQljb2RlIFBMVQ0KDQoNCnRhaWwNCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-5",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ fit(item_name, 5) }}|{{ fit('abcdef', 2) }}|{{ uom }}{% if price %} {{ price_label }}{% endif %}\r\nnext\r\n"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "UHJlbWl8YWJ8Tm9zIEFFRCA0MC45Nm5leHQNClByZW1pfGFifE5vcyBBRUQgNDAuOTZuZXh0DQpRdW90ZXxhYnxCb3ggQUVEIDUuMDBuZXh0DQpUb21hdHxhYnxLZyBBRUQgNTAuMThuZXh0DQo="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-6",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_barcode(10, 20, 30) }}\n{{ draw_barcode(1.5, 2.5, 3.5, 2.5) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QkFSQ09ERSAxMCwyMCwiRUFOMTMiLDMwLDEsMCwyLDIsIjYyOTAwMDAwMDAwMSINCkJBUkNPREUgMiwzLCJFQU4xMyIsNCwxLDAsMywzLCI2MjkwMDAwMDAwMDEiDQpCQVJDT0RFIDEwLDIwLCJFQU4xMyIsMzAsMSwwLDIsMiwiNjI5MDAwMDAwMDAxIg0KQkFSQ09ERSAyLDMsIkVBTjEzIiw0LDEsMCwzLDMsIjYyOTAwMDAwMDAwMSINCkJBUkNPREUgMTAsMjAsIjEyOCIsMzAsMSwwLDIsMiwiT0RELVxbIl1efj4xIg0KQkFSQ09ERSAyLDMsIjEyOCIsNCwxLDAsMywzLCJPREQtXFsiXV5+PjEiDQpCQVJDT0RFIDEwLDIwLCJFQU4xMyIsMzAsMSwwLDIsMiwiMjAxMjM0NTAxMjUwIg0KQkFSQ09ERSAyLDMsIkVBTjEzIiw0LDEsMCwzLDMsIjIwMTIzNDUwMTI1MCINCg=="
+  },
+  {
+   "kind": "raw",
+   "template": {
+    "name": "subset-TSPL-7",
+    "language": "TSPL",
+    "width_mm": 50,
+    "height_mm": 30,
+    "dpi": 203,
+    "gap_mm": 2,
+    "barcode_type": "EAN13",
+    "body": "{{ draw_arabic(item_name_ar, 5, 6, 7, 40) }}|{{ draw_arabic('', 1, 2) }}"
+   },
+   "rows": [
+    {
+     "item_code": "ITM-00001",
+     "item_name": "Premium Tissue 500g #1",
+     "item_name_ar": "مناديل فاخرة",
+     "uom": "Nos",
+     "barcode": "6290000000016",
+     "price": 40.96,
+     "price_text": "40.96",
+     "price_label": "AED 40.96",
+     "weight_label": "",
+     "qty": 2,
+     "is_scale": 0,
+     "barcode_type": "EAN13"
+    },
+    {
+     "item_code": "ODD-\"^~>1",
+     "item_name": "Quote \" caret ^ tilde ~ back \\ é",
+     "item_name_ar": "",
+     "uom": "Box",
+     "barcode": "ODD-\"^~>1",
+     "price": 5,
+     "price_text": "5.00",
+     "price_label": "AED 5.00",
+     "weight_label": "",
+     "qty": 1,
+     "is_scale": 0,
+     "barcode_type": "Code128"
+    },
+    {
+     "item_code": "PLU-12345",
+     "item_name": "Tomato (per kg) 12345",
+     "item_name_ar": "طماطم",
+     "uom": "Kg",
+     "barcode": "2012345012509",
+     "price": 50.18,
+     "price_text": "50.18",
+     "price_label": "AED 50.18",
+     "weight_label": "1.250 Kg",
+     "qty": 1,
+     "is_scale": 1,
+     "barcode_type": "EAN13"
+    }
+   ],
+   "output": "QklUTUFQIDUsNiw1LDYsMCxtttttttttttttttttttttttttttttttttttttttt8DQpCSVRNQVAgNSw2LDUsNiwwLG2222222222222222222222222222222222222223wNCnwNCkJJVE1BUCA1LDYsMyw2LDAsbbbf222/tttvbbbf222/tttvfA0K"
+  }
+ ]
+}
