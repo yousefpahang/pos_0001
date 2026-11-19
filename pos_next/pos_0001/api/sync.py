@@ -30,6 +30,8 @@ OIS = "Offline Invoice Sync"
 DEVICE = "POS Device"
 SAVEPOINT = "pos0001_offline_submit"
 MAX_ERROR_LENGTH = 2000
+MAX_BATCH = 25
+BATCH_SAVEPOINT = "pos0001_offline_batch"
 IN_PROGRESS_MARKERS = ("SYNC_IN_PROGRESS", "currently being processed")
 TRANSIENT_ERRORS: tuple[type[Exception], ...] = (
 	frappe.QueryDeadlockError,
@@ -235,6 +237,49 @@ def submit_offline_invoice(invoice: str | dict, device_id: str | None = None) ->
 	"""Browser sync queue entry point (replaces a direct call to POS Next's submit_invoice)."""
 	payload = _parse_json(invoice)
 	return process_offline_invoice(payload, device_id)
+
+
+@frappe.whitelist(methods=["POST"])
+def submit_offline_invoices(invoices: str | list, device_id: str | None = None) -> list[dict]:
+	"""Submit several queued invoices in one request (SPEC section 6: sync 500 in < 5 min).
+
+	Each invoice is processed like ``submit_offline_invoice`` and committed on its own,
+	so a confirmed ``Synced`` or ``Failed`` (stored) answer is durable even if a later
+	invoice of the batch breaks. An invoice that cannot be processed now (lock timeout,
+	access error, bad payload) answers ``Error`` with ``stored: False``: the browser keeps
+	it and sends it again on its own. Answers keep the order of the request.
+	"""
+	require_pos_user()
+	rows = _parse_json(invoices)
+	if not isinstance(rows, list):
+		frappe.throw(_("Invoices must be a list."))
+	if len(rows) > MAX_BATCH:
+		frappe.throw(_("Send at most {0} invoices at a time.").format(MAX_BATCH))
+
+	results: list[dict] = []
+	for invoice in rows:
+		offline_id = invoice.get("offline_id") if isinstance(invoice, dict) else None
+		frappe.db.savepoint(BATCH_SAVEPOINT)
+		try:
+			outcome = process_offline_invoice(invoice, device_id)
+			if not frappe.flags.in_test:
+				frappe.db.commit()  # nosemgrep: each answer must be durable before the next invoice
+		except Exception as exc:
+			message = error_text(exc)
+			try:
+				frappe.db.rollback(save_point=BATCH_SAVEPOINT)
+			except Exception:
+				frappe.db.rollback()
+			_clear_messages()
+			outcome = {
+				"offline_id": offline_id,
+				"status": "Error",
+				"invoice_name": None,
+				"error": message,
+				"stored": False,
+			}
+		results.append(outcome)
+	return results
 
 
 @frappe.whitelist(methods=["POST"])

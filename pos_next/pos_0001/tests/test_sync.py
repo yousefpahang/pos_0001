@@ -189,6 +189,70 @@ class TestOfflineSync(FrappeTestCase):
 		self.assertEqual(result["status"], "Synced", result)
 
 
+class TestBatchSync(FrappeTestCase):
+	"""submit_offline_invoices: several queued invoices in one request (SPEC section 6)."""
+
+	def setUp(self) -> None:
+		frappe.set_user("Administrator")
+
+	def tearDown(self) -> None:
+		frappe.set_user("Administrator")
+
+	def test_batch_answers_each_invoice_in_order(self) -> None:
+		good = _payload()
+		rejected = _payload(customer=_ensure_customer(disabled=1))
+		other = _payload()
+		device = _device_id()
+
+		results = sync.submit_offline_invoices(json.dumps([good, rejected, good, other]), device)
+
+		self.assertEqual([r["offline_id"] for r in results], [p["offline_id"] for p in (good, rejected, good, other)])
+		self.assertEqual([r["status"] for r in results], ["Synced", "Failed", "Synced", "Synced"], results)
+		self.assertTrue(results[1]["stored"])
+		self.assertIn("disabled", results[1]["error"].lower())
+		# The same offline_id twice in one batch gives one invoice.
+		self.assertEqual(results[0]["invoice_name"], results[2]["invoice_name"])
+		self.assertTrue(results[2]["duplicate_prevented"])
+		self.assertNotEqual(results[0]["invoice_name"], results[3]["invoice_name"])
+		self.assertEqual(frappe.db.count("Offline Invoice Sync", {"offline_id": good["offline_id"]}), 1)
+		self.assertEqual(frappe.db.get_value("Sales Invoice", results[3]["invoice_name"], "pos_device"), device)
+		failed = frappe.db.get_value(
+			"Offline Invoice Sync", {"offline_id": rejected["offline_id"]}, ["status", "payload"], as_dict=True
+		)
+		self.assertEqual(failed.status, "Failed")
+		self.assertEqual(json.loads(failed.payload)["offline_id"], rejected["offline_id"])
+
+	def test_invoice_that_cannot_be_processed_is_not_stored(self) -> None:
+		no_id = _payload()
+		no_id.pop("offline_id")
+		good = _payload()
+
+		results = sync.submit_offline_invoices([no_id, good], None)
+
+		self.assertEqual(results[0]["status"], "Error")
+		self.assertFalse(results[0]["stored"])
+		self.assertTrue(results[0]["error"])
+		# One bad invoice does not stop the rest of the batch.
+		self.assertEqual(results[1]["status"], "Synced", results)
+
+	def test_outsider_gets_error_and_nothing_is_created(self) -> None:
+		payload = _payload()
+		frappe.set_user(_ensure_outsider())
+		results = sync.submit_offline_invoices([payload], None)
+		frappe.set_user("Administrator")
+		self.assertEqual((results[0]["status"], results[0]["stored"]), ("Error", False))
+		self.assertFalse(frappe.db.exists("Offline Invoice Sync", {"offline_id": payload["offline_id"]}))
+
+	def test_bad_input(self) -> None:
+		with self.assertRaises(frappe.ValidationError):
+			sync.submit_offline_invoices(json.dumps({"offline_id": "x"}), None)
+		with self.assertRaises(frappe.ValidationError):
+			sync.submit_offline_invoices([{}] * (sync.MAX_BATCH + 1), None)
+		frappe.set_user("Guest")
+		with self.assertRaises(frappe.PermissionError):
+			sync.submit_offline_invoices([], None)
+
+
 class TestAccessChecks(FrappeTestCase):
 	def setUp(self) -> None:
 		frappe.set_user("Administrator")
