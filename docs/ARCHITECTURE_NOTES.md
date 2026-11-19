@@ -167,6 +167,18 @@ Implication for Phase 2: the spec's fields (prefix, lengths, value type, decimal
 do not exist anywhere in POS Next. Adding them to `POS Barcode Rules` changes a POS Next doctype (ask first);
 the alternative is a new pos_0001 doctype linked from `POS Barcode Rules.barcode_rule`.
 
+**After Phase 2** (DECISIONS items 3-4): `searchByBarcode()` goes through `POS/src/plus/scan/scanner.js`, which
+runs `plus/core/scanResolve.js`: (1) `uom_barcodes` map, then the Dexie `items.barcodes` index; (2) our
+**POS Scale Barcode Rule** doctype (`plus/core/scaleBarcode.js`), PLU looked up in `plu_map` (Item `scale_plu`)
+or the barcode index; (3) POS Next's `search_by_barcode` (and `pos_0001.api.barcode.resolve_scale_barcode`) only
+when online. Rules, PLU map and UOM barcodes come from `pos_0001.api.barcode.get_scan_cache`, stored in the Dexie
+`settings` store under `pos0001_scan_cache::<profile>`. Scale lines carry `pos0001_scale_barcode` to
+Sales Invoice Item, where a `validate` hook re-checks item, weight or amount (`pos_0001/scale_barcode.py`).
+`barcode_resolver` and `POS Barcode Rules` are untouched. Note: POS Next caches an item's barcodes as one
+comma-joined string without UOMs (`get_items` `GROUP_CONCAT`), which is why the UOM barcode map exists.
+ERPNext's `before_tests` hook deletes every Item Price on the site; re-run
+`bench --site pos.test execute pos_next.pos_0001.demo.seed.ensure_item_prices` after `run-tests`.
+
 ### 2.5 Sales person
 
 - Mode: `POS Settings.enable_sales_persons` = Disabled / Single / Multiple (`stores/posSettings.js` line ~172).
