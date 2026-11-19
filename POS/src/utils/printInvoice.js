@@ -455,7 +455,7 @@ export async function printInvoiceByName(invoiceName, printFormat = null, letter
 // Silent printing (QZ Tray — no browser dialog)
 // ============================================================================
 
-export async function silentPrintDoc(doctype, name, printFormat) {
+export async function silentPrintDoc(doctype, name, printFormat, printerName = undefined) {
 	const result = await call("frappe.www.printview.get_html_and_style", {
 		doc: doctype,
 		name,
@@ -473,7 +473,7 @@ export async function silentPrintDoc(doctype, name, printFormat) {
 <body>${html}</body>
 </html>`;
 
-	await qzPrintHTML(fullHTML);
+	await qzPrintHTML(fullHTML, printerName);
 	return true;
 }
 
@@ -505,9 +505,9 @@ export async function silentPrintInvoice(invoiceName, printFormat = null) {
 /**
  * Silent-print a full invoice dict using the same HTML as the offline receipt fallback.
  */
-export async function silentPrintInvoiceFromDoc(invoiceData) {
+export async function silentPrintInvoiceFromDoc(invoiceData, printerName = undefined) {
 	const fullHTML = buildReceiptDocumentHTML(invoiceData, { includeControls: false });
-	await qzPrintHTML(fullHTML);
+	await qzPrintHTML(fullHTML, printerName);
 	log.info(`Silent print (local receipt) for ${invoiceData?.name}`);
 	flagOfflineInvoicePrinted(invoiceData?.name);
 	return true;

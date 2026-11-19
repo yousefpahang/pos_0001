@@ -1054,6 +1054,7 @@ import { useStockStore } from "@/stores/stock";
 import { usePOSCartStore } from "@/stores/posCart";
 import { usePOSDraftsStore } from "@/stores/posDrafts";
 import { usePOSSettingsStore } from "@/stores/posSettings";
+import { usePlusPrintingStore } from "@/plus/printing/printingStore";
 import { usePOSShiftStore } from "@/stores/posShift";
 import { usePOSSyncStore } from "@/stores/posSync";
 import { usePOSUIStore } from "@/stores/posUI";
@@ -1068,6 +1069,7 @@ const uiStore = usePOSUIStore();
 const offlineStore = usePOSSyncStore();
 const draftsStore = usePOSDraftsStore();
 const posSettingsStore = usePOSSettingsStore();
+const plusPrinting = usePlusPrintingStore(); // pos_0001 receipt printing (F9)
 const itemStore = useItemSearchStore();
 const stockStore = useStockStore();
 const customerSearchStore = useCustomerSearchStore();
@@ -2140,9 +2142,9 @@ async function handlePaymentCompleted(paymentData) {
 				draftsStore.deleteDraft(draftIdToDelete);
 			}
 
-			if (shiftStore.autoPrintEnabled || posSettingsStore.silentPrint) {
+			if (shiftStore.autoPrintEnabled || posSettingsStore.silentPrint || plusPrinting.active) {
 				try {
-					await handlePrintInvoice({ name: offlineReceiptName });
+					await handlePrintInvoice({ name: offlineReceiptName }, { reason: "sale" });
 					showSuccess(
 						__(
 							"Invoice {0} saved offline and sent to printer — will sync when online",
@@ -2219,9 +2221,9 @@ async function handlePaymentCompleted(paymentData) {
 					log.debug("Background invoice cache refresh failed:", err)
 				);
 
-				if (shiftStore.autoPrintEnabled || posSettingsStore.silentPrint) {
+				if (shiftStore.autoPrintEnabled || posSettingsStore.silentPrint || plusPrinting.active) {
 					try {
-						await handlePrintInvoice({ name: invoiceName });
+						await handlePrintInvoice({ name: invoiceName }, { reason: "sale" });
 						showSuccess(__("Invoice {0} created and sent to printer", [invoiceName]));
 					} catch (error) {
 						log.error("Auto-print error:", error);
@@ -2941,7 +2943,7 @@ function handleViewInvoice(invoice) {
 }
 
 // Centralized print handler - uses printInvoice.js utilities
-async function handlePrintInvoice(invoiceData) {
+async function handlePrintInvoice(invoiceData, { reason = "reprint" } = {}) {
 	try {
 		invoiceData = await hydrateLocalOnlyInvoice(invoiceData || {});
 		const offlineSnapshot = uiStore.lastOfflinePrintDoc;
@@ -2951,6 +2953,15 @@ async function handlePrintInvoice(invoiceData) {
 			offlineSnapshot.items?.length > 0
 		) {
 			invoiceData = offlineSnapshot;
+		}
+
+		// pos_0001: a till with a POS Printer Profile prints raster / ESC/POS / QZ / browser
+		if (plusPrinting.active) {
+			const result = await plusPrinting.printInvoice(invoiceData, { reason });
+			if (result.fallback) {
+				showWarning(__("Printed through the browser: QZ Tray is not connected"));
+			}
+			return;
 		}
 
 		// Silent print path — send directly to thermal printer via QZ Tray
