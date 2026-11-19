@@ -7,6 +7,8 @@
  * - Commercial Rounding: Rounds .5 away from zero
  */
 
+import { currencySymbol as plusCurrencySymbol } from "@/plus/core/money"; // pos_0001
+
 // =============================================================================
 // Settings (initialized from bootstrap)
 // =============================================================================
@@ -58,6 +60,8 @@ const _symbolCache = new Map();
 
 function getSymbol(currency) {
 	if (!currency) return SYMBOLS[DEFAULT_CURRENCY];
+	// pos_0001 (SPEC section 7): "AED" or "د.إ" per language setting (POS 0001 Settings)
+	if (currency === "AED") return aedSymbol();
 	if (SYMBOLS[currency]) return SYMBOLS[currency];
 	if (_symbolCache.has(currency)) return _symbolCache.get(currency);
 
@@ -74,6 +78,18 @@ function getSymbol(currency) {
 		_symbolCache.set(currency, currency);
 		return currency;
 	}
+}
+
+/** pos_0001: AED symbol from the page language and the cached "AED Symbol" setting. */
+function aedSymbol() {
+	if (typeof document === "undefined") return SYMBOLS.AED;
+	let mode = null;
+	try {
+		mode = localStorage.getItem("pos0001_currency_symbol");
+	} catch {
+		mode = null;
+	}
+	return plusCurrencySymbol("AED", { lang: document.documentElement.lang, mode });
 }
 
 export { getSymbol as getCurrencySymbol };

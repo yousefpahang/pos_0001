@@ -547,6 +547,19 @@ export const usePlusPrintingStore = defineStore("plusPrinting", () => {
 		})
 	}
 
+	// "AED Symbol" setting for the till's amounts (utils/currency.js reads it).
+	watch(
+		() => cache.value?.currency_symbol,
+		(mode) => {
+			if (!mode) return
+			try {
+				localStorage.setItem("pos0001_currency_symbol", mode)
+			} catch {
+				// private mode: the language decides
+			}
+		},
+	)
+
 	watch(
 		() => posSync.isOffline,
 		(offline) => {
