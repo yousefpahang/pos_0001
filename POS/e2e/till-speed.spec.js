@@ -124,7 +124,9 @@ test("scan without focus, shortcuts, ? overlay, instant search, virtual list", a
 
 	// + / - change the last line, Del removes it.
 	await page.evaluate(() => document.activeElement?.blur?.())
+	// Keys under 30 ms apart count as a scanner burst, so press like a person.
 	await page.keyboard.press("+")
+	await page.waitForTimeout(150)
 	await page.keyboard.press("+")
 	await expect.poll(() => firstLine(page)).toMatch(/\b3\b/)
 	await page.keyboard.press("-")
@@ -204,8 +206,13 @@ test("favourites grid and new parts in RTL", async ({ page }) => {
 	expect(
 		await overlay.evaluate((el) => el.scrollWidth - el.clientWidth),
 	).toBeLessThanOrEqual(1)
-	const row = await page.getByTestId("shortcut-row").first().boundingBox()
-	expect(row.height).toBeGreaterThanOrEqual(44)
+	// Measured after the open transition (it scales the overlay in).
+	await expect
+		.poll(
+			async () =>
+				(await page.getByTestId("shortcut-row").first().boundingBox())?.height,
+		)
+		.toBeGreaterThanOrEqual(44)
 	await page.keyboard.press("Escape")
 	await clearCart(page)
 })
