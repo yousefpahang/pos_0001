@@ -1064,6 +1064,7 @@ import { usePOSDraftsStore } from "@/stores/posDrafts";
 import { usePOSSettingsStore } from "@/stores/posSettings";
 import { usePlusPrintingStore } from "@/plus/printing/printingStore";
 import { buildDraftInvoice } from "@/plus/core/heldCarts"; // pos_0001
+import { canSubmitInBackground, invoiceLevelFields } from "@/plus/core/backgroundSubmit.js"; // pos_0001
 import { usePlusSalesPersonStore } from "@/plus/salesPerson/salesPersonStore"; // pos_0001
 import { usePOSShiftStore } from "@/stores/posShift";
 import { usePOSSyncStore } from "@/stores/posSync";
@@ -2066,7 +2067,22 @@ async function handlePaymentCompleted(paymentData) {
 		// Delete draft if it exists (since we're submitting/saving invoice)
 		const draftIdToDelete = cartStore.currentDraftId;
 
-		if (offlineStore.isOffline) {
+		// pos_0001 (DECISIONS item 13): a plain, fully paid online sale goes into the offline
+		// queue, prints from the local invoice at once and is sent to the server in the
+		// background. Other sales keep POS Next's waiting submit below.
+		const submitInBackground =
+			!offlineStore.isOffline &&
+			canSubmitInBackground({
+				targetDoctype: cartStore.targetDoctype,
+				isCreditSale: Boolean(paymentData.is_credit_sale),
+				receivableAccount: paymentData.receivable_account || null,
+				grandTotal: cartStore.grandTotal,
+				paidAmount: paymentData.paid_amount,
+				payments: cartStore.payments,
+			});
+
+		if (offlineStore.isOffline || submitInBackground) {
+			const soldItemCodes = cartStore.invoiceItems.map((item) => item.item_code);
 			// Use the same item transformation as online flow for consistency
 			// This ensures rate, discount_percentage, discount_amount, and pricing_rules
 			// are all correctly formatted for ERPNext
@@ -2088,6 +2104,11 @@ async function handlePaymentCompleted(paymentData) {
 				is_credit_sale: paymentData.is_credit_sale ? 1 : 0,
 				receivable_account: paymentData.receivable_account || null,
 				edited_from: editingOfflineContext?.originalOfflineId || null,
+				// pos_0001: additional discount and coupon, as POS Next's online submit sends them.
+				...invoiceLevelFields({
+					additionalDiscount: cartStore.additionalDiscount,
+					couponCode: cartStore.appliedCoupon?.code || cartStore.appliedCoupon?.name,
+				}),
 			};
 
 			// Save to the offline queue first so we can use the worker's
@@ -2122,7 +2143,8 @@ async function handlePaymentCompleted(paymentData) {
 			const offlinePrintDoc = {
 				name: offlineReceiptName,
 				doctype: "Sales Invoice",
-				is_offline: true,
+				is_offline: !submitInBackground,
+				pos0001_background_submit: submitInBackground,
 				pos_profile: cartStore.posProfile,
 				posting_date: new Date().toISOString().slice(0, 10),
 				company: shiftStore.profileCompany || undefined,
@@ -2156,10 +2178,12 @@ async function handlePaymentCompleted(paymentData) {
 				try {
 					await handlePrintInvoice({ name: offlineReceiptName }, { reason: "sale" });
 					showSuccess(
-						__(
-							"Invoice {0} saved offline and sent to printer — will sync when online",
-							[offlineReceiptName]
-						)
+						submitInBackground
+							? __("Sale saved and sent to printer. Sending it to the server now.")
+							: __(
+									"Invoice {0} saved offline and sent to printer — will sync when online",
+									[offlineReceiptName]
+								)
 					);
 				} catch (error) {
 					log.error("Offline auto-print error:", error);
@@ -2173,8 +2197,13 @@ async function handlePaymentCompleted(paymentData) {
 				}
 			} else {
 				uiStore.showSuccess(offlineReceiptName, grandTotal, paymentData.paid_amount);
-				showSuccess(__("Invoice saved offline. Will sync when online"));
+				showSuccess(
+					submitInBackground
+						? __("Sale saved. Sending it to the server now.")
+						: __("Invoice saved offline. Will sync when online")
+				);
 			}
+			if (submitInBackground) sendQueuedSaleNow(soldItemCodes);
 		} else {
 			// Get item codes from cart before clearing
 			const soldItemCodes = cartStore.invoiceItems.map((item) => item.item_code);
@@ -2279,6 +2308,24 @@ async function handlePaymentCompleted(paymentData) {
 			showWarning(errorContext.message);
 		}
 	}
+}
+
+/**
+ * pos_0001 (DECISIONS item 13): send a sale that was printed from the local invoice to the
+ * server through the offline queue now, then refresh stock and the invoice history.
+ * The queue keeps the invoice until the server answers Synced or Failed-and-stored.
+ * @param {string[]} itemCodes
+ */
+function sendQueuedSaleNow(itemCodes) {
+	offlineStore
+		.syncPending()
+		.then(() => {
+			stockStore.refresh(itemCodes, shiftStore.profileWarehouse);
+			loadInvoiceHistoryData().catch((err) =>
+				log.debug("Background invoice cache refresh failed:", err)
+			);
+		})
+		.catch((err) => log.warn("Background submit will retry with the sync queue:", err));
 }
 
 function handleClearCart() {

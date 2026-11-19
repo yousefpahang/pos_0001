@@ -1963,3 +1963,5 @@ Points applied: {0}. Please pay remaining {1} with {2},تم خصم النقاط:
 "POS Sales (Last 30 Days)","مبيعات نقطة البيع (آخر 30 يوماً)",""
 "Held carts","السلال المعلقة",""
 "Sales persons","مندوبو المبيعات",""
+"Sale saved and sent to printer. Sending it to the server now.","تم حفظ البيع وإرساله إلى الطابعة. جارٍ إرساله إلى الخادم الآن.",""
+"Sale saved. Sending it to the server now.","تم حفظ البيع. جارٍ إرساله إلى الخادم الآن.",""
