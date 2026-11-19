@@ -899,7 +899,7 @@ item 6 applied. The 20,000-item demo catalogue from `pos_next/pos_0001/demo/seed
 16. Demo data note: ITM-00002 shows two "Nos" UOM rows in the UOM dialog (left over from earlier test data). It does
     not affect this phase but is worth cleaning up in the seed.
 
-## Phase 6
+## Phase 6 (second run)
 
 Second run, 2026-11-19 (unattended). The first run (section above) built everything in SPEC section 11, Phase 6,
 but two section 6 targets were not met. This run worked on those two targets and checked everything again.
@@ -1008,4 +1008,108 @@ The manual checks of the first run still apply. Also:
   chart "POS Sales (Last 30 Days)" (`pos_0001/dashboard_chart`) and eight colour-coded feature tiles. Blocks live in
   `pos_0001/workspace_blocks/` and are refreshed on migrate. Checked in light, dark and Arabic (RTL).
 
-PHASE 6: BLOCKED - pay -> receipt (1.3 s, target 1 s) and sync of 500 queued invoices (6 min 44 s, target 5 min) are still not met on the dev bench; both are now bound by server time in POS Next's submit_invoice and need a measurement on a production (multi-worker) server, which this unattended run was not allowed to start
+Second run status (superseded by the third run below): blocked - pay -> receipt (1.3 s, target 1 s) and sync of 500 queued invoices (6 min 44 s, target 5 min) are still not met on the dev bench; both are now bound by server time in POS Next's submit_invoice and need a measurement on a production (multi-worker) server, which this unattended run was not allowed to start
+
+## Phase 6
+
+Third run, 2026-11-19 (unattended). The first two runs (sections above) built everything in SPEC section 11,
+Phase 6 (server held carts, search index worker, virtual grid, favourites, global scanner, shortcuts and `?`
+overlay, batch sync). Two section 6 targets were still open. This run applied the new DECISIONS items 13 and 14
+and checked everything again.
+
+### What was built
+
+- **Pay -> receipt without waiting for the server** (DECISIONS item 13). `plus/core/backgroundSubmit.js`
+  (`canSubmitInBackground`, `invoiceLevelFields`, Vitest) decides which online sales qualify: plain, fully paid
+  Sales Invoices. In `POSSale.vue` (UPSTREAM_PATCHES 44) such a sale takes POS Next's offline branch: it is saved
+  in the browser queue, printed from the local invoice at once, and `sendQueuedSaleNow()` starts the queue sync
+  right away, then refreshes stock and the invoice history. The duplicate protection (`offline_id`, Offline
+  Invoice Sync) and the DECISIONS item 2 rule are unchanged: the sale leaves the queue only on Synced or
+  Failed-and-stored. The receipt of such a sale is not marked "OFFLINE - PENDING SYNC"
+  (`pos0001_background_submit` in `plus/core/receipt.js`).
+- **Queue payloads keep the additional discount and coupon** (`discount_amount`, `coupon_code`), as POS Next's
+  online submit sends them. Before, an offline sale with an invoice discount reached the server without it.
+- **Fix: `posSync.syncPending` was not exposed** by POS Next's sync store (UPSTREAM_PATCHES 45). The background
+  submit failed with "syncPending is not a function", and so did the Phase 1 sync panel's "Sync now" (the error
+  was swallowed there). Found by the benchmark.
+- **Fix: F9 after a queued sale.** The printing store now stores a plain copy of the last receipt; POS Next's
+  offline print snapshot is a reactive proxy, which IndexedDB cannot store (found by the e2e test).
+- **Benchmarks against gunicorn** (DECISIONS item 14): `perf/benchmark.spec.js` can send the till's `/api` calls to
+  `PERF_API_URL` (here `http://127.0.0.1:8002`, header `X-Frappe-Site-Name: pos.test`). New
+  `perf/sync-load.spec.js`: 5 tills send 100 queued invoices each, together, in the browser's batch pattern, and
+  the test checks one invoice per offline id. No server was started or stopped.
+- Demo: `seed.restock()` tops demo items below 20 back to opening stock (the runs had sold ITM-00001 out, which
+  made the offline-sync e2e test fail with "insufficient stock"). Arabic for the 2 new toasts in `ar.csv`.
+- Docs: PERFORMANCE.md (third-run table), ARCHITECTURE_NOTES "After Phase 6", UPSTREAM_PATCHES 44-45.
+
+### Test results
+
+- **Benchmark** (till page on the dev bench, API on gunicorn :8002, 20,000 items). Every section 6 target is met:
+
+  | Target | Result |
+  | --- | --- |
+  | Search first results < 100 ms | 34 ms |
+  | Scan to cart < 150 ms | 22 ms |
+  | Scale scan to cart < 150 ms | 23 ms |
+  | Scan with no field focused | 11 ms |
+  | Pay -> receipt < 1 s | **203 ms** (runs 296, 203, 194); the queue then emptied |
+  | Submit offline < 50 ms | 15 ms |
+  | Reopen cached < 3 s | 2,424 ms |
+  | Initial cache 20,000 < 60 s, progress bar | 11.7 s, bar shown |
+  | Sync 500 queued, one till < 5 min | **4 min 48 s**, 500 Synced, 500 different invoices |
+  | Sync 500 queued, 5 tills together < 5 min | **3 min 42 s**, 500 Synced, 500 different invoices, no duplicates |
+
+  In the 5-till run, one invoice hit a MariaDB deadlock (1213), answered `Error` (not stored) and synced on the
+  next try. Per-invoice server time: about 1 s with 4 batch requests in flight, about 4 s with 10 in flight on 4
+  workers (about 135 invoices a minute in total).
+- **Vitest** `yarn test:run`: **197 tests, 18 files, all pass** (7 new: background submit rule, invoice-level
+  fields, receipt flag). One run during the e2e suite failed the 20,000-row search timing test (CPU busy); it
+  passed on the rerun.
+- **Playwright** `yarn e2e`: **15 passed** (4.3 min). `receipt-printing.spec.js` now also checks that the online
+  sale leaves the queue (reached the server), and that the browser fallback prints the local receipt window
+  (it was `/printview`, now the sale is printed from local data).
+- **Python** (`run-tests --module`): `test_sync` 17, `test_printing` 17, `test_held_carts` 11, `test_favourites` 3,
+  `test_barcode` 19, `test_sales_person` 20, `test_labels` 21, `test_workspace` 7. All OK. No server code changed
+  in this run. Demo prices rebuilt afterwards (`seed.ensure_item_prices`).
+- `bench build --app pos_next`: OK. `biome check` clean on `src/plus`, `perf` and the changed e2e file.
+
+### Manual checks (need real hardware, a person or a production server)
+
+The manual checks of the first and second runs still apply. Also:
+
+- [ ] Re-measure sync 500 (one till and 5 tills) on a production server (nginx, gunicorn workers sized for the
+      shop, no developer mode). The 8002 server here shares the laptop with MariaDB, the dev bench and the
+      browser.
+- [ ] Online cash sale on a real receipt printer: the receipt prints at once, the drawer opens, and the invoice
+      appears in ERPNext a moment later. Pull the network cable right after paying: the sale stays in the queue
+      and syncs on reconnect.
+- [ ] Check the receipt wording with the client: an online receipt now shows the till's reference
+      (`pos_offline_<uuid>`, as offline receipts already did), not the ERPNext invoice number. Reprints from the
+      invoice list show the ERPNext number.
+- [ ] Watch the sync badge after a few online sales: it should go back to "Online" within seconds.
+
+### Decisions to review
+
+1. **Which online sales print before the server answers.** Only plain, fully paid Sales Invoices. Sales
+   Orders, credit and partly paid sales, receivable-account sales and customer-credit or wallet payments still
+   wait for `submit_invoice`, because the server checks credit limits and balances and the cashier must see a
+   refusal before the customer leaves. A sale with cash rounding where the paid amount is below the unrounded
+   total by more than 0.005 also waits. These rules are in `plus/core/backgroundSubmit.js`.
+2. **A background sale the server rejects** (for example stock ran out on another till) is stored as Failed
+   on Offline Invoice Sync and shown in the sync panel with Retry, like an offline sale. The customer already has
+   the receipt. Before, the cashier saw the error before printing.
+3. **The receipt shows the browser's VAT and totals**, not ERPNext's final figures (this replaces Phase 4
+   decision 8 for these sales, as DECISIONS item 13 asks). The browser and server use the same rates, so they
+   normally match; the Phase 3/4 server hooks still run on submit. Phase 7 (UAE receipt) should check rounding
+   on a sample of invoices.
+4. **Invoice number on the receipt** is the local `pos_offline_<uuid>` id (Code128 or QR of it). The return
+   lookup by scanning this receipt barcode should be checked in Phase 7/8 (Offline Invoice Sync maps the id to
+   the ERPNext invoice).
+5. **Queue payloads now carry `discount_amount` and `coupon_code`.** This also changes POS Next's offline
+   sales: an invoice discount is no longer dropped on sync, and a coupon that is no longer valid makes the
+   invoice Failed (stored, with Retry) instead of syncing without the discount.
+6. **`posSync.syncPending` exposed** (one line in a POS Next store), which also repairs the Phase 1 "Sync now".
+7. **`seed.restock()`** writes Material Receipt Stock Entries on the demo site only (stock ledger, ask-first
+   area). It is a demo helper and is not called by any hook.
+
+PHASE 6: DONE
