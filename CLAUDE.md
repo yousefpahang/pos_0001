@@ -7,9 +7,10 @@ How the base code works: docs/ARCHITECTURE_NOTES.md (read before changing anythi
 Progress and status per phase: docs/PROGRESS.md.
 
 ## Targets
-- Frappe/ERPNext v15 (branch version-15) first; must also install on v16.
+- Frappe/ERPNext v15 (branch version-15). v16 is not required at this stage (DECISIONS item 15).
 - Bench: ~/projects/pos/frappe-bench (Node 22). Site: pos.test (admin/admin), http://localhost:8001/pos.
-- Do not touch ~/frappe-bench; it is a different bench.
+- Do not change ~/frappe-bench; it is a different bench. Only exception: taking a backup of site
+  posnext-mig.localhost there for the real-data test (DECISIONS item 16).
 - POS Awesome reference: ~/reference/posawesome (read-only).
 
 ## Where code goes

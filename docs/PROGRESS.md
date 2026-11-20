@@ -1675,3 +1675,17 @@ Decisions to review:
    `sites/fresh-tests.test`. The older `sites/install-test.test` was not made by this run and was not touched.
 
 PHASE 9: BLOCKED - v16 bench could not be tested; clean install and Python tests on a fresh v15 site pass (169 OK, fifth run); all automated tests passed in the fourth run (Vitest 247, Python 169+18+3, e2e 20), docs written, tagged v1.0.0-rc.1 instead of v1.0.0
+
+### After Phase 9 (2026-11-21, with the user)
+
+- **v16 is not required at this stage** (DECISIONS item 15). The v16 bench check is no longer a blocker for
+  Phase 9 or for tagging v1.0.0; it moves to a later stage. CLAUDE.md and SPEC section 12 updated.
+- **Next: test on real data** (DECISIONS item 16). The customer's data migrated from Odoo (company "Khozama Nuts
+  and Herbs": 3,547 items, 83,350 Sales Invoices, 56 customers) is on site `posnext-mig.localhost` in the other
+  bench (`~/frappe-bench`, Frappe 15.121.1, ERPNext 15.118.0, upstream POS Next 1.17.0, odoo_pos_migrator).
+  Plan: back up that site there (no other change to that bench), restore it into this bench as a new site,
+  `migrate` (installs pos_0001's doctypes and custom fields over upstream POS Next), then run the till on it.
+  This bench is newer (Frappe 15.127.1, ERPNext 15.125.0), so migrate only goes forward. Moving this app into
+  `~/frappe-bench` was rejected: it would replace upstream POS Next for every site on that bench.
+
+PHASE 9: DONE for v15 - v16 not required at this stage (DECISIONS item 15); real-data test on the Odoo site next

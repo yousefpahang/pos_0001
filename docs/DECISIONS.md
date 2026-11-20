@@ -35,3 +35,11 @@
     Do not start or stop servers yourself. If it still misses 5 min, record the per-invoice
     server time and the top 3 slow spots of submit_invoice in PROGRESS.md, add "re-measure on
     a production server" under Manual checks, and mark the phase DONE.
+15. v16 (decided 2026-11-21, with the user): installing on a v16 bench is not required at this
+    stage. v15 is the only release target for v1.0.0. Keep the code free of v15-only APIs where
+    it costs nothing, but do not block a phase or a release on a v16 check. The v16 install
+    test moves to a later stage.
+16. Real-data test (decided 2026-11-21, with the user): before tagging v1.0.0, test the app on
+    the customer's real data migrated from Odoo. That data lives on site posnext-mig.localhost in
+    the other bench (~/frappe-bench). Copy the site into this bench from a backup; do not install
+    this app on ~/frappe-bench and do not change anything there.
