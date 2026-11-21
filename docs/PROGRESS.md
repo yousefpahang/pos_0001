@@ -1689,3 +1689,18 @@ PHASE 9: BLOCKED - v16 bench could not be tested; clean install and Python tests
   `~/frappe-bench` was rejected: it would replace upstream POS Next for every site on that bench.
 
 PHASE 9: DONE for v15 - v16 not required at this stage (DECISIONS item 15); real-data test on the Odoo site next
+
+### Real-data check (2026-11-21, with the user)
+
+- `posnext-mig.localhost` (Odoo data) on `~/frappe-bench` now runs this app (branch `pos0001`, migrated), served
+  for testing at http://localhost:8006 (`bench --site posnext-mig.localhost serve --port 8006`).
+- **Setup found:** POS Profile "Shop" had no users in "Applicable for Users", so the till loaded no items
+  (`You don't have access to this POS Profile`, POS Next's own check in `get_pos_profile_data`, which has no
+  Administrator exception). Administrator added (with the user's OK). Every cashier must be added there too.
+  After that: 3,479 items, item groups and favourites from the real sales history load.
+- **Fixed: favourites were never stored offline.** `favouritesStore.refresh()` wrote `rows.value` (a Vue
+  reactive proxy) to IndexedDB, which threw `DataCloneError` on every till load (also on pos.test), so the
+  favourites grid was empty offline. It now stores the plain API list. New `favouritesStore.test.js` (fails on
+  the old code). Vitest 249 pass.
+- Expected console messages on that site: `QZ Tray certificate not found` (no certificate set up yet) and
+  Socket.IO errors on port 8006 (the test server is not wired to that bench's Socket.IO; realtime only).

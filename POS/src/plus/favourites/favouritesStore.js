@@ -63,11 +63,14 @@ export const usePlusFavouritesStore = defineStore("plusFavourites", () => {
 		if (!posSync.isOffline) {
 			try {
 				const result = await call(API, { pos_profile: name })
-				rows.value = result?.items || []
+				// Store the plain API list, not rows.value: that is a reactive proxy, which
+				// IndexedDB cannot clone (DataCloneError), so the list was never kept offline.
+				const list = result?.items || []
+				rows.value = list
 				fetchedAt.value = new Date().toISOString()
 				await db.settings.put({
 					key: cacheKey(name),
-					value: { items: rows.value, fetched_at: fetchedAt.value },
+					value: { items: list, fetched_at: fetchedAt.value },
 				})
 			} catch (error) {
 				log.warn("Favourites refresh failed; using the stored list", error)
